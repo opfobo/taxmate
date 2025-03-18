@@ -73,56 +73,71 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signUp = async (name: string, email: string, password: string) => {
-    try {
-      const { error, data } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name,
-          },
-        },
-      });
+  try {
+    setLoading(true);
+    
+    // Step 1: Create user in Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
 
-      if (error) {
-        toast({
-          title: "Signup failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        throw error;
-      }
-
-      // Create user profile in users table
-      if (data.user) {
-        const { error: profileError } = await supabase.from("users").insert({
-          id: data.user.id,
-          email: email,
-          name: name,
-          role: "shopper",
-        });
-
-        if (profileError) {
-          toast({
-            title: "Profile creation failed",
-            description: profileError.message,
-            variant: "destructive",
-          });
-          throw profileError;
-        }
-      }
-
+    if (error) {
       toast({
-        title: "Account created",
-        description: "Welcome to TaxMaster!",
+        title: "Signup Failed",
+        description: error.message,
+        variant: "destructive",
       });
-
-    } catch (error) {
-      console.error("Error during signup:", error);
-      throw error;
+      console.error("❌ Signup error:", error);
+      return { error, data: null };
     }
-  };
 
+    const user = data.user;
+    if (!user) {
+      toast({
+        title: "Signup Error",
+        description: "User creation failed. Please try again.",
+        variant: "destructive",
+      });
+      console.error("❌ No user returned after signup.");
+      return { error: new Error("No user created"), data: null };
+    }
+
+    // Step 2: Insert user profile into the `users` table
+    const { error: profileError } = await supabase
+      .from("users")
+      .insert([{ id: user.id, email, name, role: "shopper" }]);
+
+    if (profileError) {
+      console.error("❌ Profile creation failed:", profileError);
+      toast({
+        title: "Profile Creation Failed",
+        description: profileError.message,
+        variant: "destructive",
+      });
+    } else {
+      console.log("✅ Profile successfully created.");
+      toast({
+        title: "Signup Successful",
+        description: "Your account has been created.",
+      });
+    }
+
+    return { error: null, data: user };
+  } catch (error) {
+    console.error("❌ Unexpected signup error:", error);
+    toast({
+      title: "Unexpected Error",
+      description: "Something went wrong. Please try again.",
+      variant: "destructive",
+    });
+    return { error, data: null };
+  } finally {
+    setLoading(false);
+  }
+};
+
+  
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
