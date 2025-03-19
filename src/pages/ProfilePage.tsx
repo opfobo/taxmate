@@ -320,11 +320,15 @@ const ProfilePage = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">None</SelectItem>
-                              <SelectItem value="Solo">Solo</SelectItem>
+                              <SelectItem value="SOLO">Solo</SelectItem>
                               <SelectItem value="GmbH">GmbH</SelectItem>
                               <SelectItem value="UG">UG</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
+                              <SelectItem value="Freiberufler">Freiberufler</SelectItem>
+                              <SelectItem value="Einzelunternehmen">Einzelunternehmen</SelectItem>
+                              <SelectItem value="AG">AG</SelectItem>
+                              <SelectItem value="OHG">OHG</SelectItem>
+                              <SelectItem value="KG">KG</SelectItem>
+                              <SelectItem value="GbR">GbR</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
