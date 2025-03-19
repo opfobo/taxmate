@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +29,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tables } from "@/integrations/supabase/types";
 import AddressList from "@/components/profile/AddressList";
 
-// Define the profile form schema
 const profileFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address").optional(),
@@ -50,7 +48,6 @@ const ProfilePage = () => {
   const queryClient = useQueryClient();
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
 
-  // Fetch user profile data
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
@@ -86,7 +83,6 @@ const ProfilePage = () => {
     },
   });
 
-  // Update form values when profile data is loaded
   useEffect(() => {
     if (profile) {
       form.reset({
@@ -102,7 +98,6 @@ const ProfilePage = () => {
     }
   }, [profile, form]);
 
-  // Handle profile update
   const updateProfileMutation = useMutation({
     mutationFn: async (values: ProfileFormValues) => {
       if (!user?.id) throw new Error("No user ID found");
@@ -388,7 +383,6 @@ const ProfilePage = () => {
           </Form>
 
           <TabsContent value="addresses">
-              {console.log("Current userId for AddressList:", user?.id)}
             <AddressList userId={user?.id || ""} />
           </TabsContent>
         </Tabs>
