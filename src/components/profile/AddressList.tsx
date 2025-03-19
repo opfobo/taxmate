@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tables } from "@/integrations/supabase/types";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AddressFormProps {
   userId: string;
@@ -14,6 +15,9 @@ interface AddressFormProps {
 
 const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // State für Adressdaten
   const [type, setType] = useState(address?.type || "home");
   const [street, setStreet] = useState(address?.street || "");
   const [zip, setZip] = useState(address?.zip || "");
@@ -21,29 +25,59 @@ const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
   const [country, setCountry] = useState(address?.country || "Deutschland");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    console.log("📌 Aktueller Adresstyp:", type);
+  }, [type]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    console.log("Submitting Address:", { userId, type, street, zip, city, country });
+    console.log("🔄 Überprüfe bestehende Adresse für Typ:", type);
 
-    if (!street || !zip || !city || !country) {
-      toast({ title: "Error", description: "All fields are required.", variant: "destructive" });
+    // Überprüfen, ob eine Adresse mit demselben Typ bereits existiert
+    const { data: existingAddresses, error: checkError } = await supabase
+      .from("addresses")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("type", type);
+
+    if (checkError) {
+      console.error("❌ Fehler beim Prüfen vorhandener Adressen:", checkError);
+      toast({ title: "Fehler", description: "Datenbankfehler beim Überprüfen bestehender Adresse.", variant: "destructive" });
       setLoading(false);
       return;
     }
 
+    console.log("🔎 Gefundene Adressen:", existingAddresses);
+
+    // Adress-Objekt für Supabase
     const addressData = { user_id: userId, type, street, zip, city, country };
 
-    const { error } = address
-      ? await supabase.from("addresses").update(addressData).eq("id", address.id)
-      : await supabase.from("addresses").insert(addressData);
+    let saveError = null;
+    
+    if (existingAddresses && existingAddresses.length > 0) {
+      // Falls Adresse existiert → Update
+      const { error } = await supabase
+        .from("addresses")
+        .update(addressData)
+        .eq("id", existingAddresses[0].id);
 
-    if (error) {
-      console.error("Error saving address:", error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      saveError = error;
+      console.log("✏️ Adresse aktualisiert:", existingAddresses[0].id);
     } else {
-      toast({ title: "Success", description: `Address ${address ? "updated" : "added"} successfully.` });
+      // Falls keine existiert → Neue Adresse anlegen
+      const { error } = await supabase.from("addresses").insert(addressData);
+      saveError = error;
+      console.log("✅ Neue Adresse gespeichert.");
+    }
+
+    if (saveError) {
+      console.error("❌ Fehler beim Speichern der Adresse:", saveError);
+      toast({ title: "Fehler", description: saveError.message, variant: "destructive" });
+    } else {
+      toast({ title: "Erfolg", description: `Adresse wurde ${existingAddresses.length > 0 ? "aktualisiert" : "hinzugefügt"}.` });
+      queryClient.invalidateQueries(["addresses", userId]); // Frontend aktualisieren
       onClose();
     }
 
