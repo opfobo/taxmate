@@ -388,6 +388,7 @@ const ProfilePage = () => {
           </Form>
 
           <TabsContent value="addresses">
+              {console.log("Current userId for AddressList:", user?.id)}
             <AddressList userId={user?.id || ""} />
           </TabsContent>
         </Tabs>
