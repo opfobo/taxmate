@@ -11,10 +11,13 @@ export type Database = {
     Tables: {
       addresses: {
         Row: {
+          additional_info: string | null
           city: string
           country: string
+          county: string | null
           created_at: string | null
           id: string
+          phone: string | null
           street: string
           type: string
           updated_at: string | null
@@ -22,10 +25,13 @@ export type Database = {
           zip: string
         }
         Insert: {
+          additional_info?: string | null
           city: string
           country: string
+          county?: string | null
           created_at?: string | null
           id?: string
+          phone?: string | null
           street: string
           type: string
           updated_at?: string | null
@@ -33,10 +39,13 @@ export type Database = {
           zip: string
         }
         Update: {
+          additional_info?: string | null
           city?: string
           country?: string
+          county?: string | null
           created_at?: string | null
           id?: string
+          phone?: string | null
           street?: string
           type?: string
           updated_at?: string | null
@@ -330,6 +339,7 @@ export type Database = {
           business_type: string | null
           created_at: string | null
           currency: string | null
+          deleted_at: string | null
           email: string
           eori_number: string | null
           eu_vat_id: string | null
@@ -345,6 +355,7 @@ export type Database = {
           business_type?: string | null
           created_at?: string | null
           currency?: string | null
+          deleted_at?: string | null
           email: string
           eori_number?: string | null
           eu_vat_id?: string | null
@@ -360,6 +371,7 @@ export type Database = {
           business_type?: string | null
           created_at?: string | null
           currency?: string | null
+          deleted_at?: string | null
           email?: string
           eori_number?: string | null
           eu_vat_id?: string | null

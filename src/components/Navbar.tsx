@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { MenuIcon, X } from "lucide-react";
+import { MenuIcon, X, User, Settings } from "lucide-react";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -32,6 +32,18 @@ const Navbar = () => {
             <>
               <Button variant="ghost" asChild>
                 <Link to="/dashboard">Dashboard</Link>
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link to="/profile" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link to="/settings" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  <span>Settings</span>
+                </Link>
               </Button>
               <Button onClick={handleSignOut}>Logout</Button>
             </>
@@ -74,6 +86,18 @@ const Navbar = () => {
                 <Button variant="ghost" asChild className="justify-start">
                   <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
                     Dashboard
+                  </Link>
+                </Button>
+                <Button variant="ghost" asChild className="justify-start">
+                  <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
+                </Button>
+                <Button variant="ghost" asChild className="justify-start">
+                  <Link to="/settings" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    <span>Settings</span>
                   </Link>
                 </Button>
                 <Button
