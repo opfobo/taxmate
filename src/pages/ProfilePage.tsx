@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -11,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
-// 🔹 Zod Schema for validation
+// ✅ Zod Schema for validation
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
@@ -30,7 +29,7 @@ const profileSchema = z.object({
       country: z.string(),
       phone: z.string().optional(),
     })
-  ),
+  ).max(3, "You can only add up to 3 addresses."),
 });
 
 const ProfilePage = () => {
@@ -56,12 +55,10 @@ const ProfilePage = () => {
   });
 
   useEffect(() => {
-    if (user) {
-      fetchProfile(user.id);
-    }
+    if (user) fetchProfile(user.id);
   }, [user]);
 
-  const fetchProfile = async (userId) => {
+  const fetchProfile = async (userId: string) => {
     setLoading(true);
     const { data, error } = await supabase.from("users").select("*").eq("id", userId).single();
 
@@ -73,8 +70,7 @@ const ProfilePage = () => {
     setLoading(false);
   };
 
-  // 🔹 Auto-fill VAT details from an external API (Placeholder)
-  const fetchVatDetails = async (vatId) => {
+  const fetchVatDetails = async (vatId: string) => {
     if (!vatId) return;
     try {
       const response = await fetch(`https://some-vat-api.com/validate/${vatId}`);
@@ -86,7 +82,7 @@ const ProfilePage = () => {
     }
   };
 
-  const onSubmit = async (values) => {
+  const onSubmit = async (values: any) => {
     setLoading(true);
     const { error } = await supabase.from("users").update(values).eq("id", user.id);
 
