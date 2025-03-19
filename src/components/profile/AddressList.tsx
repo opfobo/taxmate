@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +18,25 @@ const AddressList = ({ userId }: AddressListProps) => {
   const [editingAddress, setEditingAddress] = useState<Tables<"addresses"> | null>(null);
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
 
-  // Fetch user addresses
+  // 🏷️ Korrekte Labels für Adress-Typen (Datenbankwerte beachten!)
+  const renderAddressTypeLabel = (type: string) => {
+    switch (type.toLowerCase()) {
+      case "home":
+        return <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs">Home</span>;
+      case "business":
+        return <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md text-xs">Business</span>;
+      case "shipping":
+        return <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-md text-xs">Shipping</span>;
+      case "billing":
+        return <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-md text-xs">Billing</span>;
+      case "warehouse":
+        return <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-md text-xs">Warehouse</span>;
+      default:
+        return <span className="bg-red-100 text-red-800 px-2 py-1 rounded-md text-xs">Unknown</span>;
+    }
+  };
+
+  // 🛠 Adressen aus Supabase abrufen
   const { data: addresses, isLoading, error } = useQuery({
     queryKey: ["addresses", userId],
     queryFn: async () => {
@@ -30,48 +47,40 @@ const AddressList = ({ userId }: AddressListProps) => {
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
-        
-      if (error) {
-        console.error("Error fetching addresses:", error);
-        throw error;
-      }
-      
-      return data as Tables<"addresses">[];
+
+      console.log("🔍 Supabase AddressList Data:", data);
+      console.log("❌ Supabase AddressList Error:", error);
+
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!userId,
   });
 
-  // Delete address mutation
+  // 🗑️ Adresse löschen
   const deleteAddressMutation = useMutation({
     mutationFn: async (addressId: string) => {
       const { error } = await supabase
         .from("addresses")
         .delete()
         .eq("id", addressId);
-        
+      
       if (error) {
-        console.error("Error deleting address:", error);
+        console.error("❌ Fehler beim Löschen der Adresse:", error);
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["addresses", userId] });
-      toast({
-        title: "Address deleted",
-        description: "The address has been removed successfully.",
-      });
+      toast({ title: "Adresse gelöscht", description: "Die Adresse wurde erfolgreich entfernt." });
     },
     onError: (error) => {
-      toast({
-        title: "Error deleting address",
-        description: error.message || "Something went wrong.",
-        variant: "destructive",
-      });
+      toast({ title: "Fehler beim Löschen", description: error.message || "Etwas ist schiefgelaufen.", variant: "destructive" });
     },
   });
 
   const handleDeleteAddress = (addressId: string) => {
-    if (confirm("Are you sure you want to delete this address?")) {
+    if (confirm("Möchtest du diese Adresse wirklich löschen?")) {
       deleteAddressMutation.mutate(addressId);
     }
   };
@@ -91,19 +100,7 @@ const AddressList = ({ userId }: AddressListProps) => {
     setEditingAddress(null);
   };
 
-  const renderAddressTypeLabel = (type: string) => {
-    switch (type) {
-      case "Home":
-        return <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs">Home</span>;
-      case "Business":
-        return <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md text-xs">Business</span>;
-      case "Shipping":
-        return <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-md text-xs">Shipping</span>;
-      default:
-        return <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-md text-xs">{type}</span>;
-    }
-  };
-
+  // 🔄 Ladezustand
   if (isLoading) {
     return (
       <Card>
@@ -116,14 +113,15 @@ const AddressList = ({ userId }: AddressListProps) => {
     );
   }
 
+  // ❌ Fehlerzustand
   if (error) {
     return (
       <Card>
         <CardContent className="pt-6">
           <div className="text-center text-destructive">
-            <p>There was an error loading your addresses.</p>
+            <p>Fehler beim Laden der Adressen.</p>
             <p className="text-sm text-muted-foreground mt-2">
-              Please refresh the page or try again later.
+              Bitte lade die Seite neu oder versuche es später erneut.
             </p>
           </div>
         </CardContent>
@@ -135,11 +133,11 @@ const AddressList = ({ userId }: AddressListProps) => {
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Addresses</CardTitle>
+          <CardTitle>Adressen</CardTitle>
           {(!addresses || addresses.length < 3) && (
             <Button variant="outline" size="sm" onClick={handleAddNewAddress} disabled={isAddressFormOpen}>
               <Plus className="mr-2 h-4 w-4" />
-              Add Address
+              Neue Adresse
             </Button>
           )}
         </CardHeader>
@@ -154,10 +152,10 @@ const AddressList = ({ userId }: AddressListProps) => {
             <>
               {!addresses || addresses.length === 0 ? (
                 <div className="text-center py-6">
-                  <p className="text-muted-foreground mb-4">You don't have any addresses yet.</p>
+                  <p className="text-muted-foreground mb-4">Du hast noch keine Adressen gespeichert.</p>
                   <Button onClick={handleAddNewAddress}>
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Your First Address
+                    Erste Adresse hinzufügen
                   </Button>
                 </div>
               ) : (
@@ -165,9 +163,7 @@ const AddressList = ({ userId }: AddressListProps) => {
                   {addresses.map((address) => (
                     <div key={address.id} className="border rounded-lg p-4">
                       <div className="flex justify-between items-start mb-2">
-                        <div>
-                          {renderAddressTypeLabel(address.type)}
-                        </div>
+                        <div>{renderAddressTypeLabel(address.type)}</div>
                         <div className="flex space-x-2">
                           <Button 
                             variant="ghost" 
