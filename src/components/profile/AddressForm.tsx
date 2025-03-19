@@ -25,6 +25,9 @@ import {
 } from "@/components/ui/select";
 import { Tables } from "@/integrations/supabase/types";
 
+// Define the allowed address types as a union type
+type AddressType = "home" | "business" | "warehouse";
+
 const addressFormSchema = z.object({
   type: z.enum(["home", "business", "warehouse"], {
     required_error: "Please select an address type",
@@ -54,7 +57,7 @@ const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
     defaultValues: {
-      type: address?.type || "home",
+      type: (address?.type as AddressType) || "home",
       street: address?.street || "",
       additional_info: address?.additional_info || "",
       zip: address?.zip || "",
