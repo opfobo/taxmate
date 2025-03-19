@@ -29,6 +29,9 @@ import AddressList from "@/components/profile/AddressList";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
 
+// Define a type for business type to match the Zod enum
+type BusinessType = "SOLO" | "GmbH" | "UG" | "Freelancer" | "Other";
+
 // Zod schema for validation
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -93,11 +96,14 @@ const ProfilePage = () => {
   // Update form values when profile data is loaded
   useEffect(() => {
     if (profileData) {
+      // Ensure business_type is typed correctly or null
+      const businessType = profileData.business_type as BusinessType | null;
+      
       form.reset({
         name: profileData.name || "",
         email: profileData.email || "",
         phone: profileData.phone || "",
-        business_type: profileData.business_type || null,
+        business_type: businessType,
         eu_vat_id: profileData.eu_vat_id || "",
         tax_number: profileData.tax_number || "",
         eori_number: profileData.eori_number || ""
@@ -263,7 +269,7 @@ const ProfilePage = () => {
                         <FormControl>
                           <Select
                             onValueChange={field.onChange}
-                            defaultValue={field.value || undefined}
+                            value={field.value || undefined}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select a business type" />
