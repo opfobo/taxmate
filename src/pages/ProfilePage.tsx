@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -8,168 +9,337 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
+  Form, 
+  FormControl, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from "@/components/ui/form";
+import { Loader2, PlusCircle, Trash } from "lucide-react";
+import AddressList from "@/components/profile/AddressList";
+import { useQuery } from "@tanstack/react-query";
 
-// ✅ Zod Schema for validation
+// Zod schema for validation
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
-  businessType: z.string().optional(),
-  vatId: z.string().optional(),
-  taxationNumber: z.string().optional(),
-  eoriNumber: z.string().optional(),
-  addresses: z.array(
-    z.object({
-      type: z.enum(["home", "business", "warehouse"]),
-      street: z.string(),
-      street2: z.string().optional(),
-      zip: z.string(),
-      city: z.string(),
-      country: z.string(),
-      phone: z.string().optional(),
-    })
-  ).max(3, "You can only add up to 3 addresses."),
+  phone: z.string().optional().nullable(),
+  business_type: z.string().optional().nullable(),
+  eu_vat_id: z.string().optional().nullable(),
+  tax_number: z.string().optional().nullable(),
+  eori_number: z.string().optional().nullable()
 });
+
+type ProfileFormValues = z.infer<typeof profileSchema>;
 
 const ProfilePage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("personal");
-  const [selectedAddressType, setSelectedAddressType] = useState("home");
-  const [vatData, setVatData] = useState(null);
+  const [vatData, setVatData] = useState<any>(null);
 
-  const form = useForm({
+  // Initialize the form
+  const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: "",
       email: "",
       phone: "",
-      businessType: "",
-      vatId: "",
-      taxationNumber: "",
-      eoriNumber: "",
-      addresses: [],
+      business_type: "",
+      eu_vat_id: "",
+      tax_number: "",
+      eori_number: ""
     },
   });
 
+  // Fetch user profile data
+  const { isLoading: isLoadingProfile, data: profileData } = useQuery({
+    queryKey: ["userProfile", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching user profile:", error);
+        toast({
+          title: "Error",
+          description: "Could not load your profile. Please try again.",
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Update form values when profile data is loaded
   useEffect(() => {
-    if (user) fetchProfile(user.id);
-  }, [user]);
-
-  const fetchProfile = async (userId: string) => {
-    setLoading(true);
-    const { data, error } = await supabase.from("users").select("*").eq("id", userId).single();
-
-    if (error) {
-      toast({ title: "Error", description: "Could not load profile.", variant: "destructive" });
-    } else {
-      form.reset(data);
+    if (profileData) {
+      form.reset({
+        name: profileData.name || "",
+        email: profileData.email || "",
+        phone: profileData.phone || "",
+        business_type: profileData.business_type || "",
+        eu_vat_id: profileData.eu_vat_id || "",
+        tax_number: profileData.tax_number || "",
+        eori_number: profileData.eori_number || ""
+      });
     }
-    setLoading(false);
-  };
+  }, [profileData, form]);
 
+  // Auto-fill VAT details from an external API (mock function)
   const fetchVatDetails = async (vatId: string) => {
-    if (!vatId) return;
+    if (!vatId || vatId.length < 5) return;
+    
+    setVatData(null);
     try {
-      const response = await fetch(`https://some-vat-api.com/validate/${vatId}`);
-      const data = await response.json();
-      setVatData(data);
-      form.setValue("businessType", data.business_name || "");
+      // This would be replaced with a real VAT validation API
+      // For demo purposes, we'll simulate an API call
+      setTimeout(() => {
+        const mockData = {
+          valid: true,
+          business_name: "Sample Business " + vatId.substring(0, 4).toUpperCase(),
+          address: "123 Business St, Business City",
+          country_code: "DE"
+        };
+        setVatData(mockData);
+        form.setValue("business_type", mockData.business_name);
+      }, 1000);
     } catch (error) {
       console.error("VAT API Error:", error);
+      toast({
+        title: "VAT Validation Failed",
+        description: "Could not validate the VAT ID. Please check and try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const onSubmit = async (values: any) => {
+  // Handle form submission
+  const onSubmit = async (values: ProfileFormValues) => {
+    if (!user) return;
+    
     setLoading(true);
-    const { error } = await supabase.from("users").update(values).eq("id", user.id);
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({
+          name: values.name,
+          phone: values.phone,
+          business_type: values.business_type,
+          eu_vat_id: values.eu_vat_id,
+          tax_number: values.tax_number,
+          eori_number: values.eori_number,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", user.id);
 
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Success", description: "Profile updated!" });
+      if (error) throw error;
+
+      toast({
+        title: "Profile Updated",
+        description: "Your profile information has been saved successfully.",
+      });
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update your profile. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
+
+  if (isLoadingProfile && !profileData) {
+    return (
+      <div className="container mx-auto p-6 flex justify-center items-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Profile Settings</h1>
+      <h1 className="text-2xl font-bold mb-6">Profile Settings</h1>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="mb-6">
           <TabsTrigger value="personal">Personal Info</TabsTrigger>
           <TabsTrigger value="business">Business Info</TabsTrigger>
           <TabsTrigger value="addresses">Addresses</TabsTrigger>
         </TabsList>
 
-        {/* 🔹 Personal Info Tab */}
+        {/* Personal Info Tab */}
         <TabsContent value="personal">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField control={form.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="email" render={({ field }) => (
-                <FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="phone" render={({ field }) => (
-                <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <Button type="submit" disabled={loading}>Save Changes</Button>
-            </form>
-          </Form>
+          <div className="max-w-2xl">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled className="bg-muted/50" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+1 555 123 4567" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button type="submit" disabled={loading || isLoadingProfile}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Changes
+                </Button>
+              </form>
+            </Form>
+          </div>
         </TabsContent>
 
-        {/* 🔹 Business Info Tab */}
+        {/* Business Info Tab */}
         <TabsContent value="business">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField control={form.control} name="businessType" render={({ field }) => (
-                <FormItem><FormLabel>Business Type</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="vatId" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>VAT ID</FormLabel>
-                  <FormControl><Input {...field} onBlur={() => fetchVatDetails(field.value)} /></FormControl>
-                  {vatData && <p>✅ Business Name: {vatData.business_name}</p>}
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="taxationNumber" render={({ field }) => (
-                <FormItem><FormLabel>Taxation Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="eoriNumber" render={({ field }) => (
-                <FormItem><FormLabel>EORI Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <Button type="submit" disabled={loading}>Save Changes</Button>
-            </form>
-          </Form>
+          <div className="max-w-2xl">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="business_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Business Type</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="e.g. GmbH, LLC, Sole Trader" 
+                          {...field} 
+                          value={field.value || ''} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="eu_vat_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>VAT ID</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="e.g. DE123456789" 
+                          {...field} 
+                          value={field.value || ''} 
+                          onBlur={() => fetchVatDetails(field.value || '')}
+                        />
+                      </FormControl>
+                      {vatData && (
+                        <div className="text-sm bg-primary/10 p-2 rounded border border-primary/20">
+                          <p className="text-green-600 font-medium">✓ VAT ID Valid</p>
+                          <p>Business: {vatData.business_name}</p>
+                        </div>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="tax_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tax Number</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Tax registration number" 
+                          {...field} 
+                          value={field.value || ''} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="eori_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>EORI Number</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Economic Operators Registration and Identification" 
+                          {...field} 
+                          value={field.value || ''} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button type="submit" disabled={loading || isLoadingProfile}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Changes
+                </Button>
+              </form>
+            </Form>
+          </div>
         </TabsContent>
 
-        {/* 🔹 Address Management Tab */}
+        {/* Addresses Tab */}
         <TabsContent value="addresses">
-          <select onChange={(e) => setSelectedAddressType(e.target.value)} className="mb-4">
-            <option value="home">Home Address</option>
-            <option value="business">Business Address</option>
-            <option value="warehouse">Warehouse Address</option>
-          </select>
-
-          {form.watch("addresses").map((address, index) =>
-            address.type === selectedAddressType ? (
-              <div key={index} className="space-y-4">
-                <FormField control={form.control} name={`addresses.${index}.street`} render={({ field }) => (
-                  <FormItem><FormLabel>Street</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name={`addresses.${index}.zip`} render={({ field }) => (
-                  <FormItem><FormLabel>ZIP Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <Button type="submit" disabled={loading}>Save Address</Button>
-              </div>
-            ) : null
-          )}
+          {user && <AddressList userId={user.id} />}
         </TabsContent>
       </Tabs>
     </div>

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -25,11 +26,16 @@ import {
 import { Tables } from "@/integrations/supabase/types";
 
 const addressFormSchema = z.object({
-  type: z.enum(["Home", "Business", "Shipping"]),
+  type: z.enum(["home", "business", "warehouse"], {
+    required_error: "Please select an address type",
+  }),
   street: z.string().min(3, "Street address is required"),
+  additional_info: z.string().optional().nullable(),
   zip: z.string().min(1, "ZIP/Postal code is required"),
   city: z.string().min(1, "City is required"),
+  county: z.string().optional().nullable(),
   country: z.string().min(1, "Country is required"),
+  phone: z.string().optional().nullable(),
 });
 
 type AddressFormValues = z.infer<typeof addressFormSchema>;
@@ -48,11 +54,14 @@ const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
     defaultValues: {
-      type: address?.type as "Home" | "Business" | "Shipping" || "Home",
+      type: address?.type || "home",
       street: address?.street || "",
+      additional_info: address?.additional_info || "",
       zip: address?.zip || "",
       city: address?.city || "",
+      county: address?.county || "",
       country: address?.country || "",
+      phone: address?.phone || "",
     },
   });
 
@@ -66,9 +75,12 @@ const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
           .update({
             type: values.type,
             street: values.street,
+            additional_info: values.additional_info,
             zip: values.zip,
             city: values.city,
+            county: values.county,
             country: values.country,
+            phone: values.phone,
             updated_at: new Date().toISOString(),
           })
           .eq("id", address.id)
@@ -88,9 +100,12 @@ const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
             user_id: userId,
             type: values.type,
             street: values.street,
+            additional_info: values.additional_info,
             zip: values.zip,
             city: values.city,
+            county: values.county,
             country: values.country,
+            phone: values.phone,
           })
           .select();
           
@@ -109,16 +124,16 @@ const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["addresses", userId] });
       toast({
-        title: isEditing ? "Address updated" : "Address added",
+        title: isEditing ? "Address Updated" : "Address Added",
         description: isEditing 
           ? "Your address has been updated successfully." 
-          : "Your address has been added successfully.",
+          : "Your new address has been added successfully.",
       });
       onClose();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: isEditing ? "Error updating address" : "Error adding address",
+        title: isEditing ? "Error Updating Address" : "Error Adding Address",
         description: error.message || "Something went wrong.",
         variant: "destructive",
       });
@@ -130,7 +145,7 @@ const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
   };
 
   return (
-    <div className="p-4 border rounded-lg bg-card">
+    <div className="border rounded-lg p-5 bg-card">
       <h3 className="text-lg font-medium mb-4">
         {isEditing ? "Edit Address" : "Add New Address"}
       </h3>
@@ -153,9 +168,9 @@ const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Home">Home</SelectItem>
-                    <SelectItem value="Business">Business</SelectItem>
-                    <SelectItem value="Shipping">Shipping</SelectItem>
+                    <SelectItem value="home">Home</SelectItem>
+                    <SelectItem value="business">Business</SelectItem>
+                    <SelectItem value="warehouse">Warehouse</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -170,14 +185,28 @@ const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
               <FormItem>
                 <FormLabel>Street Address</FormLabel>
                 <FormControl>
-                  <Input placeholder="123 Main St, Apt 4B" {...field} />
+                  <Input placeholder="123 Main St" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="additional_info"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Additional Information</FormLabel>
+                <FormControl>
+                  <Input placeholder="Apt 4B, Floor 2, etc." {...field} value={field.value || ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="zip"
@@ -185,7 +214,7 @@ const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
                 <FormItem>
                   <FormLabel>ZIP/Postal Code</FormLabel>
                   <FormControl>
-                    <Input placeholder="10001" {...field} />
+                    <Input placeholder="10001" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -199,7 +228,7 @@ const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
                 <FormItem>
                   <FormLabel>City</FormLabel>
                   <FormControl>
-                    <Input placeholder="New York" {...field} />
+                    <Input placeholder="New York" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -209,12 +238,40 @@ const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
 
           <FormField
             control={form.control}
+            name="county"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>County/State/Province</FormLabel>
+                <FormControl>
+                  <Input placeholder="New York" {...field} value={field.value || ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="country"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Country</FormLabel>
                 <FormControl>
-                  <Input placeholder="United States" {...field} />
+                  <Input placeholder="United States" {...field} value={field.value || ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone Number (Optional)</FormLabel>
+                <FormControl>
+                  <Input placeholder="+1 555 123 4567" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -228,8 +285,8 @@ const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
             <Button type="submit" disabled={addressMutation.isPending}>
               {addressMutation.isPending ? (
                 <>
-                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent"></span>
-                  Saving...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isEditing ? "Updating..." : "Adding..."}
                 </>
               ) : isEditing ? "Update Address" : "Add Address"}
             </Button>
