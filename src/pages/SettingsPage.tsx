@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -101,15 +100,14 @@ const SettingsPage = () => {
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
     try {
-      // Soft delete - Just update the user profile to indicate deletion
-      // In a real app, you might want to handle this differently or use Supabase's auth.admin.deleteUser
-      // which requires server-side code or edge functions
-      
-      // Instead we'll mark the user as deleted in the users table
+      // Instead of using deleted_at which doesn't exist in the type definition,
+      // we'll mark the user as inactive by setting a flag in the users table
+      // For this example, we'll update the 'role' field to 'deleted'
       const { error } = await supabase
         .from("users")
         .update({
-          deleted_at: new Date().toISOString(),
+          role: "deleted", // Using an existing field to mark the user as deleted
+          updated_at: new Date().toISOString(),
         })
         .eq("id", user?.id);
 
@@ -119,7 +117,7 @@ const SettingsPage = () => {
 
       toast({
         title: "Account deleted",
-        description: "Your account has been deleted successfully.",
+        description: "Your account has been marked as deleted successfully.",
       });
 
       // Sign out the user
