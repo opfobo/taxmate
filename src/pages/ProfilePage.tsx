@@ -1,392 +1,180 @@
-import { useEffect, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/context/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { z } from "zod";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Navbar from "@/components/Navbar";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabaseClient";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tables } from "@/integrations/supabase/types";
-import AddressList from "@/components/profile/AddressList";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
-const profileFormSchema = z.object({
+// 🔹 Zod Schema for validation
+const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address").optional(),
-  business_type: z.string().optional(),
-  tax_number: z.string().optional(),
-  eu_vat_id: z.string().optional(),
-  eori_number: z.string().optional(),
-  language: z.enum(["en", "de", "ru"]).default("en"),
-  currency: z.enum(["EUR", "USD", "GBP"]).default("EUR"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().optional(),
+  businessType: z.string().optional(),
+  vatId: z.string().optional(),
+  taxationNumber: z.string().optional(),
+  eoriNumber: z.string().optional(),
+  addresses: z.array(
+    z.object({
+      type: z.enum(["home", "business", "warehouse"]),
+      street: z.string(),
+      street2: z.string().optional(),
+      zip: z.string(),
+      city: z.string(),
+      country: z.string(),
+      phone: z.string().optional(),
+    })
+  ),
 });
-
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 const ProfilePage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("personal");
+  const [selectedAddressType, setSelectedAddressType] = useState("home");
+  const [vatData, setVatData] = useState(null);
 
-  const { data: profile, isLoading, error } = useQuery({
-    queryKey: ["profile", user?.id],
-    queryFn: async () => {
-      if (!user?.id) throw new Error("No user ID found");
-      
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-        
-      if (error) {
-        console.error("Error fetching profile:", error);
-        throw error;
-      }
-      
-      return data as Tables<"users">;
-    },
-    enabled: !!user?.id,
-  });
-
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
+  const form = useForm({
+    resolver: zodResolver(profileSchema),
     defaultValues: {
       name: "",
       email: "",
-      business_type: "",
-      tax_number: "",
-      eu_vat_id: "",
-      eori_number: "",
-      language: "en",
-      currency: "EUR",
+      phone: "",
+      businessType: "",
+      vatId: "",
+      taxationNumber: "",
+      eoriNumber: "",
+      addresses: [],
     },
   });
 
   useEffect(() => {
-    if (profile) {
-      form.reset({
-        name: profile.name || "",
-        email: profile.email,
-        business_type: profile.business_type || "",
-        tax_number: profile.tax_number || "",
-        eu_vat_id: profile.eu_vat_id || "",
-        eori_number: profile.eori_number || "",
-        language: (profile.language as "en" | "de" | "ru") || "en",
-        currency: (profile.currency as "EUR" | "USD" | "GBP") || "EUR",
-      });
+    if (user) {
+      fetchProfile(user.id);
     }
-  }, [profile, form]);
+  }, [user]);
 
-  const updateProfileMutation = useMutation({
-    mutationFn: async (values: ProfileFormValues) => {
-      if (!user?.id) throw new Error("No user ID found");
-      
-      const { data, error } = await supabase
-        .from("users")
-        .update({
-          name: values.name,
-          business_type: values.business_type,
-          tax_number: values.tax_number,
-          eu_vat_id: values.eu_vat_id,
-          eori_number: values.eori_number,
-          language: values.language,
-          currency: values.currency,
-        })
-        .eq("id", user.id)
-        .select()
-        .single();
-        
-      if (error) {
-        console.error("Error updating profile:", error);
-        throw error;
-      }
-      
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["profile", user?.id] });
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error updating profile",
-        description: error.message || "Something went wrong.",
-        variant: "destructive",
-      });
-    },
-  });
+  const fetchProfile = async (userId) => {
+    setLoading(true);
+    const { data, error } = await supabase.from("users").select("*").eq("id", userId).single();
 
-  const onSubmit = (values: ProfileFormValues) => {
-    updateProfileMutation.mutate(values);
+    if (error) {
+      toast({ title: "Error", description: "Could not load profile.", variant: "destructive" });
+    } else {
+      form.reset(data);
+    }
+    setLoading(false);
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-1 container py-8">
-          <div className="flex justify-center py-10">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  // 🔹 Auto-fill VAT details from an external API (Placeholder)
+  const fetchVatDetails = async (vatId) => {
+    if (!vatId) return;
+    try {
+      const response = await fetch(`https://some-vat-api.com/validate/${vatId}`);
+      const data = await response.json();
+      setVatData(data);
+      form.setValue("businessType", data.business_name || "");
+    } catch (error) {
+      console.error("VAT API Error:", error);
+    }
+  };
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-1 container py-8">
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="text-center text-destructive">
-                <p>There was an error loading your profile data.</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Please refresh the page or try again later.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    );
-  }
+  const onSubmit = async (values) => {
+    setLoading(true);
+    const { error } = await supabase.from("users").update(values).eq("id", user.id);
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Success", description: "Profile updated!" });
+    }
+    setLoading(false);
+  };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1 container py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
-          <p className="text-muted-foreground">
-            View and manage your profile information
-          </p>
-        </div>
+    <div className="container mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">Profile Settings</h1>
 
-        <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid grid-cols-3 max-w-md mb-8">
-            <TabsTrigger value="personal">Personal Info</TabsTrigger>
-            <TabsTrigger value="tax">Tax Data</TabsTrigger>
-            <TabsTrigger value="addresses">Addresses</TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="personal">Personal Info</TabsTrigger>
+          <TabsTrigger value="business">Business Info</TabsTrigger>
+          <TabsTrigger value="addresses">Addresses</TabsTrigger>
+        </TabsList>
 
+        {/* 🔹 Personal Info Tab */}
+        <TabsContent value="personal">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <TabsContent value="personal">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Personal Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your email" disabled {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="language"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Language</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            defaultValue={field.value}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select language" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="en">English</SelectItem>
-                              <SelectItem value="de">German</SelectItem>
-                              <SelectItem value="ru">Russian</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="currency"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Currency</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            defaultValue={field.value}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select currency" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="EUR">Euro (€)</SelectItem>
-                              <SelectItem value="USD">US Dollar ($)</SelectItem>
-                              <SelectItem value="GBP">British Pound (£)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <Button type="submit" className="mt-4">
-                      Save Changes
-                    </Button>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="tax">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Tax Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="business_type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Business Type</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            defaultValue={field.value || ""}
-                            value={field.value || ""}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select business type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="SOLO">Solo</SelectItem>
-                              <SelectItem value="GmbH">GmbH</SelectItem>
-                              <SelectItem value="UG">UG</SelectItem>
-                              <SelectItem value="Freiberufler">Freiberufler</SelectItem>
-                              <SelectItem value="Einzelunternehmen">Einzelunternehmen</SelectItem>
-                              <SelectItem value="AG">AG</SelectItem>
-                              <SelectItem value="OHG">OHG</SelectItem>
-                              <SelectItem value="KG">KG</SelectItem>
-                              <SelectItem value="GbR">GbR</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="tax_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tax Number</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your tax number" {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="eu_vat_id"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>EU VAT ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="EU VAT ID" {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="eori_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>EORI Number</FormLabel>
-                          <FormControl>
-                            <Input placeholder="EORI Number" {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <Button type="submit" className="mt-4">
-                      Save Changes
-                    </Button>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField control={form.control} name="name" render={({ field }) => (
+                <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="email" render={({ field }) => (
+                <FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="phone" render={({ field }) => (
+                <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <Button type="submit" disabled={loading}>Save Changes</Button>
             </form>
           </Form>
+        </TabsContent>
 
-          <TabsContent value="addresses">
-            <AddressList userId={user?.id || ""} />
-          </TabsContent>
-        </Tabs>
-      </main>
+        {/* 🔹 Business Info Tab */}
+        <TabsContent value="business">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField control={form.control} name="businessType" render={({ field }) => (
+                <FormItem><FormLabel>Business Type</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="vatId" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>VAT ID</FormLabel>
+                  <FormControl><Input {...field} onBlur={() => fetchVatDetails(field.value)} /></FormControl>
+                  {vatData && <p>✅ Business Name: {vatData.business_name}</p>}
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="taxationNumber" render={({ field }) => (
+                <FormItem><FormLabel>Taxation Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="eoriNumber" render={({ field }) => (
+                <FormItem><FormLabel>EORI Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <Button type="submit" disabled={loading}>Save Changes</Button>
+            </form>
+          </Form>
+        </TabsContent>
+
+        {/* 🔹 Address Management Tab */}
+        <TabsContent value="addresses">
+          <select onChange={(e) => setSelectedAddressType(e.target.value)} className="mb-4">
+            <option value="home">Home Address</option>
+            <option value="business">Business Address</option>
+            <option value="warehouse">Warehouse Address</option>
+          </select>
+
+          {form.watch("addresses").map((address, index) =>
+            address.type === selectedAddressType ? (
+              <div key={index} className="space-y-4">
+                <FormField control={form.control} name={`addresses.${index}.street`} render={({ field }) => (
+                  <FormItem><FormLabel>Street</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name={`addresses.${index}.zip`} render={({ field }) => (
+                  <FormItem><FormLabel>ZIP Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <Button type="submit" disabled={loading}>Save Address</Button>
+              </div>
+            ) : null
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
