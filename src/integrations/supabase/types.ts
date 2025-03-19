@@ -329,6 +329,7 @@ export type Database = {
         Row: {
           business_type: string | null
           created_at: string | null
+          currency: string | null
           email: string
           eori_number: string | null
           eu_vat_id: string | null
@@ -343,6 +344,7 @@ export type Database = {
         Insert: {
           business_type?: string | null
           created_at?: string | null
+          currency?: string | null
           email: string
           eori_number?: string | null
           eu_vat_id?: string | null
@@ -350,13 +352,14 @@ export type Database = {
           language?: string | null
           name?: string | null
           phone?: string | null
-          role: string
+          role?: string
           tax_number?: string | null
           updated_at?: string | null
         }
         Update: {
           business_type?: string | null
           created_at?: string | null
+          currency?: string | null
           email?: string
           eori_number?: string | null
           eu_vat_id?: string | null
