@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,25 +9,140 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { useTheme } from "@/components/ThemeProvider";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const SettingsPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [emailNotifications, setEmailNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const [language, setLanguage] = useState("en");
+  const [userSettings, setUserSettings] = useState<any>(null);
+
+  // Fetch user settings when component mounts
+  useEffect(() => {
+    if (user) {
+      fetchUserSettings();
+    }
+  }, [user]);
+
+  // Initialize settings from localStorage and/or database
+  useEffect(() => {
+    if (userSettings) {
+      // Set theme based on user settings
+      if (userSettings.theme) {
+        setTheme(userSettings.theme);
+      }
+      
+      // Set language based on user settings
+      if (userSettings.language) {
+        setLanguage(userSettings.language);
+      }
+      
+      // Set email notification preferences
+      if (userSettings.email_notifications !== undefined) {
+        setEmailNotifications(userSettings.email_notifications);
+      }
+    }
+  }, [userSettings, setTheme]);
+
+  const fetchUserSettings = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("theme, language, email_notifications")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+      
+      setUserSettings(data);
+    } catch (error: any) {
+      console.error("Error fetching user settings:", error);
+    }
+  };
+
+  const handleThemeChange = async (checked: boolean) => {
+    const newTheme = checked ? "dark" : "light";
+    setTheme(newTheme);
+    
+    // Save immediately to localStorage (this is handled by ThemeProvider)
+    
+    // If user is logged in, save to database
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from("users")
+          .update({
+            theme: newTheme,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", user.id);
+
+        if (error) throw error;
+      } catch (error: any) {
+        console.error("Error updating theme setting:", error);
+        toast({
+          title: "Error Saving Theme",
+          description: "Your theme preference couldn't be saved to your profile.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleLanguageChange = async (newLanguage: string) => {
+    setLanguage(newLanguage);
+    
+    // Save to localStorage for persistence without login
+    localStorage.setItem("app-language", newLanguage);
+    
+    // If user is logged in, save to database
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from("users")
+          .update({
+            language: newLanguage,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", user.id);
+
+        if (error) throw error;
+      } catch (error: any) {
+        console.error("Error updating language setting:", error);
+        toast({
+          title: "Error Saving Language",
+          description: "Your language preference couldn't be saved to your profile.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   const handleSaveSettings = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
-      // This would typically update user preferences in the database
+      // Update user preferences in the database
       const { error } = await supabase
         .from("users")
         .update({
-          // Add preference fields here when they're added to the schema
+          theme: theme,
+          language: language,
+          email_notifications: emailNotifications,
           updated_at: new Date().toISOString()
         })
         .eq("id", user.id);
@@ -73,8 +188,8 @@ const SettingsPage = () => {
                 </div>
                 <Switch
                   id="dark-mode"
-                  checked={darkMode}
-                  onCheckedChange={setDarkMode}
+                  checked={theme === "dark"}
+                  onCheckedChange={handleThemeChange}
                 />
               </div>
               
@@ -83,11 +198,19 @@ const SettingsPage = () => {
                   <Label htmlFor="language" className="font-medium">Language</Label>
                   <p className="text-sm text-muted-foreground">Select your preferred language</p>
                 </div>
-                <select id="language" className="border rounded px-3 py-2">
-                  <option value="en">English</option>
-                  <option value="de">Deutsch</option>
-                  <option value="fr">Français</option>
-                </select>
+                <Select
+                  value={language}
+                  onValueChange={handleLanguageChange}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="de">Deutsch</SelectItem>
+                    <SelectItem value="fr">Français</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <Button onClick={handleSaveSettings} disabled={loading}>
