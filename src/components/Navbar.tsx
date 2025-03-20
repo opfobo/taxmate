@@ -5,11 +5,13 @@ import { useAuth } from "@/context/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { MenuIcon, X, User, Settings } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleSignOut = async () => {
     await signOut();
@@ -31,29 +33,29 @@ const Navbar = () => {
           {user ? (
             <>
               <Button variant="ghost" asChild>
-                <Link to="/dashboard">Dashboard</Link>
+                <Link to="/dashboard">{t("dashboard")}</Link>
               </Button>
               <Button variant="ghost" asChild>
                 <Link to="/profile" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  <span>Profile</span>
+                  <span>{t("profile")}</span>
                 </Link>
               </Button>
               <Button variant="ghost" asChild>
                 <Link to="/settings" className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
-                  <span>Settings</span>
+                  <span>{t("settings")}</span>
                 </Link>
               </Button>
-              <Button onClick={handleSignOut}>Logout</Button>
+              <Button onClick={handleSignOut}>{t("logout")}</Button>
             </>
           ) : (
             <>
               <Button variant="ghost" asChild>
-                <Link to="/auth/login">Login</Link>
+                <Link to="/auth/login">{t("login")}</Link>
               </Button>
               <Button asChild>
-                <Link to="/auth/signup">Sign Up</Link>
+                <Link to="/auth/signup">{t("sign_up")}</Link>
               </Button>
             </>
           )}
@@ -66,7 +68,7 @@ const Navbar = () => {
             variant="ghost"
             size="icon"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
+            aria-label={t("toggle_menu")}
           >
             {isMenuOpen ? (
               <X className="h-5 w-5" />
@@ -85,19 +87,19 @@ const Navbar = () => {
               <>
                 <Button variant="ghost" asChild className="justify-start">
                   <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
-                    Dashboard
+                    {t("dashboard")}
                   </Link>
                 </Button>
                 <Button variant="ghost" asChild className="justify-start">
                   <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2">
                     <User className="h-4 w-4" />
-                    <span>Profile</span>
+                    <span>{t("profile")}</span>
                   </Link>
                 </Button>
                 <Button variant="ghost" asChild className="justify-start">
                   <Link to="/settings" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2">
                     <Settings className="h-4 w-4" />
-                    <span>Settings</span>
+                    <span>{t("settings")}</span>
                   </Link>
                 </Button>
                 <Button
@@ -108,19 +110,19 @@ const Navbar = () => {
                     setIsMenuOpen(false);
                   }}
                 >
-                  Logout
+                  {t("logout")}
                 </Button>
               </>
             ) : (
               <>
                 <Button variant="ghost" asChild className="justify-start">
                   <Link to="/auth/login" onClick={() => setIsMenuOpen(false)}>
-                    Login
+                    {t("login")}
                   </Link>
                 </Button>
                 <Button variant="ghost" asChild className="justify-start">
                   <Link to="/auth/signup" onClick={() => setIsMenuOpen(false)}>
-                    Sign Up
+                    {t("sign_up")}
                   </Link>
                 </Button>
               </>
