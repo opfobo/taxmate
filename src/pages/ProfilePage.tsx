@@ -200,6 +200,40 @@ const ProfilePage = () => {
             </div>
           </TabsContent>
 
+          {/* ✅ Business Info Tab (Now Fully Restored) */}
+          <TabsContent value="business">
+            <div className="max-w-2xl">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="business_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("business_type")}</FormLabel>
+                        <FormControl>
+                          <Select onValueChange={field.onChange} value={field.value || undefined}>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t("select_business_type")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="SOLO">{t("SOLO")}</SelectItem>
+                              <SelectItem value="GmbH">{t("GmbH")}</SelectItem>
+                              <SelectItem value="UG">{t("UG")}</SelectItem>
+                              <SelectItem value="Freelancer">{t("Freelancer")}</SelectItem>
+                              <SelectItem value="Other">{t("Other")}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </form>
+              </Form>
+            </div>
+          </TabsContent>
+
           {/* Addresses Tab */}
           <TabsContent value="addresses">
             {user && <AddressList userId={user.id} />}
