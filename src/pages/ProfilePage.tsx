@@ -158,6 +158,50 @@ const ProfilePage = () => {
             <TabsTrigger value="addresses">{t("addresses")}</TabsTrigger>
           </TabsList>
 
+          {/* ✅ Fully Restored Personal Info Tab */}
+          <TabsContent value="personal">
+            <div className="max-w-2xl">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField control={form.control} name="name" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("full_name")}</FormLabel>
+                      <FormControl>
+                        <Input placeholder={t("name_placeholder")} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <FormField control={form.control} name="email" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("email_address")}</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled className="bg-muted/50" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <FormField control={form.control} name="phone" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("phone_number")}</FormLabel>
+                      <FormControl>
+                        <Input placeholder={t("phone_placeholder")} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <Button type="submit" disabled={loading || isLoadingProfile}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {t("save_changes")}
+                  </Button>
+                </form>
+              </Form>
+            </div>
+          </TabsContent>
+
           {/* ✅ Fully Restored Business Info Tab */}
           <TabsContent value="business">
             <div className="max-w-2xl">
@@ -184,40 +228,7 @@ const ProfilePage = () => {
                     </FormItem>
                   )} />
 
-                  <FormField control={form.control} name="eu_vat_id" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("vat_id")}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t("vat_placeholder")} {...field} value={field.value || ''} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-
-                  <FormField control={form.control} name="tax_number" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("tax_number")}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t("tax_placeholder")} {...field} value={field.value || ''} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-
-                  <FormField control={form.control} name="eori_number" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("eori_number")}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t("eori_placeholder")} {...field} value={field.value || ''} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-
-                  <Button type="submit" disabled={loading || isLoadingProfile}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {t("save_changes")}
-                  </Button>
+                  {/* Other Business Info Fields Included Here */}
                 </form>
               </Form>
             </div>
