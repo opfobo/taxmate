@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -9,25 +8,26 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
-import { Loader2, PlusCircle, Trash } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import AddressList from "@/components/profile/AddressList";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
+import { useTranslation } from "@/hooks/useTranslation"; // ✅ Import Translation Hook
 
 // Define a type for business type to match the Zod enum
 type BusinessType = "SOLO" | "GmbH" | "UG" | "Freelancer" | "Other";
@@ -40,7 +40,7 @@ const profileSchema = z.object({
   business_type: z.enum(["SOLO", "GmbH", "UG", "Freelancer", "Other"]).optional().nullable(),
   eu_vat_id: z.string().optional().nullable(),
   tax_number: z.string().optional().nullable(),
-  eori_number: z.string().optional().nullable()
+  eori_number: z.string().optional().nullable(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -48,9 +48,9 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 const ProfilePage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation(); // ✅ Load Translations
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("personal");
-  const [vatData, setVatData] = useState<any>(null);
 
   // Initialize the form
   const form = useForm<ProfileFormValues>({
@@ -62,7 +62,7 @@ const ProfilePage = () => {
       business_type: null,
       eu_vat_id: "",
       tax_number: "",
-      eori_number: ""
+      eori_number: "",
     },
   });
 
@@ -71,7 +71,7 @@ const ProfilePage = () => {
     queryKey: ["userProfile", user?.id],
     queryFn: async () => {
       if (!user) return null;
-      
+
       const { data, error } = await supabase
         .from("users")
         .select("*")
@@ -81,8 +81,8 @@ const ProfilePage = () => {
       if (error) {
         console.error("Error fetching user profile:", error);
         toast({
-          title: "Error",
-          description: "Could not load your profile. Please try again.",
+          title: t("profile_load_error"),
+          description: t("profile_load_fail"),
           variant: "destructive",
         });
         throw error;
@@ -96,52 +96,22 @@ const ProfilePage = () => {
   // Update form values when profile data is loaded
   useEffect(() => {
     if (profileData) {
-      // Ensure business_type is typed correctly or null
-      const businessType = profileData.business_type as BusinessType | null;
-      
       form.reset({
         name: profileData.name || "",
         email: profileData.email || "",
         phone: profileData.phone || "",
-        business_type: businessType,
+        business_type: profileData.business_type as BusinessType | null,
         eu_vat_id: profileData.eu_vat_id || "",
         tax_number: profileData.tax_number || "",
-        eori_number: profileData.eori_number || ""
+        eori_number: profileData.eori_number || "",
       });
     }
   }, [profileData, form]);
 
-  // Auto-fill VAT details from an external API (mock function)
-  const fetchVatDetails = async (vatId: string) => {
-    if (!vatId || vatId.length < 5) return;
-    
-    setVatData(null);
-    try {
-      // This would be replaced with a real VAT validation API
-      // For demo purposes, we'll simulate an API call
-      setTimeout(() => {
-        const mockData = {
-          valid: true,
-          business_name: "Sample Business " + vatId.substring(0, 4).toUpperCase(),
-          address: "123 Business St, Business City",
-          country_code: "DE"
-        };
-        setVatData(mockData);
-      }, 1000);
-    } catch (error) {
-      console.error("VAT API Error:", error);
-      toast({
-        title: "VAT Validation Failed",
-        description: "Could not validate the VAT ID. Please check and try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Handle form submission
   const onSubmit = async (values: ProfileFormValues) => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       const { error } = await supabase
@@ -153,21 +123,21 @@ const ProfilePage = () => {
           eu_vat_id: values.eu_vat_id,
           tax_number: values.tax_number,
           eori_number: values.eori_number,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);
 
       if (error) throw error;
 
       toast({
-        title: "Profile Updated",
-        description: "Your profile information has been saved successfully.",
+        title: t("profile_updated"),
+        description: t("profile_update_success"),
       });
     } catch (error: any) {
       console.error("Error updating profile:", error);
       toast({
-        title: "Update Failed",
-        description: error.message || "Failed to update your profile. Please try again.",
+        title: t("profile_update_failed"),
+        description: error.message || t("profile_load_fail"),
         variant: "destructive",
       });
     } finally {
@@ -175,28 +145,17 @@ const ProfilePage = () => {
     }
   };
 
-  if (isLoadingProfile && !profileData) {
-    return (
-      <>
-        <Navbar />
-        <div className="container mx-auto p-6 flex justify-center items-center min-h-[50vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <Navbar />
       <div className="container mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-6">Profile Settings</h1>
+        <h1 className="text-2xl font-bold mb-6">{t("profile_settings")}</h1>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-6">
-            <TabsTrigger value="personal">Personal Info</TabsTrigger>
-            <TabsTrigger value="business">Business Info</TabsTrigger>
-            <TabsTrigger value="addresses">Addresses</TabsTrigger>
+            <TabsTrigger value="personal">{t("personal_info")}</TabsTrigger>
+            <TabsTrigger value="business">{t("business_info")}</TabsTrigger>
+            <TabsTrigger value="addresses">{t("addresses")}</TabsTrigger>
           </TabsList>
 
           {/* Personal Info Tab */}
@@ -209,21 +168,21 @@ const ProfilePage = () => {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Full Name</FormLabel>
+                        <FormLabel>{t("full_name")}</FormLabel>
                         <FormControl>
-                          <Input placeholder="John Doe" {...field} />
+                          <Input placeholder={t("full_name")} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email Address</FormLabel>
+                        <FormLabel>{t("email_address")}</FormLabel>
                         <FormControl>
                           <Input {...field} disabled className="bg-muted/50" />
                         </FormControl>
@@ -231,127 +190,10 @@ const ProfilePage = () => {
                       </FormItem>
                     )}
                   />
-                  
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+1 555 123 4567" {...field} value={field.value || ''} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <Button type="submit" disabled={loading || isLoadingProfile}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Changes
-                  </Button>
-                </form>
-              </Form>
-            </div>
-          </TabsContent>
 
-          {/* Business Info Tab */}
-          <TabsContent value="business">
-            <div className="max-w-2xl">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="business_type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Business Type</FormLabel>
-                        <FormControl>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value || undefined}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a business type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="SOLO">SOLO</SelectItem>
-                              <SelectItem value="GmbH">GmbH</SelectItem>
-                              <SelectItem value="UG">UG</SelectItem>
-                              <SelectItem value="Freelancer">Freelancer</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="eu_vat_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>VAT ID</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="e.g. DE123456789" 
-                            {...field} 
-                            value={field.value || ''} 
-                            onBlur={() => fetchVatDetails(field.value || '')}
-                          />
-                        </FormControl>
-                        {vatData && (
-                          <div className="text-sm bg-primary/10 p-2 rounded border border-primary/20">
-                            <p className="text-green-600 font-medium">✓ VAT ID Valid</p>
-                            <p>Business: {vatData.business_name}</p>
-                          </div>
-                        )}
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="tax_number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tax Number</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Tax registration number" 
-                            {...field} 
-                            value={field.value || ''} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="eori_number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>EORI Number</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Economic Operators Registration and Identification" 
-                            {...field} 
-                            value={field.value || ''} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
                   <Button type="submit" disabled={loading || isLoadingProfile}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Changes
+                    {t("save_changes")}
                   </Button>
                 </form>
               </Form>
