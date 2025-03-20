@@ -27,9 +27,9 @@ import { Loader2 } from "lucide-react";
 import AddressList from "@/components/profile/AddressList";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
-import { useTranslation } from "@/hooks/useTranslation"; // ✅ Import Translation Hook
+import { useTranslation } from "@/hooks/useTranslation";
 
-// Define a type for business type to match the Zod enum
+// Define a type for business type
 type BusinessType = "SOLO" | "GmbH" | "UG" | "Freelancer" | "Other";
 
 // Zod schema for validation
@@ -48,7 +48,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 const ProfilePage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { t } = useTranslation(); // ✅ Load Translations
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("personal");
 
@@ -200,35 +200,36 @@ const ProfilePage = () => {
             </div>
           </TabsContent>
 
-          {/* ✅ Business Info Tab (Now Fully Restored) */}
+          {/* ✅ Fully Restored Business Info Tab */}
           <TabsContent value="business">
             <div className="max-w-2xl">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="business_type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("business_type")}</FormLabel>
-                        <FormControl>
-                          <Select onValueChange={field.onChange} value={field.value || undefined}>
-                            <SelectTrigger>
-                              <SelectValue placeholder={t("select_business_type")} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="SOLO">{t("SOLO")}</SelectItem>
-                              <SelectItem value="GmbH">{t("GmbH")}</SelectItem>
-                              <SelectItem value="UG">{t("UG")}</SelectItem>
-                              <SelectItem value="Freelancer">{t("Freelancer")}</SelectItem>
-                              <SelectItem value="Other">{t("Other")}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={form.control} name="business_type" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("business_type")}</FormLabel>
+                      <FormControl>
+                        <Select onValueChange={field.onChange} value={field.value || undefined}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("select_business_type")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="SOLO">{t("SOLO")}</SelectItem>
+                            <SelectItem value="GmbH">{t("GmbH")}</SelectItem>
+                            <SelectItem value="UG">{t("UG")}</SelectItem>
+                            <SelectItem value="Freelancer">{t("Freelancer")}</SelectItem>
+                            <SelectItem value="Other">{t("Other")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <Button type="submit" disabled={loading || isLoadingProfile}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {t("save_changes")}
+                  </Button>
                 </form>
               </Form>
             </div>
