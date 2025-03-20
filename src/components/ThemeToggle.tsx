@@ -29,7 +29,8 @@ export function ThemeToggle() {
           }
 
           // Only set theme if we got valid data back and it has a theme property
-          if (data && data.theme) {
+          // Ensure the theme value is one of the allowed types (dark, light, system)
+          if (data && data.theme && (data.theme === "dark" || data.theme === "light" || data.theme === "system")) {
             setTheme(data.theme);
           }
         } catch (error) {
