@@ -85,13 +85,21 @@ const ImageUpload = ({
       if (uploadError) throw uploadError;
 
       // Update the order or item record
-      const tableName = type === "order" ? "orders" : "order_items";
-      const { error: updateError } = await supabase
-        .from(tableName)
-        .update({ image_url: filePath })
-        .eq("id", orderId);
+      if (type === "order") {
+        const { error: updateError } = await supabase
+          .from("orders")
+          .update({ image_url: filePath })
+          .eq("id", orderId);
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
+      } else {
+        const { error: updateError } = await supabase
+          .from("order_items")
+          .update({ image_url: filePath })
+          .eq("id", orderId);
+
+        if (updateError) throw updateError;
+      }
 
       // If there was an existing image, delete it
       if (existingImage) {
@@ -141,7 +149,7 @@ const ImageUpload = ({
           {(preview || existingImage) && (
             <div className="mt-4 border rounded-lg overflow-hidden">
               <img 
-                src={preview || `${supabase.storage.from("order_images").getPublicUrl(existingImage!).data.publicUrl}`} 
+                src={preview || (existingImage ? `${supabase.storage.from("order_images").getPublicUrl(existingImage).data.publicUrl}` : '')} 
                 alt={t("preview")} 
                 className="w-full h-auto max-h-[300px] object-contain"
               />

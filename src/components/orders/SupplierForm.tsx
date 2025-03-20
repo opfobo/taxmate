@@ -49,14 +49,16 @@ export const SupplierForm = ({
     setIsSubmitting(true);
 
     try {
+      const supplierData = {
+        user_id: user?.id,
+        name,
+        contact,
+        website,
+      };
+
       const { error } = await supabase
         .from("suppliers")
-        .insert({
-          user_id: user?.id,
-          name,
-          contact,
-          website,
-        });
+        .insert(supplierData);
 
       if (error) throw error;
 

@@ -1,18 +1,14 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/context/AuthContext";
-import { QueryClient, QueryClientProvider, useQuery, useMutation } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Package, 
   ShoppingBag, 
   Search, 
-  Filter, 
-  Calendar, 
-  Plus,
-  FileDown,
-  Upload 
+  Plus 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,15 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
-const queryClient = new QueryClient();
-
-const OrdersPage = () => (
-  <QueryClientProvider client={queryClient}>
-    <OrdersPageContent />
-  </QueryClientProvider>
-);
-
-const OrdersPageContent = () => {
+const OrdersPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("fulfillment");
@@ -57,7 +45,7 @@ const OrdersPageContent = () => {
         *,
         supplier:suppliers(name)
       `)
-      .eq("user_id", user?.id || "")
+      .eq("shopper_id", user?.id || "")
       .eq("type", activeTab);
 
     if (searchQuery) {
@@ -83,14 +71,13 @@ const OrdersPageContent = () => {
       throw new Error(error.message);
     }
 
-    return data;
+    return data || [];
   };
 
-  const { data: orders, isLoading, isError, refetch } = useQuery({
+  const { data: orders = [], isLoading, refetch } = useQuery({
     queryKey: ["orders", activeTab, searchQuery, statusFilter, dateRange],
     queryFn: fetchOrders,
     enabled: !!user,
-    refetchOnWindowFocus: false,
   });
 
   const handleViewOrderDetails = (order: any) => {
@@ -198,7 +185,7 @@ const OrdersPageContent = () => {
           </CardHeader>
           <CardContent>
             <OrdersTable
-              orders={orders || []}
+              orders={orders}
               isLoading={isLoading}
               onViewDetails={handleViewOrderDetails}
               orderType={activeTab}

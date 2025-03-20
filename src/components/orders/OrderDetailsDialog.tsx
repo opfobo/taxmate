@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -69,7 +69,7 @@ const OrderDetailsDialog = ({
         .eq("order_id", order.id);
 
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: isOpen,
   });
@@ -248,7 +248,7 @@ const OrderDetailsDialog = ({
                   {new Intl.NumberFormat("de-DE", {
                     style: "currency",
                     currency: order.currency || "EUR",
-                  }).format(order.total_price)}
+                  }).format(order.total_price || order.amount)}
                 </p>
               </div>
 

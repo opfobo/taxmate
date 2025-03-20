@@ -80,16 +80,21 @@ const OrderForm = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch suppliers
-  const { data: suppliers } = useQuery({
+  const { data: suppliers = [] } = useQuery({
     queryKey: ["suppliers"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("suppliers")
-        .select("*")
-        .eq("user_id", user?.id || "");
+      try {
+        const { data, error } = await supabase
+          .from("suppliers")
+          .select("*")
+          .eq("user_id", user?.id || "");
 
-      if (error) throw error;
-      return data || [];
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error("Error fetching suppliers:", error);
+        return [];
+      }
     },
     enabled: !!user && orderType === "supplier",
   });
@@ -170,19 +175,22 @@ const OrderForm = ({
 
     try {
       // Create the order
-      const { data: orderData, error: orderError } = await supabase
+      const orderData = {
+        order_number: orderNumber,
+        shopper_id: user?.id,
+        type: orderType,
+        status,
+        currency,
+        notes,
+        total_price: calculateTotalPrice(),
+        amount: calculateTotalPrice(), // For compatibility with existing orders table
+        supplier_id: supplierId,
+        order_date: new Date().toISOString(),
+      };
+
+      const { data: newOrder, error: orderError } = await supabase
         .from("orders")
-        .insert({
-          order_number: orderNumber,
-          user_id: user?.id,
-          type: orderType,
-          status,
-          currency,
-          notes,
-          total_price: calculateTotalPrice(),
-          supplier_id: supplierId,
-          order_date: new Date().toISOString(),
-        })
+        .insert(orderData)
         .select()
         .single();
 
@@ -190,7 +198,7 @@ const OrderForm = ({
 
       // Insert order items
       const orderItems = items.map(item => ({
-        order_id: orderData.id,
+        order_id: newOrder.id,
         product_name: item.product_name,
         quantity: item.quantity,
         unit_price: item.unit_price,
