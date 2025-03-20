@@ -1,18 +1,21 @@
 
+import { useState } from "react";
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle,
-  DialogFooter,
+  DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
-import { ImagePlus, Trash } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
-import ImageUpload from "./ImageUpload";
+import { useMutation } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { X, ImagePlus, Save, Edit, Trash } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import ImageUpload from "./ImageUpload";
 
 interface ItemDetailsDialogProps {
   item: any;
@@ -25,50 +28,88 @@ const ItemDetailsDialog = ({
   item,
   isOpen,
   onClose,
-  onItemUpdated,
+  onItemUpdated
 }: ItemDetailsDialogProps) => {
   const { t } = useTranslation();
+  const [isEditing, setIsEditing] = useState(false);
+  const [productName, setProductName] = useState(item.product_name);
+  const [quantity, setQuantity] = useState(item.quantity);
+  const [unitPrice, setUnitPrice] = useState(item.unit_price);
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
 
-  const handleUploadSuccess = () => {
-    toast({
-      title: t("image_uploaded"),
-      description: t("image_uploaded_successfully"),
-    });
-    setIsImageUploadOpen(false);
-    onItemUpdated();
-  };
-
-  const handleDeleteImage = async () => {
-    if (!item.image_url) return;
-
-    try {
-      // Delete from storage first
-      const { error: storageError } = await supabase.storage
-        .from("order_images")
-        .remove([item.image_url]);
-
-      if (storageError) throw storageError;
-
-      // Update the item record
-      const { error: dbError } = await supabase
+  // Update item mutation
+  const updateItemMutation = useMutation({
+    mutationFn: async () => {
+      const totalPrice = Number(quantity) * Number(unitPrice);
+      
+      const { data, error } = await supabase
         .from("order_items")
-        .update({ image_url: null })
-        .eq("id", item.id);
+        .update({
+          product_name: productName,
+          quantity: Number(quantity),
+          unit_price: Number(unitPrice),
+          total_price: totalPrice,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", item.id)
+        .select();
 
-      if (dbError) throw dbError;
-
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
       toast({
-        title: t("image_deleted"),
-        description: t("image_deleted_successfully"),
+        title: t("item_updated"),
+        description: t("item_updated_successfully"),
       });
+      setIsEditing(false);
       onItemUpdated();
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       toast({
         title: t("error"),
         description: error.message,
         variant: "destructive",
       });
+    },
+  });
+
+  // Delete item mutation
+  const deleteItemMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("order_items")
+        .delete()
+        .eq("id", item.id);
+
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      toast({
+        title: t("item_deleted"),
+        description: t("item_deleted_successfully"),
+      });
+      onClose();
+      onItemUpdated();
+    },
+    onError: (error: any) => {
+      toast({
+        title: t("error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleImageUploadSuccess = () => {
+    setIsImageUploadOpen(false);
+    onItemUpdated();
+  };
+
+  const handleConfirmDelete = () => {
+    if (window.confirm(t("confirm_delete_item"))) {
+      deleteItemMutation.mutate();
     }
   };
 
@@ -80,92 +121,149 @@ const ItemDetailsDialog = ({
             <DialogTitle>{t("item_details")}</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                  {t("product_name")}
-                </h3>
-                <p>{item.product_name}</p>
+          <div className="space-y-4 py-4">
+            {item.image_url && (
+              <div className="border rounded-lg overflow-hidden">
+                <img 
+                  src={`${supabase.storage.from("order_images").getPublicUrl(item.image_url).data.publicUrl}`} 
+                  alt={item.product_name} 
+                  className="w-full h-auto max-h-60 object-contain"
+                />
+              </div>
+            )}
+            
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="productName">{t("product_name")}</Label>
+                {isEditing ? (
+                  <Input
+                    id="productName"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                  />
+                ) : (
+                  <div className="p-2 border rounded-md">{item.product_name}</div>
+                )}
               </div>
               
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                  {t("quantity")}
-                </h3>
-                <p>{item.quantity}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">{t("quantity")}</Label>
+                  {isEditing ? (
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min="1"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                    />
+                  ) : (
+                    <div className="p-2 border rounded-md">{item.quantity}</div>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="unitPrice">{t("unit_price")}</Label>
+                  {isEditing ? (
+                    <Input
+                      id="unitPrice"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={unitPrice}
+                      onChange={(e) => setUnitPrice(e.target.value)}
+                    />
+                  ) : (
+                    <div className="p-2 border rounded-md">
+                      {new Intl.NumberFormat("de-DE", {
+                        style: "currency",
+                        currency: "EUR",
+                      }).format(item.unit_price)}
+                    </div>
+                  )}
+                </div>
               </div>
               
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                  {t("unit_price")}
-                </h3>
-                <p>
+              <div className="space-y-2">
+                <Label>{t("total_price")}</Label>
+                <div className="p-2 border rounded-md font-medium">
                   {new Intl.NumberFormat("de-DE", {
                     style: "currency",
                     currency: "EUR",
-                  }).format(item.unit_price)}
-                </p>
-              </div>
-              
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                  {t("total_price")}
-                </h3>
-                <p>
-                  {new Intl.NumberFormat("de-DE", {
-                    style: "currency",
-                    currency: "EUR",
-                  }).format(item.total_price)}
-                </p>
+                  }).format(isEditing ? Number(quantity) * Number(unitPrice) : item.total_price)}
+                </div>
               </div>
               
               {item.supplier && (
-                <div className="col-span-2">
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                    {t("supplier")}
-                  </h3>
-                  <p>{item.supplier.name}</p>
+                <div className="space-y-2">
+                  <Label>{t("supplier")}</Label>
+                  <div className="p-2 border rounded-md">{item.supplier.name}</div>
                 </div>
               )}
             </div>
-            
-            {item.image_url && (
-              <div className="mt-4">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                  {t("image")}
-                </h3>
-                <div className="border rounded-lg overflow-hidden">
-                  <img 
-                    src={`${supabase.storage.from("order_images").getPublicUrl(item.image_url).data.publicUrl}`} 
-                    alt={item.product_name} 
-                    className="w-full h-auto max-h-[300px] object-contain"
-                  />
-                </div>
-              </div>
-            )}
           </div>
           
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                className="gap-2"
-                onClick={() => setIsImageUploadOpen(true)}
-              >
-                <ImagePlus className="h-4 w-4" />
-                {item.image_url ? t("update_image") : t("add_image")}
-              </Button>
-              
-              {item.image_url && (
-                <Button 
-                  variant="outline" 
-                  className="gap-2 border-red-500 hover:bg-red-50"
-                  onClick={handleDeleteImage}
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
+              {!isEditing ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditing(true)}
+                    className="gap-2"
+                  >
+                    <Edit className="h-4 w-4" />
+                    {t("edit")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2 text-red-500 border-red-200 hover:bg-red-50"
+                    onClick={handleConfirmDelete}
+                  >
+                    <Trash className="h-4 w-4" />
+                    {t("delete")}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditing(false)}
+                  className="gap-2"
                 >
-                  <Trash className="h-4 w-4 text-red-500" />
-                  {t("delete_image")}
+                  <X className="h-4 w-4" />
+                  {t("cancel")}
                 </Button>
+              )}
+            </div>
+            
+            <div className="flex gap-2 w-full sm:w-auto">
+              {isEditing ? (
+                <Button
+                  type="button"
+                  onClick={() => updateItemMutation.mutate()}
+                  className="gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  {t("save")}
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsImageUploadOpen(true)}
+                    className="gap-2"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                    {item.image_url ? t("update_image") : t("add_image")}
+                  </Button>
+                  <Button type="button" onClick={onClose}>
+                    {t("close")}
+                  </Button>
+                </>
               )}
             </div>
           </DialogFooter>
@@ -175,7 +273,7 @@ const ItemDetailsDialog = ({
       <ImageUpload
         isOpen={isImageUploadOpen}
         onClose={() => setIsImageUploadOpen(false)}
-        onSuccess={handleUploadSuccess}
+        onSuccess={handleImageUploadSuccess}
         orderId={item.id}
         type="item"
         existingImage={item.image_url}

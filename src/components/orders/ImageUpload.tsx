@@ -1,18 +1,20 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle,
-  DialogFooter,
+  DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Trash, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { Upload, X, Image as ImageIcon } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface ImageUploadProps {
   isOpen: boolean;
@@ -20,7 +22,7 @@ interface ImageUploadProps {
   onSuccess: () => void;
   orderId: string;
   type: "order" | "item";
-  existingImage?: string | null;
+  existingImage?: string;
 }
 
 const ImageUpload = ({
@@ -29,88 +31,106 @@ const ImageUpload = ({
   onSuccess,
   orderId,
   type,
-  existingImage,
+  existingImage
 }: ImageUploadProps) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
-    // Check file type
-    if (!selectedFile.type.includes("image/")) {
-      setError(t("file_type_error"));
-      return;
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      
+      // Check file type
+      if (!selectedFile.type.startsWith('image/')) {
+        toast({
+          title: t("invalid_file_type"),
+          description: t("please_select_image_file"),
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check file size (max 5MB)
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        toast({
+          title: t("file_too_large"),
+          description: t("image_must_be_less_than_5mb"),
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setFile(selectedFile);
+      setPreview(URL.createObjectURL(selectedFile));
     }
-
-    // Check file size (5MB limit)
-    if (selectedFile.size > 5 * 1024 * 1024) {
-      setError(t("file_size_error"));
-      return;
-    }
-
-    setError(null);
-    setFile(selectedFile);
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPreview(reader.result as string);
-    };
-    reader.readAsDataURL(selectedFile);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!file) return;
+  const handleRemoveFile = () => {
+    setFile(null);
+    setPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      toast({
+        title: t("no_file_selected"),
+        description: t("please_select_file_to_upload"),
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsUploading(true);
-    setError(null);
 
     try {
-      // Generate a unique file name
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${type}_${orderId}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${type === "order" ? "orders" : "items"}/${fileName}`;
+      // Delete existing file if it exists
+      if (existingImage) {
+        await supabase.storage.from('order_images').remove([existingImage]);
+      }
 
-      // Upload the file to storage
+      // Upload new file
+      const fileName = `${user?.id}/${type}_${orderId}_${Date.now()}.${file.name.split('.').pop()}`;
       const { error: uploadError } = await supabase.storage
-        .from("order_images")
-        .upload(filePath, file);
+        .from('order_images')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
 
       if (uploadError) throw uploadError;
 
-      // Update the order or item record
-      if (type === "order") {
-        const { error: updateError } = await supabase
-          .from("orders")
-          .update({ image_url: filePath })
-          .eq("id", orderId);
-
-        if (updateError) throw updateError;
+      // Update the database record with the new image URL
+      let updateError;
+      if (type === 'order') {
+        const { error } = await supabase
+          .from('orders')
+          .update({ image_url: fileName })
+          .eq('id', orderId);
+        updateError = error;
       } else {
-        const { error: updateError } = await supabase
-          .from("order_items")
-          .update({ image_url: filePath })
-          .eq("id", orderId);
-
-        if (updateError) throw updateError;
+        const { error } = await supabase
+          .from('order_items')
+          .update({ image_url: fileName })
+          .eq('id', orderId);
+        updateError = error;
       }
 
-      // If there was an existing image, delete it
-      if (existingImage) {
-        await supabase.storage
-          .from("order_images")
-          .remove([existingImage]);
-      }
+      if (updateError) throw updateError;
 
       onSuccess();
     } catch (error: any) {
-      setError(error.message);
+      toast({
+        title: t("upload_failed"),
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setIsUploading(false);
     }
@@ -120,65 +140,86 @@ const ImageUpload = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {existingImage ? t("update_image") : t("upload_image")}
-          </DialogTitle>
+          <DialogTitle>{existingImage ? t("update_image") : t("upload_image")}</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="image" className="block">
-              {t("select_image")}
-            </Label>
-            
-            <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Input
-                id="image"
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="cursor-pointer"
-              />
-            </div>
-            
-            {error && (
-              <p className="text-sm text-red-500 mt-1">{error}</p>
-            )}
-          </div>
-          
-          {(preview || existingImage) && (
-            <div className="mt-4 border rounded-lg overflow-hidden">
+        <div className="space-y-4">
+          {existingImage && (
+            <div className="border rounded-lg p-2 overflow-hidden">
               <img 
-                src={preview || (existingImage ? `${supabase.storage.from("order_images").getPublicUrl(existingImage).data.publicUrl}` : '')} 
-                alt={t("preview")} 
-                className="w-full h-auto max-h-[300px] object-contain"
+                src={`${supabase.storage.from("order_images").getPublicUrl(existingImage).data.publicUrl}`} 
+                alt={t("current_image")}
+                className="w-full h-auto max-h-40 object-contain"
               />
+              <p className="text-xs text-muted-foreground mt-2">{t("current_image")}</p>
             </div>
           )}
           
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              {t("cancel")}
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={!file || isUploading}
-              className="gap-2"
-            >
-              {isUploading ? (
-                <>
-                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
-                  {t("uploading")}
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4" />
-                  {t("upload")}
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
+          <div className="space-y-2">
+            <Label htmlFor="image">{t("select_image")}</Label>
+            <Input
+              id="image"
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              onChange={handleFileChange}
+              className="cursor-pointer"
+            />
+          </div>
+          
+          {preview && (
+            <div className="relative border rounded-lg p-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 h-6 w-6 rounded-full bg-muted/80"
+                onClick={handleRemoveFile}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <img 
+                src={preview} 
+                alt={t("preview")}
+                className="w-full h-auto max-h-40 object-contain"
+              />
+              <p className="text-xs text-muted-foreground mt-2">{t("preview")}</p>
+            </div>
+          )}
+          
+          {!file && !preview && (
+            <div className="border border-dashed rounded-lg p-8 text-center">
+              <ImageIcon className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                {t("drag_drop_or_click_to_select")}
+              </p>
+            </div>
+          )}
+        </div>
+        
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            {t("cancel")}
+          </Button>
+          <Button 
+            type="button"
+            disabled={!file || isUploading}
+            onClick={handleUpload}
+            className="gap-2"
+          >
+            {isUploading ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+                {t("uploading")}
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4" />
+                {t("upload")}
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

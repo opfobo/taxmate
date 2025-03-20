@@ -56,6 +56,7 @@ export const SupplierForm = ({
         website,
       };
 
+      // Update the table name to 'suppliers'
       const { error } = await supabase
         .from("suppliers")
         .insert(supplierData);

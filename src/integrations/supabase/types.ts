@@ -148,6 +148,60 @@ export type Database = {
           },
         ]
       }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          order_id: string
+          product_name: string
+          quantity: number
+          supplier_id: string | null
+          total_price: number
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          order_id: string
+          product_name: string
+          quantity?: number
+          supplier_id?: string | null
+          total_price?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          order_id?: string
+          product_name?: string
+          quantity?: number
+          supplier_id?: string | null
+          total_price?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           amount: number
@@ -155,12 +209,17 @@ export type Database = {
           created_at: string | null
           currency: string | null
           id: string
+          image_url: string | null
+          notes: string | null
+          order_date: string | null
           order_number: string
           payment_status: string | null
           shipping_address_id: string | null
           shopper_id: string | null
           status: string | null
+          supplier_id: string | null
           tracking_number: string | null
+          type: string | null
           updated_at: string | null
         }
         Insert: {
@@ -169,12 +228,17 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           id?: string
+          image_url?: string | null
+          notes?: string | null
+          order_date?: string | null
           order_number: string
           payment_status?: string | null
           shipping_address_id?: string | null
           shopper_id?: string | null
           status?: string | null
+          supplier_id?: string | null
           tracking_number?: string | null
+          type?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -183,12 +247,17 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           id?: string
+          image_url?: string | null
+          notes?: string | null
+          order_date?: string | null
           order_number?: string
           payment_status?: string | null
           shipping_address_id?: string | null
           shopper_id?: string | null
           status?: string | null
+          supplier_id?: string | null
           tracking_number?: string | null
+          type?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -213,7 +282,44 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      suppliers: {
+        Row: {
+          contact: string | null
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          contact?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          contact?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
       }
       tax_reports: {
         Row: {

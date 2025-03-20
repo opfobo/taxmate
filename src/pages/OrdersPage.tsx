@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/context/AuthContext";
-import { QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Package, 
