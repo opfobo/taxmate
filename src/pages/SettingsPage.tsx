@@ -9,14 +9,12 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import { useTheme } from "@/components/ThemeProvider";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslation } from "@/hooks/useTranslation";
 
 const SettingsPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { theme, setTheme } = useTheme();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
@@ -33,17 +31,12 @@ const SettingsPage = () => {
   // Initialize settings from localStorage and/or database
   useEffect(() => {
     if (userSettings) {
-      // Set theme based on user settings
-      if (userSettings.theme) {
-        setTheme(userSettings.theme);
-      }
-      
       // Set email notification preferences
       if (userSettings.email_notifications !== undefined) {
         setEmailNotifications(userSettings.email_notifications);
       }
     }
-  }, [userSettings, setTheme]);
+  }, [userSettings]);
 
   const fetchUserSettings = async () => {
     if (!user) return;
@@ -51,7 +44,7 @@ const SettingsPage = () => {
     try {
       const { data, error } = await supabase
         .from("users")
-        .select("theme, language, email_notifications")
+        .select("language, email_notifications")
         .eq("id", user.id)
         .single();
 
@@ -60,35 +53,6 @@ const SettingsPage = () => {
       setUserSettings(data);
     } catch (error: any) {
       console.error("Error fetching user settings:", error);
-    }
-  };
-
-  const handleThemeChange = async (checked: boolean) => {
-    const newTheme = checked ? "dark" : "light";
-    setTheme(newTheme);
-    
-    // Save immediately to localStorage (this is handled by ThemeProvider)
-    
-    // If user is logged in, save to database
-    if (user) {
-      try {
-        const { error } = await supabase
-          .from("users")
-          .update({
-            theme: newTheme,
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", user.id);
-
-        if (error) throw error;
-      } catch (error: any) {
-        console.error("Error updating theme setting:", error);
-        toast({
-          title: "Error Saving Theme",
-          description: "Your theme preference couldn't be saved to your profile.",
-          variant: "destructive",
-        });
-      }
     }
   };
 
@@ -101,7 +65,6 @@ const SettingsPage = () => {
       const { error } = await supabase
         .from("users")
         .update({
-          theme: theme,
           email_notifications: emailNotifications,
           updated_at: new Date().toISOString()
         })
@@ -141,18 +104,6 @@ const SettingsPage = () => {
           {/* General Settings Tab */}
           <TabsContent value="general">
             <div className="max-w-2xl space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="dark-mode" className="font-medium">{t("dark_mode")}</Label>
-                  <p className="text-sm text-muted-foreground">{t("toggle_theme")}</p>
-                </div>
-                <Switch
-                  id="dark-mode"
-                  checked={theme === "dark"}
-                  onCheckedChange={handleThemeChange}
-                />
-              </div>
-              
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="language" className="font-medium">{t("language")}</Label>

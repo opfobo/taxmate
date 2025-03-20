@@ -11,10 +11,16 @@ import {
 export function LanguageSwitcher() {
   const { language, changeLanguage, availableLanguages } = useTranslation();
 
+  const handleLanguageChange = (newLanguage: string) => {
+    changeLanguage(newLanguage);
+    // Force page reload to update all translations
+    window.location.reload();
+  };
+
   return (
     <Select
       value={language}
-      onValueChange={changeLanguage}
+      onValueChange={handleLanguageChange}
     >
       <SelectTrigger className="w-[180px]">
         <SelectValue placeholder="Select language" />
