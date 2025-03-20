@@ -341,6 +341,7 @@ export type Database = {
           currency: string | null
           deleted_at: string | null
           email: string
+          email_notifications: boolean | null
           eori_number: string | null
           eu_vat_id: string | null
           id: string
@@ -349,6 +350,7 @@ export type Database = {
           phone: string | null
           role: string
           tax_number: string | null
+          theme: string | null
           updated_at: string | null
         }
         Insert: {
@@ -357,6 +359,7 @@ export type Database = {
           currency?: string | null
           deleted_at?: string | null
           email: string
+          email_notifications?: boolean | null
           eori_number?: string | null
           eu_vat_id?: string | null
           id?: string
@@ -365,6 +368,7 @@ export type Database = {
           phone?: string | null
           role?: string
           tax_number?: string | null
+          theme?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -373,6 +377,7 @@ export type Database = {
           currency?: string | null
           deleted_at?: string | null
           email?: string
+          email_notifications?: boolean | null
           eori_number?: string | null
           eu_vat_id?: string | null
           id?: string
@@ -381,6 +386,7 @@ export type Database = {
           phone?: string | null
           role?: string
           tax_number?: string | null
+          theme?: string | null
           updated_at?: string | null
         }
         Relationships: []

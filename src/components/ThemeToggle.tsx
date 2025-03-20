@@ -5,10 +5,12 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
+  const { toast } = useToast();
 
   // Sync theme with database when component mounts
   useEffect(() => {
@@ -26,6 +28,7 @@ export function ThemeToggle() {
             return;
           }
 
+          // Only set theme if we got valid data back and it has a theme property
           if (data && data.theme) {
             setTheme(data.theme);
           }
@@ -55,9 +58,24 @@ export function ThemeToggle() {
 
         if (error) {
           console.error("Error updating theme preference:", error);
+          toast({
+            title: "Error",
+            description: "Couldn't save your theme preference to your profile.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Theme updated",
+            description: `Theme switched to ${newTheme} mode`,
+          });
         }
       } catch (error) {
         console.error("Error saving theme preference:", error);
+        toast({
+          title: "Error",
+          description: "Couldn't save your theme preference.",
+          variant: "destructive",
+        });
       }
     }
   };
