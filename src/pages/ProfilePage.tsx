@@ -95,18 +95,20 @@ const ProfilePage = () => {
 
   // Update form values when profile data is loaded
   useEffect(() => {
-    if (profileData) {
-      form.reset({
-        name: profileData.name || "",
-        email: profileData.email || "",
-        phone: profileData.phone || "",
-        business_type: profileData.business_type as BusinessType | null,
-        eu_vat_id: profileData.eu_vat_id || "",
-        tax_number: profileData.tax_number || "",
-        eori_number: profileData.eori_number || "",
-      });
-    }
-  }, [profileData, form]);
+  if (profileData) {
+    form.reset((prevValues) => ({
+      ...prevValues,  // Preserve previous form state
+      name: profileData.name || prevValues.name,
+      email: profileData.email || prevValues.email,
+      phone: profileData.phone || prevValues.phone,
+      business_type: profileData.business_type || prevValues.business_type,
+      eu_vat_id: profileData.eu_vat_id || prevValues.eu_vat_id,
+      tax_number: profileData.tax_number || prevValues.tax_number,
+      eori_number: profileData.eori_number || prevValues.eori_number,
+    }));
+  }
+}, [profileData, form]);
+
 
   // Handle form submission
   const onSubmit = async (values: ProfileFormValues) => {
