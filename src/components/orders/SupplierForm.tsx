@@ -1,45 +1,34 @@
-
 import { useState } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useTranslation } from "@/hooks/useTranslation";
-import { useAuth } from "@/context/AuthContext";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
-import { Save } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 
-interface SupplierFormProps {
+type SupplierFormProps = {
   isOpen: boolean;
   onClose: () => void;
   onSupplierCreated: () => void;
-}
+};
 
-export const SupplierForm = ({
-  isOpen,
-  onClose,
-  onSupplierCreated,
-}: SupplierFormProps) => {
-  const { t } = useTranslation();
+export const SupplierForm = ({ isOpen, onClose, onSupplierCreated }: SupplierFormProps) => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [website, setWebsite] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!name) {
+  const handleSubmit = async () => {
+    if (!user) return;
+
+    if (!name.trim()) {
       toast({
-        title: t("validation_error"),
+        title: t("missing_name"),
         description: t("supplier_name_required"),
         variant: "destructive",
       });
@@ -47,99 +36,79 @@ export const SupplierForm = ({
     }
 
     setIsSubmitting(true);
-
-    try {
-      const supplierData = {
-        user_id: user?.id,
+    const { error } = await supabase.from("suppliers").insert([
+      {
+        user_id: user.id,
         name,
         contact,
         website,
-      };
+      },
+    ]);
 
-      // Update the table name to 'suppliers'
-      const { error } = await supabase
-        .from("suppliers")
-        .insert(supplierData);
+    setIsSubmitting(false);
 
-      if (error) throw error;
-
+    if (error) {
+      console.error("Error creating supplier:", error);
+      toast({
+        title: t("error"),
+        description: t("supplier_creation_failed"),
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: t("supplier_created"),
+        description: t("supplier_created_successfully"),
+      });
       setName("");
       setContact("");
       setWebsite("");
       onSupplierCreated();
-    } catch (error: any) {
-      toast({
-        title: t("error"),
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t("add_supplier")}</DialogTitle>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="supplierName">{t("supplier_name")}</Label>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="name">{t("name")}</Label>
             <Input
-              id="supplierName"
+              id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              required
+              placeholder={t("supplier_name_placeholder")}
             />
           </div>
-          
-          <div className="space-y-2">
+          <div>
             <Label htmlFor="contact">{t("contact")}</Label>
             <Input
               id="contact"
               value={contact}
               onChange={(e) => setContact(e.target.value)}
-              placeholder={t("email_or_phone")}
+              placeholder={t("supplier_contact_placeholder")}
             />
           </div>
-          
-          <div className="space-y-2">
+          <div>
             <Label htmlFor="website">{t("website")}</Label>
             <Input
               id="website"
-              type="url"
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
-              placeholder="https://example.com"
+              placeholder={t("supplier_website_placeholder")}
             />
           </div>
-          
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={onClose}>
               {t("cancel")}
             </Button>
-            <Button 
-              type="submit" 
-              disabled={isSubmitting}
-              className="gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
-                  {t("creating")}
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  {t("add_supplier")}
-                </>
-              )}
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? t("saving") + "..." : t("save")}
             </Button>
-          </DialogFooter>
-        </form>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
