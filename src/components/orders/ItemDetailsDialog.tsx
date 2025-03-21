@@ -1,284 +1,165 @@
-
-import { useState } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
-  DialogFooter
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "@/hooks/useTranslation";
 import { supabase } from "@/integrations/supabase/client";
-import { useMutation } from "@tanstack/react-query";
-import { toast } from "@/hooks/use-toast";
-import { X, ImagePlus, Save, Edit, Trash } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 import ImageUpload from "./ImageUpload";
 
-interface ItemDetailsDialogProps {
-  item: any;
+const schema = z.object({
+  product_name: z.string().min(1),
+  quantity: z.coerce.number().min(1),
+  unit_price: z.coerce.number().min(0),
+  supplier_id: z.string().uuid(),
+});
+
+type ItemDetailsProps = {
+  orderId: string;
   isOpen: boolean;
   onClose: () => void;
-  onItemUpdated: () => void;
-}
+  onItemSaved: () => void;
+};
 
-const ItemDetailsDialog = ({
-  item,
-  isOpen,
-  onClose,
-  onItemUpdated
-}: ItemDetailsDialogProps) => {
+const ItemDetailsDialog = ({ orderId, isOpen, onClose, onItemSaved }: ItemDetailsProps) => {
   const { t } = useTranslation();
-  const [isEditing, setIsEditing] = useState(false);
-  const [productName, setProductName] = useState(item.product_name);
-  const [quantity, setQuantity] = useState(item.quantity);
-  const [unitPrice, setUnitPrice] = useState(item.unit_price);
-  const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
-
-  // Update item mutation
-  const updateItemMutation = useMutation({
-    mutationFn: async () => {
-      const totalPrice = Number(quantity) * Number(unitPrice);
-      
-      const { data, error } = await supabase
-        .from("order_items")
-        .update({
-          product_name: productName,
-          quantity: Number(quantity),
-          unit_price: Number(unitPrice),
-          total_price: totalPrice,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", item.id)
-        .select();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      toast({
-        title: t("item_updated"),
-        description: t("item_updated_successfully"),
-      });
-      setIsEditing(false);
-      onItemUpdated();
-    },
-    onError: (error: any) => {
-      toast({
-        title: t("error"),
-        description: error.message,
-        variant: "destructive",
-      });
+  const form = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      product_name: "",
+      quantity: 1,
+      unit_price: 0,
+      supplier_id: "",
     },
   });
 
-  // Delete item mutation
-  const deleteItemMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from("order_items")
-        .delete()
-        .eq("id", item.id);
+  const { setValue, watch, handleSubmit, reset } = form;
+  const quantity = watch("quantity");
+  const unit_price = watch("unit_price");
 
-      if (error) throw error;
-      return true;
-    },
-    onSuccess: () => {
-      toast({
-        title: t("item_deleted"),
-        description: t("item_deleted_successfully"),
-      });
+  const total_price = quantity * unit_price;
+
+  useEffect(() => {
+    if (!isOpen) reset();
+  }, [isOpen]);
+
+  const onSubmit = async (values: any) => {
+    const { error } = await supabase.from("order_items").insert({
+      ...values,
+      order_id: orderId,
+      total_price,
+    });
+
+    if (!error) {
+      onItemSaved();
       onClose();
-      onItemUpdated();
-    },
-    onError: (error: any) => {
-      toast({
-        title: t("error"),
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleImageUploadSuccess = () => {
-    setIsImageUploadOpen(false);
-    onItemUpdated();
-  };
-
-  const handleConfirmDelete = () => {
-    if (window.confirm(t("confirm_delete_item"))) {
-      deleteItemMutation.mutate();
+    } else {
+      console.error(error);
     }
   };
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("item_details")}</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            {item.image_url && (
-              <div className="border rounded-lg overflow-hidden">
-                <img 
-                  src={`${supabase.storage.from("order_images").getPublicUrl(item.image_url).data.publicUrl}`} 
-                  alt={item.product_name} 
-                  className="w-full h-auto max-h-60 object-contain"
-                />
-              </div>
-            )}
-            
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="productName">{t("product_name")}</Label>
-                {isEditing ? (
-                  <Input
-                    id="productName"
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
-                  />
-                ) : (
-                  <div className="p-2 border rounded-md">{item.product_name}</div>
-                )}
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="quantity">{t("quantity")}</Label>
-                  {isEditing ? (
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                    />
-                  ) : (
-                    <div className="p-2 border rounded-md">{item.quantity}</div>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="unitPrice">{t("unit_price")}</Label>
-                  {isEditing ? (
-                    <Input
-                      id="unitPrice"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={unitPrice}
-                      onChange={(e) => setUnitPrice(e.target.value)}
-                    />
-                  ) : (
-                    <div className="p-2 border rounded-md">
-                      {new Intl.NumberFormat("de-DE", {
-                        style: "currency",
-                        currency: "EUR",
-                      }).format(item.unit_price)}
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>{t("total_price")}</Label>
-                <div className="p-2 border rounded-md font-medium">
-                  {new Intl.NumberFormat("de-DE", {
-                    style: "currency",
-                    currency: "EUR",
-                  }).format(isEditing ? Number(quantity) * Number(unitPrice) : item.total_price)}
-                </div>
-              </div>
-              
-              {item.supplier && (
-                <div className="space-y-2">
-                  <Label>{t("supplier")}</Label>
-                  <div className="p-2 border rounded-md">{item.supplier.name}</div>
-                </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t("item_details")}</DialogTitle>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="product_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("product_name")}</FormLabel>
+                  <FormControl><Input {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
+            />
+
+            <FormField
+              control={form.control}
+              name="quantity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("quantity")}</FormLabel>
+                  <FormControl><Input type="number" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="unit_price"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("unit_price")}</FormLabel>
+                  <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div>
+              <FormLabel>{t("total_price")}</FormLabel>
+              <div className="px-3 py-2 border rounded-md bg-muted/30">{total_price.toFixed(2)} EUR</div>
             </div>
-          </div>
-          
-          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
-            <div className="flex gap-2 w-full sm:w-auto">
-              {!isEditing ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsEditing(true)}
-                    className="gap-2"
-                  >
-                    <Edit className="h-4 w-4" />
-                    {t("edit")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="gap-2 text-red-500 border-red-200 hover:bg-red-50"
-                    onClick={handleConfirmDelete}
-                  >
-                    <Trash className="h-4 w-4" />
-                    {t("delete")}
-                  </Button>
-                </>
+
+            <FormField
+              control={form.control}
+              name="supplier_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("supplier")}</FormLabel>
+                  <Select onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger><SelectValue placeholder={t("select_supplier")} /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {/* Fetch suppliers dynamically */}
+                      {/* This can be replaced with actual supplier data */}
+                      <SelectItem value="supplier-1">Supplier 1</SelectItem>
+                      <SelectItem value="supplier-2">Supplier 2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div>
+              <FormLabel>{t("upload_image")}</FormLabel>
+              <ImageUpload
+                storagePath="order_images"
+                entityId={orderId}
+                entityType="order_items"
+              />
+            </div>
+
+            <Button type="submit" className="w-full">
+              {form.formState.isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsEditing(false)}
-                  className="gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  {t("cancel")}
-                </Button>
+                t("save")
               )}
-            </div>
-            
-            <div className="flex gap-2 w-full sm:w-auto">
-              {isEditing ? (
-                <Button
-                  type="button"
-                  onClick={() => updateItemMutation.mutate()}
-                  className="gap-2"
-                >
-                  <Save className="h-4 w-4" />
-                  {t("save")}
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsImageUploadOpen(true)}
-                    className="gap-2"
-                  >
-                    <ImagePlus className="h-4 w-4" />
-                    {item.image_url ? t("update_image") : t("add_image")}
-                  </Button>
-                  <Button type="button" onClick={onClose}>
-                    {t("close")}
-                  </Button>
-                </>
-              )}
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      <ImageUpload
-        isOpen={isImageUploadOpen}
-        onClose={() => setIsImageUploadOpen(false)}
-        onSuccess={handleImageUploadSuccess}
-        orderId={item.id}
-        type="item"
-        existingImage={item.image_url}
-      />
-    </>
+            </Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 };
 
