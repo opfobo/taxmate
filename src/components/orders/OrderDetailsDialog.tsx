@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "@/hooks/useTranslation";
 import { format } from "date-fns";
-import { ImagePlus, Plus } from "lucide-react";
+import { ImagePlus, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
