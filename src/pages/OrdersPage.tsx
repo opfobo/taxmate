@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import Navbar from "@/components/Navbar";
 
 // Define the correct order_type enum values to match the database
 type OrderType = "fulfillment" | "supplier";
@@ -176,128 +177,131 @@ const OrdersPage = () => {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-6">{t("orders")}</h1>
+    <>
+      <Navbar />
+      <div className="container mx-auto py-8">
+        <h1 className="text-3xl font-bold mb-6">{t("orders")}</h1>
 
-      <Tabs 
-        defaultValue="fulfillment" 
-        value={activeTab}
-        onValueChange={handleTabChange}
-        className="w-full"
-      >
-        <TabsList className="grid w-full grid-cols-2 mb-8">
-          <TabsTrigger value="fulfillment" className="flex items-center gap-2">
-            <ShoppingBag className="h-4 w-4" />
-            {t("fulfillment_orders")}
-          </TabsTrigger>
-          <TabsTrigger value="supplier" className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            {t("supplier_orders")}
-          </TabsTrigger>
-        </TabsList>
+        <Tabs 
+          defaultValue="fulfillment" 
+          value={activeTab}
+          onValueChange={handleTabChange}
+          className="w-full"
+        >
+          <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsTrigger value="fulfillment" className="flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4" />
+              {t("fulfillment_orders")}
+            </TabsTrigger>
+            <TabsTrigger value="supplier" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              {t("supplier_orders")}
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder={`${t("search")} ${t("orders")}...`}
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder={`${t("search")} ${t("orders")}...`}
+                  className="pl-9"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
-          
-          <StatusFilter
-            value={statusFilter}
-            onChange={setStatusFilter}
-          />
-          
-          <DateRangePicker
-            value={dateRange}
-            onChange={setDateRange}
-          />
-          
-          {activeFilterCount > 0 && (
-            <Button 
-              onClick={handleClearFilters} 
-              variant="outline" 
-              size="icon"
-              className="flex-shrink-0"
-              title={t("clear_filters")}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-          
-          {activeTab === "supplier" && (
-            <Button onClick={handleAddSupplier} variant="outline" className="flex items-center gap-2">
+            
+            <StatusFilter
+              value={statusFilter}
+              onChange={setStatusFilter}
+            />
+            
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+            />
+            
+            {activeFilterCount > 0 && (
+              <Button 
+                onClick={handleClearFilters} 
+                variant="outline" 
+                size="icon"
+                className="flex-shrink-0"
+                title={t("clear_filters")}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+            
+            {activeTab === "supplier" && (
+              <Button onClick={handleAddSupplier} variant="outline" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                {t("add_supplier")}
+              </Button>
+            )}
+            
+            <Button onClick={handleAddOrder} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              {t("add_supplier")}
+              {t("add_order")}
             </Button>
-          )}
-          
-          <Button onClick={handleAddOrder} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            {t("add_order")}
-          </Button>
-        </div>
-
-        {activeFilterCount > 0 && (
-          <div className="mb-4 flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              {t("active_filters")}:
-            </span>
-            <Badge variant="outline" className="font-mono">
-              {activeFilterCount}
-            </Badge>
           </div>
+
+          {activeFilterCount > 0 && (
+            <div className="mb-4 flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                {t("active_filters")}:
+              </span>
+              <Badge variant="outline" className="font-mono">
+                {activeFilterCount}
+              </Badge>
+            </div>
+          )}
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>
+                {activeTab === "fulfillment" 
+                  ? t("fulfillment_orders") 
+                  : t("supplier_orders")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <OrdersTable
+                orders={orders}
+                isLoading={isLoading}
+                onViewDetails={handleViewOrderDetails}
+                orderType={activeTab}
+              />
+            </CardContent>
+          </Card>
+        </Tabs>
+
+        {selectedOrder && (
+          <OrderDetailsDialog
+            order={selectedOrder}
+            isOpen={isDetailsOpen}
+            onClose={() => setIsDetailsOpen(false)}
+            onOrderUpdated={() => refetch()}
+          />
         )}
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>
-              {activeTab === "fulfillment" 
-                ? t("fulfillment_orders") 
-                : t("supplier_orders")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <OrdersTable
-              orders={orders}
-              isLoading={isLoading}
-              onViewDetails={handleViewOrderDetails}
-              orderType={activeTab}
-            />
-          </CardContent>
-        </Card>
-      </Tabs>
-
-      {selectedOrder && (
-        <OrderDetailsDialog
-          order={selectedOrder}
-          isOpen={isDetailsOpen}
-          onClose={() => setIsDetailsOpen(false)}
-          onOrderUpdated={() => refetch()}
+        <OrderForm
+          isOpen={isOrderFormOpen}
+          onClose={() => setIsOrderFormOpen(false)}
+          onOrderCreated={handleOrderCreated}
+          orderType={activeTab}
         />
-      )}
 
-      <OrderForm
-        isOpen={isOrderFormOpen}
-        onClose={() => setIsOrderFormOpen(false)}
-        onOrderCreated={handleOrderCreated}
-        orderType={activeTab}
-      />
-
-      <SupplierForm
-        isOpen={isSupplierFormOpen}
-        onClose={() => setIsSupplierFormOpen(false)}
-        onSupplierCreated={handleSupplierCreated}
-      />
-    </div>
+        <SupplierForm
+          isOpen={isSupplierFormOpen}
+          onClose={() => setIsSupplierFormOpen(false)}
+          onSupplierCreated={handleSupplierCreated}
+        />
+      </div>
+    </>
   );
 };
 
