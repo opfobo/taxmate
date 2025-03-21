@@ -1,15 +1,9 @@
-
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Package, 
-  ShoppingBag, 
-  Search, 
-  Plus 
-} from "lucide-react";
+import { Package, ShoppingBag, Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,7 +39,7 @@ const OrdersPage = () => {
         *,
         supplier:suppliers(name)
       `)
-      .eq("shopper_id", user?.id || "")
+      .eq("user_id", user?.id || "")
       .eq("type", activeTab);
 
     if (searchQuery) {
@@ -152,23 +146,16 @@ const OrdersPage = () => {
             </div>
           </div>
           
-          <StatusFilter
-            value={statusFilter}
-            onChange={setStatusFilter}
-          />
-          
-          <DateRangePicker
-            value={dateRange}
-            onChange={setDateRange}
-          />
-          
+          <StatusFilter value={statusFilter} onChange={setStatusFilter} />
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
+
           {activeTab === "supplier" && (
             <Button onClick={handleAddSupplier} variant="outline" className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               {t("add_supplier")}
             </Button>
           )}
-          
+
           <Button onClick={handleAddOrder} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             {t("add_order")}
@@ -178,9 +165,7 @@ const OrdersPage = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle>
-              {activeTab === "fulfillment" 
-                ? t("fulfillment_orders") 
-                : t("supplier_orders")}
+              {activeTab === "fulfillment" ? t("fulfillment_orders") : t("supplier_orders")}
             </CardTitle>
           </CardHeader>
           <CardContent>
