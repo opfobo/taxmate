@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import OrdersTable from "@/components/orders/OrdersTable";
 import OrderForm from "@/components/orders/OrderForm";
 import OrderDetailsDialog from "@/components/orders/OrderDetailsDialog";
-import SupplierForm from "@/components/orders/SupplierForm";
+import { SupplierForm } from "@/components/orders/SupplierForm";
 import StatusFilter from "@/components/orders/StatusFilter";
 import DateRangePicker from "@/components/orders/DateRangePicker";
 import Navbar from "@/components/Navbar"; // ✅ NEU hinzugefügt
