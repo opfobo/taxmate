@@ -54,7 +54,8 @@ const Navbar = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  {user.name || t("profile")}
+                  {/* Fixed: Access email instead of name which doesn't exist on the User type */}
+                  {user.email || t("profile")}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

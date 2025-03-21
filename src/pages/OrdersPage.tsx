@@ -26,11 +26,18 @@ import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
+// Define the correct order_type enum values to match the database
+type OrderType = "fulfillment" | "supplier";
+
 const OrdersPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>(() => {
-    return sessionStorage.getItem("ordersActiveTab") || "fulfillment";
+  const [activeTab, setActiveTab] = useState<OrderType>(() => {
+    // Cast the stored value to OrderType to ensure type safety
+    const storedTab = sessionStorage.getItem("ordersActiveTab");
+    return (storedTab === "fulfillment" || storedTab === "supplier") 
+      ? storedTab as OrderType 
+      : "fulfillment";
   });
   const [searchQuery, setSearchQuery] = useState<string>(() => {
     return sessionStorage.getItem("ordersSearchQuery") || "";
@@ -68,49 +75,54 @@ const OrdersPage = () => {
 
   // Fetch orders with items and images
   const fetchOrders = async () => {
-    let query = supabase
-      .from("orders")
-      .select(`
-        id,
-        order_number,
-        status,
-        amount,
-        currency,
-        order_date,
-        image_urls,
-        notes,
-        supplier:suppliers(id, name),
-        order_items(*)
-      `)
-      .eq("user_id", user?.id || "")
-      .eq("type", activeTab)
-      .order("order_date", { ascending: false })
-      .range(0, 50); // Pagination for better performance
+    try {
+      let query = supabase
+        .from("orders")
+        .select(`
+          id,
+          order_number,
+          status,
+          amount,
+          currency,
+          order_date,
+          image_url,
+          notes,
+          supplier:suppliers(id, name),
+          order_items(*)
+        `)
+        .eq("user_id", user?.id || "")
+        .eq("type", activeTab)
+        .order("order_date", { ascending: false })
+        .range(0, 50); // Pagination for better performance
 
-    if (searchQuery) {
-      query = query.ilike("order_number", `%${searchQuery}%`);
+      if (searchQuery) {
+        query = query.ilike("order_number", `%${searchQuery}%`);
+      }
+
+      if (statusFilter) {
+        query = query.eq("status", statusFilter);
+      }
+
+      if (dateRange.from) {
+        query = query.gte("order_date", format(dateRange.from, "yyyy-MM-dd"));
+      }
+
+      if (dateRange.to) {
+        query = query.lte("order_date", format(dateRange.to, "yyyy-MM-dd"));
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching orders:", error);
+        throw new Error(error.message);
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Error in fetchOrders:", error);
+      return [];
     }
-
-    if (statusFilter) {
-      query = query.eq("status", statusFilter);
-    }
-
-    if (dateRange.from) {
-      query = query.gte("order_date", format(dateRange.from, "yyyy-MM-dd"));
-    }
-
-    if (dateRange.to) {
-      query = query.lte("order_date", format(dateRange.to, "yyyy-MM-dd"));
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error("Error fetching orders:", error);
-      throw new Error(error.message);
-    }
-
-    return data || [];
   };
 
   const { data: orders = [], isLoading, refetch } = useQuery({
@@ -125,7 +137,10 @@ const OrdersPage = () => {
   };
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
+    // Fix: Cast the value to OrderType to ensure type safety
+    if (value === "fulfillment" || value === "supplier") {
+      setActiveTab(value as OrderType);
+    }
     // Don't reset filters when changing tabs as per requirements
   };
 

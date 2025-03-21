@@ -16,6 +16,9 @@ interface OrderStatusUpdateFormProps {
   onUpdated: () => void;
 }
 
+// Define the valid status values to match the database enum
+type OrderStatus = "pending" | "accepted" | "declined" | "processing" | "shipped" | "delivered";
+
 const statuses = [
   { value: "pending", label: "pending", color: "bg-yellow-100 text-yellow-800" },
   { value: "accepted", label: "accepted", color: "bg-blue-100 text-blue-800" },
@@ -54,12 +57,12 @@ const OrderStatusUpdateForm: React.FC<OrderStatusUpdateFormProps> = ({
 
       if (error) throw error;
 
-      // Record the status change in history
+      // Record the status change in history - Fix the type error by making sure status is a valid enum value
       const { error: historyError } = await supabase
         .from("order_status_history")
         .insert({
           order_id: orderId,
-          status: newStatus,
+          status: newStatus as OrderStatus, // Cast to OrderStatus type
           changed_at: new Date().toISOString(),
           notes: `Status updated to ${t(newStatus)}`
         });
@@ -71,7 +74,8 @@ const OrderStatusUpdateForm: React.FC<OrderStatusUpdateFormProps> = ({
       setSelectedStatus(newStatus);
       toast({
         title: t("status_updated"),
-        description: t("order_status_updated_to", { status: t(newStatus) }),
+        // Fixed: Pass a single parameter to t() instead of two
+        description: t("order_status_updated_to_status", { status: t(newStatus) }),
       });
       onUpdated();
     } catch (error: any) {
