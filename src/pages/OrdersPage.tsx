@@ -1,10 +1,14 @@
-
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, ShoppingBag, Search, Plus } from "lucide-react";
+import { 
+  Package, 
+  ShoppingBag, 
+  Search, 
+  Plus 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,16 +18,15 @@ import OrderForm from "@/components/orders/OrderForm";
 import { SupplierForm } from "@/components/orders/SupplierForm";
 import DateRangePicker from "@/components/orders/DateRangePicker";
 import StatusFilter from "@/components/orders/StatusFilter";
+import OrderStatusUpdateForm from "@/components/orders/OrderStatusUpdateForm";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
-type OrderType = "fulfillment" | "supplier";
-
 const OrdersPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<OrderType>("fulfillment");
+  const [activeTab, setActiveTab] = useState<string>("fulfillment");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
@@ -35,15 +38,24 @@ const OrdersPage = () => {
   const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
   const [isSupplierFormOpen, setIsSupplierFormOpen] = useState(false);
 
+  // Fetch orders with items and images
   const fetchOrders = async () => {
     let query = supabase
       .from("orders")
       .select(`
-        *,
-        supplier:suppliers(name)
+        id,
+        order_number,
+        status,
+        total_price,
+        currency,
+        order_date,
+        image_urls,
+        supplier:suppliers(name),
+        order_items(*)
       `)
-      .eq("user_id", user?.id || "")
-      .eq("type", activeTab);
+      .eq("shopper_id", user?.id || "")
+      .eq("type", activeTab)
+      .range(0, 50); // Pagination für bessere Performance
 
     if (searchQuery) {
       query = query.ilike("order_number", `%${searchQuery}%`);
@@ -83,7 +95,7 @@ const OrdersPage = () => {
   };
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value as OrderType);
+    setActiveTab(value);
     setSearchQuery("");
     setStatusFilter(null);
     setDateRange({ from: undefined, to: undefined });
@@ -149,16 +161,23 @@ const OrdersPage = () => {
             </div>
           </div>
           
-          <StatusFilter value={statusFilter} onChange={setStatusFilter} />
-          <DateRangePicker value={dateRange} onChange={setDateRange} />
-
+          <StatusFilter
+            value={statusFilter}
+            onChange={setStatusFilter}
+          />
+          
+          <DateRangePicker
+            value={dateRange}
+            onChange={setDateRange}
+          />
+          
           {activeTab === "supplier" && (
             <Button onClick={handleAddSupplier} variant="outline" className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               {t("add_supplier")}
             </Button>
           )}
-
+          
           <Button onClick={handleAddOrder} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             {t("add_order")}
@@ -168,7 +187,9 @@ const OrdersPage = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle>
-              {activeTab === "fulfillment" ? t("fulfillment_orders") : t("supplier_orders")}
+              {activeTab === "fulfillment" 
+                ? t("fulfillment_orders") 
+                : t("supplier_orders")}
             </CardTitle>
           </CardHeader>
           <CardContent>
