@@ -1,16 +1,17 @@
+// src/components/orders/OrdersTable.tsx
 
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Eye, FileDown } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Eye } from "lucide-react";
 
 interface OrdersTableProps {
   orders: any[];
   isLoading: boolean;
   onViewDetails: (order: any) => void;
-  orderType: string;
+  orderType: "fulfillment" | "supplier";
 }
 
 const OrdersTable = ({ orders, isLoading, onViewDetails, orderType }: OrdersTableProps) => {
@@ -19,97 +20,76 @@ const OrdersTable = ({ orders, isLoading, onViewDetails, orderType }: OrdersTabl
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "bg-yellow-500";
+        return "bg-yellow-200 text-yellow-800";
       case "accepted":
-        return "bg-blue-500";
-      case "processing":
-        return "bg-purple-500";
-      case "shipped":
-        return "bg-orange-500";
-      case "delivered":
-        return "bg-green-500";
+        return "bg-blue-200 text-blue-800";
       case "declined":
-        return "bg-red-500";
+        return "bg-red-200 text-red-800";
+      case "processing":
+        return "bg-orange-200 text-orange-800";
+      case "shipped":
+        return "bg-indigo-200 text-indigo-800";
+      case "delivered":
+        return "bg-green-200 text-green-800";
       default:
-        return "bg-gray-500";
+        return "bg-muted text-muted-foreground";
     }
   };
 
   if (isLoading) {
     return (
-      <div className="py-8 text-center">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p>{t("loading")}</p>
+      <div className="flex justify-center py-10">
+        <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
 
   if (!orders.length) {
     return (
-      <div className="py-8 text-center">
-        <p>{t("no_orders")}</p>
+      <div className="text-center text-muted-foreground py-10">
+        {t("no_orders")}
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t("order_number")}</TableHead>
-            <TableHead>{t("order_date")}</TableHead>
-            <TableHead>{orderType === "fulfillment" ? t("customer") : t("supplier")}</TableHead>
-            <TableHead>{t("total_price")}</TableHead>
-            <TableHead>{t("status")}</TableHead>
-            <TableHead className="text-right">{t("actions")}</TableHead>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>{t("order_number")}</TableHead>
+          <TableHead>{t("order_date")}</TableHead>
+          <TableHead>{t("total_price")}</TableHead>
+          <TableHead>{t("status")}</TableHead>
+          <TableHead>{t("supplier")}</TableHead>
+          <TableHead>{t("actions")}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {orders.map((order) => (
+          <TableRow key={order.id}>
+            <TableCell>{order.order_number}</TableCell>
+            <TableCell>
+              {order.order_date ? format(new Date(order.order_date), "dd.MM.yyyy") : "-"}
+            </TableCell>
+            <TableCell>
+              {order.total_price?.toFixed(2)} {order.currency || "EUR"}
+            </TableCell>
+            <TableCell>
+              <Badge className={getStatusColor(order.status)}>
+                {t(order.status)}
+              </Badge>
+            </TableCell>
+            <TableCell>{order.supplier?.name || "-"}</TableCell>
+            <TableCell>
+              <Button size="sm" onClick={() => onViewDetails(order)} variant="outline" className="gap-1">
+                <Eye className="w-4 h-4" />
+                {t("view")}
+              </Button>
+            </TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {orders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell className="font-medium">{order.order_number}</TableCell>
-              <TableCell>{format(new Date(order.order_date), "PPP")}</TableCell>
-              <TableCell>
-                {orderType === "supplier" 
-                  ? (order.supplier?.name || "-") 
-                  : "-"}
-              </TableCell>
-              <TableCell>
-                {new Intl.NumberFormat("de-DE", {
-                  style: "currency",
-                  currency: order.currency || "EUR",
-                }).format(order.total_price)}
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline" className={`${getStatusColor(order.status)} text-white`}>
-                  {t(order.status)}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onViewDetails(order)}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    {t("view")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                  >
-                    <FileDown className="h-4 w-4 mr-1" />
-                    {t("download_invoice")}
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+        ))}
+      </TableBody>
+    </Table>
   );
 };
 
