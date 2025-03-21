@@ -26,6 +26,7 @@ import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
+import { DateRange } from "react-day-picker";
 
 // Define the correct order_type enum values to match the database
 type OrderType = "fulfillment" | "supplier";
@@ -47,13 +48,16 @@ const OrdersPage = () => {
     const savedStatus = sessionStorage.getItem("ordersStatusFilter");
     return savedStatus ? savedStatus : null;
   });
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>(() => {
+  
+  // Updated to use DateRange type from react-day-picker
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
     const savedRange = sessionStorage.getItem("ordersDateRange");
     return savedRange ? JSON.parse(savedRange) : {
       from: undefined,
       to: undefined,
     };
   });
+  
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
