@@ -74,8 +74,8 @@ const OrderStatusUpdateForm: React.FC<OrderStatusUpdateFormProps> = ({
       setSelectedStatus(newStatus);
       toast({
         title: t("status_updated"),
-        // Fixed: Pass a single parameter to t() instead of two
-        description: t("order_status_updated_to_status", { status: t(newStatus) }),
+        // Fix: Using the t() function correctly with interpolation
+        description: t(`order_status_updated_to_status_${newStatus}`),
       });
       onUpdated();
     } catch (error: any) {
