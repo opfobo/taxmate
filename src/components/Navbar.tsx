@@ -1,135 +1,87 @@
-
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { MenuIcon, X, User, Settings } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { User, LogOut, FileText, ClipboardList } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const { t } = useTranslation();
+  const location = useLocation();
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/auth/login";
   };
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Link to="/" className="flex items-center gap-2 font-bold text-xl">
-            <span className="hidden sm:inline-block">TaxMaster</span>
+    <nav className="border-b">
+      <div className="container flex items-center justify-between py-4">
+        {/* Logo */}
+        <Link to="/" className="text-xl font-bold">
+          TaxMate
+        </Link>
+
+        {/* Navigation Links */}
+        <div className="flex items-center gap-6">
+          <Link to="/dashboard" className={`hover:underline ${location.pathname === "/dashboard" ? "font-semibold" : ""}`}>
+            {t("dashboard")}
+          </Link>
+          <Link to="/orders" className={`hover:underline ${location.pathname === "/orders" ? "font-semibold" : ""}`}>
+            {t("orders")}
+          </Link>
+          <Link to="/tax-reports" className={`hover:underline ${location.pathname === "/tax-reports" ? "font-semibold" : ""}`}>
+            {t("tax_reports")}
+          </Link>
+          <Link to="/transactions" className={`hover:underline ${location.pathname === "/transactions" ? "font-semibold" : ""}`}>
+            {t("transactions")}
+          </Link>
+          <Link to="/resources" className={`hover:underline ${location.pathname === "/resources" ? "font-semibold" : ""}`}>
+            {t("resources")}
           </Link>
         </div>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex md:items-center md:gap-4">
-          <ThemeToggle />
+        {/* User Profile / Login */}
+        <div className="flex items-center gap-4">
+          <LanguageSwitcher />
+
           {user ? (
-            <>
-              <Button variant="ghost" asChild>
-                <Link to="/dashboard">{t("dashboard")}</Link>
-              </Button>
-              <Button variant="ghost" asChild>
-                <Link to="/profile" className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span>{t("profile")}</span>
-                </Link>
-              </Button>
-              <Button variant="ghost" asChild>
-                <Link to="/settings" className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  <span>{t("settings")}</span>
-                </Link>
-              </Button>
-              <Button onClick={handleSignOut}>{t("logout")}</Button>
-            </>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  {user.name || t("profile")}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/profile">
+                    <FileText className="h-4 w-4 mr-2" />
+                    {t("profile")}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings">
+                    <ClipboardList className="h-4 w-4 mr-2" />
+                    {t("settings")}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  {t("logout")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
-            <>
-              <Button variant="ghost" asChild>
-                <Link to="/auth/login">{t("login")}</Link>
-              </Button>
-              <Button asChild>
-                <Link to="/auth/signup">{t("sign_up")}</Link>
-              </Button>
-            </>
+            <Button asChild>
+              <Link to="/auth/login">{t("login")}</Link>
+            </Button>
           )}
         </div>
-
-        {/* Mobile Navigation Toggle */}
-        <div className="flex items-center gap-2 md:hidden">
-          <ThemeToggle />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label={t("toggle_menu")}
-          >
-            {isMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <MenuIcon className="h-5 w-5" />
-            )}
-          </Button>
-        </div>
       </div>
-
-      {/* Mobile Navigation Menu */}
-      {isMenuOpen && (
-        <div className="container pb-4 md:hidden">
-          <div className="flex flex-col space-y-3">
-            {user ? (
-              <>
-                <Button variant="ghost" asChild className="justify-start">
-                  <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
-                    {t("dashboard")}
-                  </Link>
-                </Button>
-                <Button variant="ghost" asChild className="justify-start">
-                  <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    <span>{t("profile")}</span>
-                  </Link>
-                </Button>
-                <Button variant="ghost" asChild className="justify-start">
-                  <Link to="/settings" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    <span>{t("settings")}</span>
-                  </Link>
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="justify-start"
-                  onClick={() => {
-                    handleSignOut();
-                    setIsMenuOpen(false);
-                  }}
-                >
-                  {t("logout")}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="ghost" asChild className="justify-start">
-                  <Link to="/auth/login" onClick={() => setIsMenuOpen(false)}>
-                    {t("login")}
-                  </Link>
-                </Button>
-                <Button variant="ghost" asChild className="justify-start">
-                  <Link to="/auth/signup" onClick={() => setIsMenuOpen(false)}>
-                    {t("sign_up")}
-                  </Link>
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </nav>
   );
 };
