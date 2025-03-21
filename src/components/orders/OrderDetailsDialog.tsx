@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import {
   Dialog,
@@ -32,8 +33,14 @@ const OrderDetailsDialog = ({
   const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   useEffect(() => {
-    if (order?.image_urls) {
-      setImageUrls(order.image_urls);
+    if (order?.image_url) {
+      // Handle image_url as a single URL or array
+      const urls = Array.isArray(order.image_url) 
+        ? order.image_url 
+        : order.image_url ? [order.image_url] : [];
+      setImageUrls(urls);
+    } else {
+      setImageUrls([]);
     }
   }, [order]);
 
@@ -65,10 +72,10 @@ const OrderDetailsDialog = ({
       }
 
       // Save new image URLs to the order
-      const newImageList = [...(imageUrls || []), ...uploadedUrls];
+      const newImageList = [...imageUrls, ...uploadedUrls];
       const { error: updateError } = await supabase
         .from("orders")
-        .update({ image_urls: newImageList })
+        .update({ image_url: newImageList })
         .eq("id", order.id);
 
       if (updateError) {
@@ -114,7 +121,7 @@ const OrderDetailsDialog = ({
             <strong>{t("status")}:</strong> {order.status}
           </div>
           <div>
-            <strong>{t("total_price")}:</strong> {order.total_price} {order.currency}
+            <strong>{t("total_price")}:</strong> {order.amount} {order.currency}
           </div>
           {order.supplier && (
             <div>
@@ -127,7 +134,7 @@ const OrderDetailsDialog = ({
             </div>
           )}
 
-          {/* Bilder Galerie */}
+          {/* Images Gallery */}
           <div className="space-y-2">
             <strong>{t("images")}:</strong>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

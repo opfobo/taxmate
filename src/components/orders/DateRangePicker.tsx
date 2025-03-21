@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
@@ -6,9 +7,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
 
+type DateRange = { from: Date | undefined; to: Date | undefined };
+
 type Props = {
-  value: { from: Date | undefined; to: Date | undefined };
-  onChange: (range: { from: Date | undefined; to: Date | undefined }) => void;
+  value: DateRange;
+  onChange: (range: DateRange) => void;
 };
 
 const DateRangePicker = ({ value, onChange }: Props) => {
@@ -16,7 +19,7 @@ const DateRangePicker = ({ value, onChange }: Props) => {
   const [open, setOpen] = React.useState(false);
 
   const handleSelect = (range: { from: Date; to?: Date }) => {
-    onChange(range);
+    onChange({ from: range.from, to: range.to });
     setOpen(false);
   };
 
@@ -41,7 +44,7 @@ const DateRangePicker = ({ value, onChange }: Props) => {
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="range"
-          selected={value}
+          selected={value as any}
           onSelect={handleSelect}
           initialFocus
         />

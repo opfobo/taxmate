@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/context/AuthContext";
@@ -17,10 +18,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
+type OrderType = "fulfillment" | "supplier";
+
 const OrdersPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>("fulfillment");
+  const [activeTab, setActiveTab] = useState<OrderType>("fulfillment");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
@@ -80,7 +83,7 @@ const OrdersPage = () => {
   };
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
+    setActiveTab(value as OrderType);
     setSearchQuery("");
     setStatusFilter(null);
     setDateRange({ from: undefined, to: undefined });

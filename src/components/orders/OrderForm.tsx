@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -32,10 +33,10 @@ const OrderForm = ({ isOpen, onClose, onOrderCreated, orderType }: OrderFormProp
 
     try {
       const { error } = await supabase.from("orders").insert({
-        shopper_id: user.id,
-        type: orderType,
+        user_id: user.id,
+        type: orderType as "fulfillment" | "supplier",
         order_number: orderNumber,
-        total_price: parseFloat(totalPrice),
+        amount: parseFloat(totalPrice),
         currency,
         status: "pending",
         created_at: new Date().toISOString(),

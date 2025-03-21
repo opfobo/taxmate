@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -77,7 +78,7 @@ const ItemDetailsDialog = ({ isOpen, onClose, item, orderId, onItemUpdated }: It
           <div>
             <Label>{t("upload_image")}</Label>
             <ImageUpload
-              recordId={item.id}
+              id={item.id}
               table="order_items"
               storagePath="order_images"
               field="image_url"
