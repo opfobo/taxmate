@@ -2,7 +2,7 @@
 import { useTranslation } from "@/hooks/useTranslation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileText } from "lucide-react";
+import { Loader2, FileText, Image } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 type OrdersTableProps = {
@@ -50,6 +50,7 @@ const OrdersTable = ({ orders, isLoading, onViewDetails, orderType }: OrdersTabl
             <TableHead>{t("total_price")}</TableHead>
             <TableHead>{t("currency")}</TableHead>
             {orderType === "supplier" && <TableHead>{t("supplier")}</TableHead>}
+            <TableHead>{t("items")}</TableHead>
             <TableHead>{t("notes")}</TableHead>
             <TableHead>{t("images")}</TableHead>
             <TableHead>{t("actions")}</TableHead>
@@ -71,19 +72,29 @@ const OrdersTable = ({ orders, isLoading, onViewDetails, orderType }: OrdersTabl
                 <TableCell>{order.supplier?.name || "-"}</TableCell>
               )}
               <TableCell>
+                {order.order_items?.length ? (
+                  <Badge variant="outline">
+                    {order.order_items.length}
+                  </Badge>
+                ) : (
+                  <span className="text-muted-foreground text-sm">0</span>
+                )}
+              </TableCell>
+              <TableCell>
                 {order.notes ? (
-                  <span className="line-clamp-1">{order.notes}</span>
+                  <span className="line-clamp-1 max-w-[150px]">{order.notes}</span>
                 ) : (
                   <span className="text-muted-foreground text-sm">-</span>
                 )}
               </TableCell>
               <TableCell>
-                {order.image_url ? (
-                  <Badge variant="outline">
-                    <FileText className="h-3 w-3 mr-1" />
-                    {typeof order.image_url === 'string' && order.image_url.includes(',') 
+                {order.image_urls?.length > 0 || order.image_url ? (
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Image className="h-3 w-3" />
+                    {order.image_urls?.length || 
+                     (typeof order.image_url === 'string' && order.image_url.includes(',') 
                       ? order.image_url.split(',').length 
-                      : order.image_url ? '1' : '0'}
+                      : order.image_url ? '1' : '0')}
                   </Badge>
                 ) : "-"}
               </TableCell>

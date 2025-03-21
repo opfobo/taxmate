@@ -1,137 +1,147 @@
 
 import React, { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, CheckCircle, Clock, AlertCircle, Package, Truck, CircleCheck } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CommandGroup, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
+import { Command } from "cmdk";
+import { Badge } from "@/components/ui/badge";
 
-interface Props {
+interface OrderStatusUpdateFormProps {
   orderId: string;
   currentStatus: string;
   onUpdated: () => void;
 }
 
-const OrderStatusUpdateForm: React.FC<Props> = ({ orderId, currentStatus, onUpdated }) => {
+const statuses = [
+  { value: "pending", label: "pending", color: "bg-yellow-100 text-yellow-800" },
+  { value: "accepted", label: "accepted", color: "bg-blue-100 text-blue-800" },
+  { value: "processing", label: "processing", color: "bg-purple-100 text-purple-800" },
+  { value: "shipped", label: "shipped", color: "bg-indigo-100 text-indigo-800" },
+  { value: "delivered", label: "delivered", color: "bg-green-100 text-green-800" },
+  { value: "declined", label: "declined", color: "bg-red-100 text-red-800" },
+];
+
+const OrderStatusUpdateForm: React.FC<OrderStatusUpdateFormProps> = ({
+  orderId,
+  currentStatus,
+  onUpdated,
+}) => {
   const { t } = useTranslation();
-  const [status, setStatus] = useState(currentStatus);
-  const [loading, setLoading] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string>(currentStatus);
 
-  const statuses = ["pending", "accepted", "declined", "processing", "shipped", "delivered"];
+  const handleUpdateStatus = async (newStatus: string) => {
+    if (newStatus === currentStatus) {
+      setIsOpen(false);
+      return;
+    }
 
-  const handleUpdate = async () => {
-    setLoading(true);
+    setIsUpdating(true);
     try {
-      const now = new Date().toISOString();
-      
       // Update the order status
       const { error } = await supabase
         .from("orders")
         .update({ 
-          status,
-          updated_at: now
+          status: newStatus,
+          updated_at: new Date().toISOString()
         })
         .eq("id", orderId);
 
       if (error) throw error;
-      
-      // Add a record to status history (if implemented)
-      // This could be added in the future to track full status history
-      
+
+      // Record the status change in history
+      const { error: historyError } = await supabase
+        .from("order_status_history")
+        .insert({
+          order_id: orderId,
+          status: newStatus,
+          changed_at: new Date().toISOString(),
+          notes: `Status updated to ${t(newStatus)}`
+        });
+
+      if (historyError) {
+        console.error("Failed to record status history:", historyError);
+      }
+
+      setSelectedStatus(newStatus);
       toast({
         title: t("status_updated"),
-        description: t("order_status_updated_successfully"),
+        description: t("order_status_updated_to", { status: t(newStatus) }),
       });
-      
       onUpdated();
     } catch (error: any) {
-      console.error("Error updating order status:", error.message);
+      console.error("Error updating status:", error.message);
       toast({
         title: t("update_failed"),
         description: error.message,
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
-    }
-  };
-  
-  const getStatusIcon = (statusValue: string) => {
-    switch (statusValue) {
-      case "pending": return <Clock className="h-4 w-4" />;
-      case "accepted": return <CheckCircle className="h-4 w-4" />;
-      case "declined": return <AlertCircle className="h-4 w-4" />;
-      case "processing": return <Package className="h-4 w-4" />;
-      case "shipped": return <Truck className="h-4 w-4" />;
-      case "delivered": return <CircleCheck className="h-4 w-4" />;
-      default: return null;
-    }
-  };
-  
-  const getStatusColor = (statusValue: string) => {
-    switch (statusValue) {
-      case "pending": return "text-yellow-600";
-      case "accepted": return "text-blue-600";
-      case "declined": return "text-red-600";
-      case "processing": return "text-purple-600";
-      case "shipped": return "text-indigo-600";
-      case "delivered": return "text-green-600";
-      default: return "";
+      setIsUpdating(false);
+      setIsOpen(false);
     }
   };
 
+  const getCurrentStatusDetails = () => {
+    return statuses.find(status => status.value === selectedStatus) || 
+      { value: selectedStatus, label: selectedStatus, color: "bg-gray-100 text-gray-800" };
+  };
+
+  const statusDetails = getCurrentStatusDetails();
+
   return (
-    <div className="mt-2 space-y-2">
-      {/* Status Tracker */}
-      <div className="flex gap-1 items-center justify-between mb-4">
-        {statuses.map((s, index) => (
-          <React.Fragment key={s}>
-            <div 
-              className={`flex flex-col items-center ${
-                statuses.indexOf(status) >= index ? getStatusColor(s) : "text-gray-300"
-              }`}
-            >
-              <div className="flex items-center justify-center w-8 h-8">
-                {getStatusIcon(s)}
-              </div>
-              <span className="text-xs mt-1">{t(s)}</span>
-            </div>
-            
-            {index < statuses.length - 1 && (
-              <div 
-                className={`flex-1 h-0.5 ${
-                  statuses.indexOf(status) > index ? "bg-primary" : "bg-gray-200"
-                }`}
-              />
+    <div className="mt-2">
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
+          <Button 
+            variant="outline" 
+            className="w-full justify-start"
+            disabled={isUpdating}
+          >
+            {isUpdating ? (
+              <React.Fragment>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t("updating")}
+              </React.Fragment>
+            ) : (
+              <React.Fragment>
+                <Badge className={statusDetails.color + " mr-2"}>
+                  {t(statusDetails.label)}
+                </Badge>
+                {t("change_status")}
+              </React.Fragment>
             )}
-          </React.Fragment>
-        ))}
-      </div>
-      
-      <div className="flex gap-4 items-center">
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder={t("status")} />
-          </SelectTrigger>
-          <SelectContent>
-            {statuses.map((status) => (
-              <SelectItem key={status} value={status}>
-                <div className="flex items-center gap-2">
-                  <span className={getStatusColor(status)}>
-                    {getStatusIcon(status)}
-                  </span>
-                  {t(status)}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button onClick={handleUpdate} disabled={loading}>
-          {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          {t("save")}
-        </Button>
-      </div>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0" align="start">
+          <Command>
+            <CommandList>
+              <CommandGroup heading={t("select_status")}>
+                {statuses.map((status) => (
+                  <CommandItem
+                    key={status.value}
+                    onSelect={() => handleUpdateStatus(status.value)}
+                    className="flex items-center"
+                  >
+                    <Badge className={status.color + " mr-2"}>
+                      {t(status.label)}
+                    </Badge>
+                    {status.value === selectedStatus && (
+                      <Check className="ml-auto h-4 w-4 text-green-500" />
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              <CommandSeparator />
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 };

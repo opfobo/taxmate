@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -7,7 +8,9 @@ import {
   Package, 
   ShoppingBag, 
   Search, 
-  Plus 
+  Plus,
+  X,
+  Filter 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,47 +21,74 @@ import OrderForm from "@/components/orders/OrderForm";
 import { SupplierForm } from "@/components/orders/SupplierForm";
 import DateRangePicker from "@/components/orders/DateRangePicker";
 import StatusFilter from "@/components/orders/StatusFilter";
-import OrderStatusUpdateForm from "@/components/orders/OrderStatusUpdateForm";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 const OrdersPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>("fulfillment");
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
-    from: undefined,
-    to: undefined,
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    return sessionStorage.getItem("ordersActiveTab") || "fulfillment";
+  });
+  const [searchQuery, setSearchQuery] = useState<string>(() => {
+    return sessionStorage.getItem("ordersSearchQuery") || "";
+  });
+  const [statusFilter, setStatusFilter] = useState<string | null>(() => {
+    const savedStatus = sessionStorage.getItem("ordersStatusFilter");
+    return savedStatus ? savedStatus : null;
+  });
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>(() => {
+    const savedRange = sessionStorage.getItem("ordersDateRange");
+    return savedRange ? JSON.parse(savedRange) : {
+      from: undefined,
+      to: undefined,
+    };
   });
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
   const [isSupplierFormOpen, setIsSupplierFormOpen] = useState(false);
 
+  // Save filter state to sessionStorage when changed
+  useEffect(() => {
+    sessionStorage.setItem("ordersActiveTab", activeTab);
+    sessionStorage.setItem("ordersSearchQuery", searchQuery);
+    sessionStorage.setItem("ordersStatusFilter", statusFilter || "");
+    sessionStorage.setItem("ordersDateRange", JSON.stringify(dateRange));
+  }, [activeTab, searchQuery, statusFilter, dateRange]);
+
+  // Count active filters
+  const activeFilterCount = [
+    searchQuery.trim().length > 0,
+    statusFilter !== null,
+    dateRange.from !== undefined || dateRange.to !== undefined
+  ].filter(Boolean).length;
+
   // Fetch orders with items and images
   const fetchOrders = async () => {
     let query = supabase
       .from("orders")
-      .select(
+      .select(`
         id,
         order_number,
         status,
-        total_price,
+        amount,
         currency,
         order_date,
         image_urls,
-        supplier:suppliers(name),
+        notes,
+        supplier:suppliers(id, name),
         order_items(*)
-      )
-      .eq("shopper_id", user?.id || "")
+      `)
+      .eq("user_id", user?.id || "")
       .eq("type", activeTab)
-      .range(0, 50); // Pagination für bessere Performance
+      .order("order_date", { ascending: false })
+      .range(0, 50); // Pagination for better performance
 
     if (searchQuery) {
-      query = query.ilike("order_number", %${searchQuery}%);
+      query = query.ilike("order_number", `%${searchQuery}%`);
     }
 
     if (statusFilter) {
@@ -96,9 +126,7 @@ const OrdersPage = () => {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    setSearchQuery("");
-    setStatusFilter(null);
-    setDateRange({ from: undefined, to: undefined });
+    // Don't reset filters when changing tabs as per requirements
   };
 
   const handleAddOrder = () => {
@@ -124,6 +152,12 @@ const OrdersPage = () => {
       title: t("supplier_added"),
       description: t("supplier_added_successfully"),
     });
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter(null);
+    setDateRange({ from: undefined, to: undefined });
   };
 
   return (
@@ -153,7 +187,7 @@ const OrdersPage = () => {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder={${t("search")} ${t("orders")}...}
+                placeholder={`${t("search")} ${t("orders")}...`}
                 className="pl-9"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -171,6 +205,18 @@ const OrdersPage = () => {
             onChange={setDateRange}
           />
           
+          {activeFilterCount > 0 && (
+            <Button 
+              onClick={handleClearFilters} 
+              variant="outline" 
+              size="icon"
+              className="flex-shrink-0"
+              title={t("clear_filters")}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+          
           {activeTab === "supplier" && (
             <Button onClick={handleAddSupplier} variant="outline" className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
@@ -183,6 +229,18 @@ const OrdersPage = () => {
             {t("add_order")}
           </Button>
         </div>
+
+        {activeFilterCount > 0 && (
+          <div className="mb-4 flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              {t("active_filters")}:
+            </span>
+            <Badge variant="outline" className="font-mono">
+              {activeFilterCount}
+            </Badge>
+          </div>
+        )}
 
         <Card>
           <CardHeader className="pb-2">

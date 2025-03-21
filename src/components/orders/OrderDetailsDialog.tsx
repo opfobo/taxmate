@@ -36,18 +36,23 @@ const OrderDetailsDialog = ({
   const [isItemDetailsOpen, setIsItemDetailsOpen] = useState(false);
 
   useEffect(() => {
-    if (order?.image_url) {
-      // Handle image_url as a single URL or array
-      const urls = typeof order.image_url === 'string' && order.image_url.includes(',')
-        ? order.image_url.split(',')
-        : order.image_url ? [order.image_url] : [];
-      setImageUrls(urls);
-    } else {
-      setImageUrls([]);
-    }
+    if (order) {
+      // Handle image_urls as an array or convert single image_url to array
+      if (order.image_urls && Array.isArray(order.image_urls)) {
+        setImageUrls(order.image_urls);
+      } else if (order.image_url) {
+        // For backward compatibility with single image_url
+        const urls = typeof order.image_url === 'string' && order.image_url.includes(',')
+          ? order.image_url.split(',')
+          : order.image_url ? [order.image_url] : [];
+        setImageUrls(urls);
+      } else {
+        setImageUrls([]);
+      }
 
-    if (order?.id) {
-      fetchOrderItems();
+      if (order?.id) {
+        fetchOrderItems();
+      }
     }
   }, [order]);
 
@@ -66,6 +71,11 @@ const OrderDetailsDialog = ({
     setLoadingItems(false);
     if (error) {
       console.error("Error fetching order items:", error);
+      toast({
+        title: t("error"),
+        description: t("error_fetching_order_items"),
+        variant: "destructive",
+      });
       return;
     }
 
@@ -102,12 +112,9 @@ const OrderDetailsDialog = ({
       // Save new image URLs to the order
       const newImageList = [...imageUrls, ...uploadedUrls];
       
-      // Store as a comma-separated string since the database field is a string
-      const imageUrlString = newImageList.join(',');
-      
       const { error: updateError } = await supabase
         .from("orders")
-        .update({ image_url: imageUrlString })
+        .update({ image_urls: newImageList })
         .eq("id", order.id);
 
       if (updateError) {
@@ -269,7 +276,7 @@ const OrderDetailsDialog = ({
                   <img
                     key={index}
                     src={url}
-                    alt={`order-img-${index}`}
+                    alt={`${t("order")}-${t("image")}-${index}`}
                     className="rounded-md w-full h-auto object-cover border"
                   />
                 ))

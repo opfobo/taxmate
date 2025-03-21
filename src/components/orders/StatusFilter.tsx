@@ -34,7 +34,7 @@ const StatusFilter = ({ value, onChange }: StatusFilterProps) => {
         <SelectValue placeholder={t("status")} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">{t("status")}</SelectItem>
+        <SelectItem value="all">{t("all_statuses")}</SelectItem>
         {statusOptions.map((status) => (
           <SelectItem key={status} value={status}>
             {t(status)}

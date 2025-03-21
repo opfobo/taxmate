@@ -51,6 +51,11 @@ const OrderForm = ({ isOpen, onClose, onOrderCreated, orderType }: OrderFormProp
     
     if (error) {
       console.error("Error fetching suppliers:", error);
+      toast({
+        title: t("error"),
+        description: t("error_fetching_suppliers"),
+        variant: "destructive",
+      });
       return;
     }
     
@@ -77,6 +82,7 @@ const OrderForm = ({ isOpen, onClose, onOrderCreated, orderType }: OrderFormProp
         created_at: now,
         updated_at: now,
         order_date: now.split('T')[0], // Just the date part
+        image_urls: [], // Initialize with empty array for new orders
       };
 
       const { error } = await supabase.from("orders").insert(orderData);
@@ -123,7 +129,7 @@ const OrderForm = ({ isOpen, onClose, onOrderCreated, orderType }: OrderFormProp
               id="order-number"
               value={orderNumber}
               onChange={(e) => setOrderNumber(e.target.value)}
-              placeholder="e.g. 2024-00123"
+              placeholder={t("order_number_placeholder")}
             />
           </div>
 
