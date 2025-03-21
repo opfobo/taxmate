@@ -1,227 +1,127 @@
-
-import { useState, useRef } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { useTranslation } from "@/hooks/useTranslation";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { Upload, X, Image as ImageIcon } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useTranslation } from "@/hooks/useTranslation";
+import { v4 as uuidv4 } from "uuid";
 
 interface ImageUploadProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
   orderId: string;
-  type: "order" | "item";
-  existingImage?: string;
 }
 
-const ImageUpload = ({
-  isOpen,
-  onClose,
-  onSuccess,
-  orderId,
-  type,
-  existingImage
-}: ImageUploadProps) => {
+const ImageUpload = ({ orderId }: ImageUploadProps) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [images, setImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      
-      // Check file type
-      if (!selectedFile.type.startsWith('image/')) {
-        toast({
-          title: t("invalid_file_type"),
-          description: t("please_select_image_file"),
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Check file size (max 5MB)
-      if (selectedFile.size > 5 * 1024 * 1024) {
-        toast({
-          title: t("file_too_large"),
-          description: t("image_must_be_less_than_5mb"),
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      setFile(selectedFile);
-      setPreview(URL.createObjectURL(selectedFile));
+  const bucket = "order_images";
+
+  const fetchImages = async () => {
+    const { data, error } = await supabase
+      .storage
+      .from(bucket)
+      .list(`${orderId}`, { limit: 100, sortBy: { column: "created_at", order: "asc" } });
+
+    if (error) {
+      console.error("Error fetching images:", error);
+    } else {
+      const urls = data.map(file => getPublicUrl(file.name));
+      setImages(urls);
     }
   };
 
-  const handleRemoveFile = () => {
-    setFile(null);
-    setPreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+  const getPublicUrl = (fileName: string) => {
+    const { data } = supabase
+      .storage
+      .from(bucket)
+      .getPublicUrl(`${orderId}/${fileName}`);
+    return data.publicUrl;
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      toast({
-        title: t("no_file_selected"),
-        description: t("please_select_file_to_upload"),
-        variant: "destructive",
-      });
-      return;
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+
+    for (const file of files) {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${uuidv4()}.${fileExt}`;
+
+      const { error } = await supabase.storage
+        .from(bucket)
+        .upload(`${orderId}/${fileName}`, file);
+
+      if (error) {
+        console.error("Upload error:", error);
+        toast({
+          title: t("upload_failed"),
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     }
 
-    setIsUploading(true);
+    setUploading(false);
+    toast({
+      title: t("upload_successful"),
+      description: t("images_uploaded"),
+    });
 
-    try {
-      // Delete existing file if it exists
-      if (existingImage) {
-        await supabase.storage.from('order_images').remove([existingImage]);
-      }
+    fetchImages();
+  };
 
-      // Upload new file
-      const fileName = `${user?.id}/${type}_${orderId}_${Date.now()}.${file.name.split('.').pop()}`;
-      const { error: uploadError } = await supabase.storage
-        .from('order_images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
+  const handleDelete = async (fileUrl: string) => {
+    const fileName = fileUrl.split("/").pop();
+    const filePath = `${orderId}/${fileName}`;
 
-      if (uploadError) throw uploadError;
+    const { error } = await supabase
+      .storage
+      .from(bucket)
+      .remove([filePath]);
 
-      // Update the database record with the new image URL
-      let updateError;
-      if (type === 'order') {
-        const { error } = await supabase
-          .from('orders')
-          .update({ image_url: fileName })
-          .eq('id', orderId);
-        updateError = error;
-      } else {
-        const { error } = await supabase
-          .from('order_items')
-          .update({ image_url: fileName })
-          .eq('id', orderId);
-        updateError = error;
-      }
-
-      if (updateError) throw updateError;
-
-      onSuccess();
-    } catch (error: any) {
+    if (error) {
       toast({
-        title: t("upload_failed"),
+        title: t("delete_failed"),
         description: error.message,
         variant: "destructive",
       });
-    } finally {
-      setIsUploading(false);
+    } else {
+      setImages(images.filter(img => img !== fileUrl));
+      toast({
+        title: t("image_deleted"),
+        description: t("image_deleted_successfully"),
+      });
     }
   };
 
+  useEffect(() => {
+    fetchImages();
+  }, [orderId]);
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{existingImage ? t("update_image") : t("upload_image")}</DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          {existingImage && (
-            <div className="border rounded-lg p-2 overflow-hidden">
-              <img 
-                src={`${supabase.storage.from("order_images").getPublicUrl(existingImage).data.publicUrl}`} 
-                alt={t("current_image")}
-                className="w-full h-auto max-h-40 object-contain"
-              />
-              <p className="text-xs text-muted-foreground mt-2">{t("current_image")}</p>
-            </div>
-          )}
-          
-          <div className="space-y-2">
-            <Label htmlFor="image">{t("select_image")}</Label>
-            <Input
-              id="image"
-              type="file"
-              ref={fileInputRef}
-              accept="image/*"
-              onChange={handleFileChange}
-              className="cursor-pointer"
-            />
-          </div>
-          
-          {preview && (
-            <div className="relative border rounded-lg p-2">
+    <div className="space-y-4">
+      <label className="block font-medium">{t("upload_image")}</label>
+      <Input type="file" multiple onChange={handleUpload} disabled={uploading} />
+      {images.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+          {images.map((url) => (
+            <div key={url} className="relative group border rounded overflow-hidden">
+              <img src={url} alt="Order Image" className="w-full h-auto" />
               <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 h-6 w-6 rounded-full bg-muted/80"
-                onClick={handleRemoveFile}
+                variant="destructive"
+                size="sm"
+                className="absolute top-1 right-1 opacity-75 hover:opacity-100"
+                onClick={() => handleDelete(url)}
               >
-                <X className="h-4 w-4" />
+                {t("delete")}
               </Button>
-              <img 
-                src={preview} 
-                alt={t("preview")}
-                className="w-full h-auto max-h-40 object-contain"
-              />
-              <p className="text-xs text-muted-foreground mt-2">{t("preview")}</p>
             </div>
-          )}
-          
-          {!file && !preview && (
-            <div className="border border-dashed rounded-lg p-8 text-center">
-              <ImageIcon className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">
-                {t("drag_drop_or_click_to_select")}
-              </p>
-            </div>
-          )}
+          ))}
         </div>
-        
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
-            {t("cancel")}
-          </Button>
-          <Button 
-            type="button"
-            disabled={!file || isUploading}
-            onClick={handleUpload}
-            className="gap-2"
-          >
-            {isUploading ? (
-              <>
-                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
-                {t("uploading")}
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4" />
-                {t("upload")}
-              </>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      )}
+    </div>
   );
 };
 
