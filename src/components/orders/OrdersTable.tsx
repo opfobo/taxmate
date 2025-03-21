@@ -1,30 +1,60 @@
 
+import React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { format } from "date-fns";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileText, Image } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Eye, Loader2 } from "lucide-react";
+import Image from "@/components/Image";
 
-type OrdersTableProps = {
-  orders: any[];
-  isLoading: boolean;
-  onViewDetails: (order: any) => void;
-  orderType: "fulfillment" | "supplier";
+type Order = {
+  id: string;
+  order_number: string;
+  order_date: string;
+  status: string;
+  amount: number;
+  currency: string;
+  supplier?: { name: string; id: string; };
+  image_url?: string;
 };
 
-const OrdersTable = ({ orders, isLoading, onViewDetails, orderType }: OrdersTableProps) => {
+interface OrdersTableProps {
+  orders: Order[];
+  isLoading: boolean;
+  onViewDetails: (order: Order) => void;
+  orderType: "fulfillment" | "supplier";
+}
+
+const OrdersTable: React.FC<OrdersTableProps> = ({
+  orders,
+  isLoading,
+  onViewDetails,
+  orderType
+}) => {
   const { t } = useTranslation();
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-10">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (!orders.length) {
-    return <p className="text-muted-foreground text-center py-6">{t("no_orders")}</p>;
+  if (orders.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <p>{t("no_orders_found")}</p>
+      </div>
+    );
   }
 
   const getStatusColor = (status: string) => {
@@ -45,62 +75,52 @@ const OrdersTable = ({ orders, isLoading, onViewDetails, orderType }: OrdersTabl
         <TableHeader>
           <TableRow>
             <TableHead>{t("order_number")}</TableHead>
-            <TableHead>{t("order_date")}</TableHead>
+            <TableHead>{t("date")}</TableHead>
             <TableHead>{t("status")}</TableHead>
-            <TableHead>{t("total_price")}</TableHead>
-            <TableHead>{t("currency")}</TableHead>
+            <TableHead>{t("amount")}</TableHead>
             {orderType === "supplier" && <TableHead>{t("supplier")}</TableHead>}
-            <TableHead>{t("items")}</TableHead>
-            <TableHead>{t("notes")}</TableHead>
-            <TableHead>{t("images")}</TableHead>
-            <TableHead>{t("actions")}</TableHead>
+            <TableHead>{t("image")}</TableHead>
+            <TableHead className="text-right">{t("actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {orders.map((order) => (
             <TableRow key={order.id}>
-              <TableCell>{order.order_number}</TableCell>
-              <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
+              <TableCell className="font-medium">{order.order_number}</TableCell>
               <TableCell>
-                <Badge className={getStatusColor(order.status)}>
-                  {t(order.status)}
+                {order.order_date && format(new Date(order.order_date), "PP")}
+              </TableCell>
+              <TableCell>
+                <Badge className={getStatusColor(order.status || "pending")}>
+                  {t(order.status || "pending")}
                 </Badge>
               </TableCell>
-              <TableCell>{order.amount?.toFixed(2)}</TableCell>
-              <TableCell>{order.currency}</TableCell>
+              <TableCell>
+                {order.amount} {order.currency || "EUR"}
+              </TableCell>
               {orderType === "supplier" && (
-                <TableCell>{order.supplier?.name || "-"}</TableCell>
+                <TableCell>
+                  {order.supplier?.name || <span className="text-muted-foreground">-</span>}
+                </TableCell>
               )}
               <TableCell>
-                {order.order_items?.length ? (
-                  <Badge variant="outline">
-                    {order.order_items.length}
-                  </Badge>
+                {order.image_url ? (
+                  <Image 
+                    src={order.image_url} 
+                    alt={`${t("order")} ${order.order_number}`} 
+                    className="h-8 w-8 rounded object-cover" 
+                  />
                 ) : (
-                  <span className="text-muted-foreground text-sm">0</span>
+                  <span className="text-muted-foreground">-</span>
                 )}
               </TableCell>
-              <TableCell>
-                {order.notes ? (
-                  <span className="line-clamp-1 max-w-[150px]">{order.notes}</span>
-                ) : (
-                  <span className="text-muted-foreground text-sm">-</span>
-                )}
-              </TableCell>
-              <TableCell>
-                {order.image_urls?.length > 0 || order.image_url ? (
-                  <Badge variant="outline" className="flex items-center gap-1">
-                    <Image className="h-3 w-3" />
-                    {order.image_urls?.length || 
-                     (typeof order.image_url === 'string' && order.image_url.includes(',') 
-                      ? order.image_url.split(',').length 
-                      : order.image_url ? '1' : '0')}
-                  </Badge>
-                ) : "-"}
-              </TableCell>
-              <TableCell>
-                <Button size="sm" onClick={() => onViewDetails(order)}>
-                  {t("view")}
+              <TableCell className="text-right">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => onViewDetails(order)}
+                >
+                  <Eye className="h-4 w-4" />
                 </Button>
               </TableCell>
             </TableRow>

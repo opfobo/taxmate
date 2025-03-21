@@ -1,41 +1,36 @@
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTranslation } from "@/hooks/useTranslation";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface StatusFilterProps {
   value: string | null;
   onChange: (value: string | null) => void;
 }
 
-const statusOptions = [
-  "pending",
-  "accepted",
-  "declined",
-  "processing",
-  "shipped",
-  "delivered",
-];
-
 const StatusFilter = ({ value, onChange }: StatusFilterProps) => {
   const { t } = useTranslation();
+  
+  // List of order statuses
+  const statuses = [
+    "pending",
+    "accepted", 
+    "processing",
+    "shipped",
+    "delivered",
+    "declined"
+  ];
 
   return (
     <Select
-      value={value || "all"}
-      onValueChange={(val) => onChange(val === "all" ? null : val)}
+      value={value || ""}
+      onValueChange={(val) => onChange(val === "" ? null : val)}
     >
-      <SelectTrigger className="min-w-[150px]">
+      <SelectTrigger className="w-[160px]">
         <SelectValue placeholder={t("status")} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">{t("all_statuses")}</SelectItem>
-        {statusOptions.map((status) => (
+        <SelectItem value="">{t("all_statuses")}</SelectItem>
+        {statuses.map((status) => (
           <SelectItem key={status} value={status}>
             {t(status)}
           </SelectItem>
