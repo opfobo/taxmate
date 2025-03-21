@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -95,20 +96,22 @@ const ProfilePage = () => {
 
   // Update form values when profile data is loaded
   useEffect(() => {
-  if (profileData) {
-    form.reset((prevValues) => ({
-      ...prevValues,  // Preserve previous form state
-      name: profileData.name || prevValues.name,
-      email: profileData.email || prevValues.email,
-      phone: profileData.phone || prevValues.phone,
-      business_type: profileData.business_type || prevValues.business_type,
-      eu_vat_id: profileData.eu_vat_id || prevValues.eu_vat_id,
-      tax_number: profileData.tax_number || prevValues.tax_number,
-      eori_number: profileData.eori_number || prevValues.eori_number,
-    }));
-  }
-}, [profileData, form]);
-
+    if (profileData) {
+      // Type casting business_type to ensure it matches the expected enum values
+      const businessType = profileData.business_type as BusinessType | null;
+      
+      // Using direct object instead of a function to avoid TypeScript errors
+      form.reset({
+        name: profileData.name || "",
+        email: profileData.email || "",
+        phone: profileData.phone || "",
+        business_type: businessType,
+        eu_vat_id: profileData.eu_vat_id || "",
+        tax_number: profileData.tax_number || "",
+        eori_number: profileData.eori_number || "",
+      });
+    }
+  }, [profileData, form]);
 
   // Handle form submission
   const onSubmit = async (values: ProfileFormValues) => {
@@ -230,7 +233,40 @@ const ProfilePage = () => {
                     </FormItem>
                   )} />
 
-                  {/* Other Business Info Fields Included Here */}
+                  <FormField control={form.control} name="eu_vat_id" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("eu_vat_id")}</FormLabel>
+                      <FormControl>
+                        <Input placeholder="DE123456789" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <FormField control={form.control} name="tax_number" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("tax_number")}</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123/456/78901" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <FormField control={form.control} name="eori_number" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("eori_number")}</FormLabel>
+                      <FormControl>
+                        <Input placeholder="DE1234567890123" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <Button type="submit" disabled={loading || isLoadingProfile}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {t("save_changes")}
+                  </Button>
                 </form>
               </Form>
             </div>
