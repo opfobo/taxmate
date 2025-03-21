@@ -1,3 +1,4 @@
+
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   Select,
@@ -26,14 +27,14 @@ const StatusFilter = ({ value, onChange }: StatusFilterProps) => {
 
   return (
     <Select
-      value={value || ""}
-      onValueChange={(val) => onChange(val === "" ? null : val)}
+      value={value || "all"}
+      onValueChange={(val) => onChange(val === "all" ? null : val)}
     >
       <SelectTrigger className="min-w-[150px]">
         <SelectValue placeholder={t("status")} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="">{t("status")}</SelectItem>
+        <SelectItem value="all">{t("status")}</SelectItem>
         {statusOptions.map((status) => (
           <SelectItem key={status} value={status}>
             {t(status)}
