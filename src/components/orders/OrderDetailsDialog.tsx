@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -67,9 +68,13 @@ const OrderDetailsDialog = ({
 
       // Save new image URLs to the order
       const newImageList = [...imageUrls, ...uploadedUrls];
+      
+      // Store as a comma-separated string since the database field is a string
+      const imageUrlString = newImageList.join(',');
+      
       const { error: updateError } = await supabase
         .from("orders")
-        .update({ image_url: newImageList })
+        .update({ image_url: imageUrlString })
         .eq("id", order.id);
 
       if (updateError) {
