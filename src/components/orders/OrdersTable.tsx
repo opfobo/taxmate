@@ -1,7 +1,9 @@
+
 import { useTranslation } from "@/hooks/useTranslation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, FileText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 type OrdersTableProps = {
   orders: any[];
@@ -10,7 +12,7 @@ type OrdersTableProps = {
   orderType: "fulfillment" | "supplier";
 };
 
-const OrdersTable = ({ orders, isLoading, onViewDetails }: OrdersTableProps) => {
+const OrdersTable = ({ orders, isLoading, onViewDetails, orderType }: OrdersTableProps) => {
   const { t } = useTranslation();
 
   if (isLoading) {
@@ -25,6 +27,18 @@ const OrdersTable = ({ orders, isLoading, onViewDetails }: OrdersTableProps) => 
     return <p className="text-muted-foreground text-center py-6">{t("no_orders")}</p>;
   }
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending": return "bg-yellow-100 text-yellow-800";
+      case "accepted": return "bg-blue-100 text-blue-800";
+      case "declined": return "bg-red-100 text-red-800";
+      case "processing": return "bg-purple-100 text-purple-800";
+      case "shipped": return "bg-indigo-100 text-indigo-800";
+      case "delivered": return "bg-green-100 text-green-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -32,10 +46,12 @@ const OrdersTable = ({ orders, isLoading, onViewDetails }: OrdersTableProps) => 
           <TableRow>
             <TableHead>{t("order_number")}</TableHead>
             <TableHead>{t("order_date")}</TableHead>
+            <TableHead>{t("status")}</TableHead>
             <TableHead>{t("total_price")}</TableHead>
             <TableHead>{t("currency")}</TableHead>
-            <TableHead>{t("status")}</TableHead>
-            <TableHead>{t("supplier")}</TableHead>
+            {orderType === "supplier" && <TableHead>{t("supplier")}</TableHead>}
+            <TableHead>{t("notes")}</TableHead>
+            <TableHead>{t("images")}</TableHead>
             <TableHead>{t("actions")}</TableHead>
           </TableRow>
         </TableHeader>
@@ -44,10 +60,33 @@ const OrdersTable = ({ orders, isLoading, onViewDetails }: OrdersTableProps) => 
             <TableRow key={order.id}>
               <TableCell>{order.order_number}</TableCell>
               <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
-              <TableCell>{order.total_price?.toFixed(2)}</TableCell>
+              <TableCell>
+                <Badge className={getStatusColor(order.status)}>
+                  {t(order.status)}
+                </Badge>
+              </TableCell>
+              <TableCell>{order.amount?.toFixed(2)}</TableCell>
               <TableCell>{order.currency}</TableCell>
-              <TableCell className="capitalize">{t(order.status)}</TableCell>
-              <TableCell>{order.supplier?.name || "-"}</TableCell>
+              {orderType === "supplier" && (
+                <TableCell>{order.supplier?.name || "-"}</TableCell>
+              )}
+              <TableCell>
+                {order.notes ? (
+                  <span className="line-clamp-1">{order.notes}</span>
+                ) : (
+                  <span className="text-muted-foreground text-sm">-</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {order.image_url ? (
+                  <Badge variant="outline">
+                    <FileText className="h-3 w-3 mr-1" />
+                    {typeof order.image_url === 'string' && order.image_url.includes(',') 
+                      ? order.image_url.split(',').length 
+                      : order.image_url ? '1' : '0'}
+                  </Badge>
+                ) : "-"}
+              </TableCell>
               <TableCell>
                 <Button size="sm" onClick={() => onViewDetails(order)}>
                   {t("view")}
