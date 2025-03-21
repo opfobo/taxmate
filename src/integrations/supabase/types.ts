@@ -202,6 +202,41 @@ export type Database = {
           },
         ]
       }
+      order_status_history: {
+        Row: {
+          changed_at: string | null
+          changed_by: string | null
+          id: string
+          notes: string | null
+          order_id: string | null
+          status: Database["public"]["Enums"]["order_status"]
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          status: Database["public"]["Enums"]["order_status"]
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           amount: number
@@ -217,10 +252,12 @@ export type Database = {
           shipping_address_id: string | null
           shopper_id: string | null
           status: string | null
+          status_history: Json | null
           supplier_id: string | null
           tracking_number: string | null
           type: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           amount: number
@@ -236,10 +273,12 @@ export type Database = {
           shipping_address_id?: string | null
           shopper_id?: string | null
           status?: string | null
+          status_history?: Json | null
           supplier_id?: string | null
           tracking_number?: string | null
           type?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           amount?: number
@@ -255,10 +294,12 @@ export type Database = {
           shipping_address_id?: string | null
           shopper_id?: string | null
           status?: string | null
+          status_history?: Json | null
           supplier_id?: string | null
           tracking_number?: string | null
           type?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -505,7 +546,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      order_status:
+        | "pending"
+        | "accepted"
+        | "declined"
+        | "processing"
+        | "shipped"
+        | "delivered"
+      order_type: "fulfillment" | "supplier"
     }
     CompositeTypes: {
       [_ in never]: never
