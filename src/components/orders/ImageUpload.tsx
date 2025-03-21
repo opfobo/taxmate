@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,11 +7,14 @@ import { toast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import { v4 as uuidv4 } from "uuid";
 
-interface ImageUploadProps {
-  orderId: string;
+export interface ImageUploadProps {
+  id: string;
+  table: string;
+  storagePath: string;
+  field: string;
 }
 
-const ImageUpload = ({ orderId }: ImageUploadProps) => {
+const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
   const { t } = useTranslation();
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -21,7 +25,7 @@ const ImageUpload = ({ orderId }: ImageUploadProps) => {
     const { data, error } = await supabase
       .storage
       .from(bucket)
-      .list(`${orderId}`, { limit: 100, sortBy: { column: "created_at", order: "asc" } });
+      .list(`${id}`, { limit: 100, sortBy: { column: "created_at", order: "asc" } });
 
     if (error) {
       console.error("Error fetching images:", error);
@@ -35,7 +39,7 @@ const ImageUpload = ({ orderId }: ImageUploadProps) => {
     const { data } = supabase
       .storage
       .from(bucket)
-      .getPublicUrl(`${orderId}/${fileName}`);
+      .getPublicUrl(`${id}/${fileName}`);
     return data.publicUrl;
   };
 
@@ -51,7 +55,7 @@ const ImageUpload = ({ orderId }: ImageUploadProps) => {
 
       const { error } = await supabase.storage
         .from(bucket)
-        .upload(`${orderId}/${fileName}`, file);
+        .upload(`${id}/${fileName}`, file);
 
       if (error) {
         console.error("Upload error:", error);
@@ -74,7 +78,7 @@ const ImageUpload = ({ orderId }: ImageUploadProps) => {
 
   const handleDelete = async (fileUrl: string) => {
     const fileName = fileUrl.split("/").pop();
-    const filePath = `${orderId}/${fileName}`;
+    const filePath = `${id}/${fileName}`;
 
     const { error } = await supabase
       .storage
@@ -98,7 +102,7 @@ const ImageUpload = ({ orderId }: ImageUploadProps) => {
 
   useEffect(() => {
     fetchImages();
-  }, [orderId]);
+  }, [id]);
 
   return (
     <div className="space-y-4">

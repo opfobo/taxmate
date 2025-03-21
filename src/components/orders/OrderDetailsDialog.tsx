@@ -1,11 +1,4 @@
-
-import { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "@/hooks/useTranslation";
 import { format } from "date-fns";
@@ -14,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from "uuid";
+import { useEffect, useState } from "react";
 
 interface OrderDetailsDialogProps {
   order: any;
