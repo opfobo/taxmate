@@ -161,8 +161,8 @@ const OrderForm = ({ isOpen, onClose, onOrderCreated, orderType }: OrderFormProp
             <div className="space-y-2">
               <Label htmlFor="supplier">{t("supplier")}</Label>
               <Select
-                value={selectedSupplierId || ""}
-                onValueChange={(value) => setSelectedSupplierId(value || null)}
+                value={selectedSupplierId || "none"}
+                onValueChange={(value) => setSelectedSupplierId(value === "none" ? null : value)}
               >
                 <SelectTrigger id="supplier">
                   <SelectValue placeholder={t("select_supplier")} />

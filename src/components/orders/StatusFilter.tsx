@@ -22,14 +22,14 @@ const StatusFilter = ({ value, onChange }: StatusFilterProps) => {
 
   return (
     <Select
-      value={value || ""}
-      onValueChange={(val) => onChange(val === "" ? null : val)}
+      value={value || "all"}
+      onValueChange={(val) => onChange(val === "all" ? null : val)}
     >
       <SelectTrigger className="w-[160px]">
         <SelectValue placeholder={t("status")} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="">{t("all_statuses")}</SelectItem>
+        <SelectItem value="all">{t("all_statuses")}</SelectItem>
         {statuses.map((status) => (
           <SelectItem key={status} value={status}>
             {t(status)}

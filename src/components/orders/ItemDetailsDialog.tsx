@@ -129,14 +129,14 @@ const ItemDetailsDialog = ({ isOpen, onClose, item, orderId, onItemUpdated }: It
           <div>
             <Label>{t("supplier")}</Label>
             <Select
-              value={updatedItem.supplier_id || ""}
-              onValueChange={(value) => setUpdatedItem({ ...updatedItem, supplier_id: value || null })}
+              value={updatedItem.supplier_id || "none"}
+              onValueChange={(value) => setUpdatedItem({ ...updatedItem, supplier_id: value === "none" ? null : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder={t("select_supplier")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t("no_supplier")}</SelectItem>
+                <SelectItem value="none">{t("no_supplier")}</SelectItem>
                 {suppliers.map((supplier) => (
                   <SelectItem key={supplier.id} value={supplier.id}>
                     {supplier.name}
