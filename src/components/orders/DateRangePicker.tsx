@@ -1,46 +1,37 @@
-
+import * as React from "react";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
 
-interface DateRangePickerProps {
+type Props = {
   value: { from: Date | undefined; to: Date | undefined };
-  onChange: (value: { from: Date | undefined; to: Date | undefined }) => void;
-}
+  onChange: (range: { from: Date | undefined; to: Date | undefined }) => void;
+};
 
-const DateRangePicker = ({ value, onChange }: DateRangePickerProps) => {
+const DateRangePicker = ({ value, onChange }: Props) => {
   const { t } = useTranslation();
+  const [open, setOpen] = React.useState(false);
 
-  const handleClear = () => {
-    onChange({ from: undefined, to: undefined });
+  const handleSelect = (range: { from: Date; to?: Date }) => {
+    onChange(range);
+    setOpen(false);
   };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            "w-[240px] justify-start text-left font-normal",
-            !value.from && "text-muted-foreground"
-          )}
-        >
+        <Button variant="outline" className="w-[250px] justify-start text-left font-normal">
           <CalendarIcon className="mr-2 h-4 w-4" />
           {value.from ? (
             value.to ? (
               <>
-                {format(value.from, "PPP")} - {format(value.to, "PPP")}
+                {format(value.from, "dd.MM.yyyy")} - {format(value.to, "dd.MM.yyyy")}
               </>
             ) : (
-              format(value.from, "PPP")
+              format(value.from, "dd.MM.yyyy")
             )
           ) : (
             <span>{t("select_date_range")}</span>
@@ -49,18 +40,11 @@ const DateRangePicker = ({ value, onChange }: DateRangePickerProps) => {
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
-          initialFocus
           mode="range"
-          defaultMonth={value.from}
-          selected={{ from: value.from, to: value.to }}
-          onSelect={onChange}
-          numberOfMonths={2}
+          selected={value}
+          onSelect={handleSelect}
+          initialFocus
         />
-        <div className="p-3 border-t border-border">
-          <Button variant="outline" size="sm" onClick={handleClear}>
-            {t("clear")}
-          </Button>
-        </div>
       </PopoverContent>
     </Popover>
   );
