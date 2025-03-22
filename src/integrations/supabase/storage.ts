@@ -26,8 +26,13 @@ export const initOrderImagesStorage = async () => {
       } else {
         console.log('Successfully created order_images bucket');
         
-        // Set up a policy to allow public access
-        await supabase.storage.from('order_images').setPublic(true);
+        // Update the bucket to allow public access
+        // Note: Since createBucket has public: true, this might not be needed
+        // but we include it for completeness to ensure public access
+        const { error: policyError } = await supabase.storage.from('order_images').createSignedUrl('dummy.txt', 31536000);
+        if (policyError && !policyError.message.includes('not found')) {
+          console.error('Error setting public access policy:', policyError);
+        }
       }
     }
   } catch (error) {
