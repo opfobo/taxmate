@@ -94,7 +94,7 @@ const OrderDetailsDialog = ({
         const filePath = `orders/${order.id}/${uuidv4()}.${fileExt}`;
 
         const { error } = await supabase.storage
-          .from("order_images")
+          .from("order-images")
           .upload(filePath, file);
 
         if (error) {
@@ -103,7 +103,7 @@ const OrderDetailsDialog = ({
 
         const {
           data: { publicUrl },
-        } = supabase.storage.from("order_images").getPublicUrl(filePath);
+        } = supabase.storage.from("order-images").getPublicUrl(filePath);
 
         uploadedUrls.push(publicUrl);
       }
@@ -212,7 +212,7 @@ const OrderDetailsDialog = ({
       
       // Delete from storage
       const { error: storageError } = await supabase.storage
-        .from("order_images")
+        .from("order-images")
         .remove([filePath]);
       
       if (storageError) {
