@@ -416,6 +416,7 @@ export type Database = {
           payment_method: string | null
           shopper_id: string | null
           status: string | null
+          type: Database["public"]["Enums"]["transaction_type"] | null
           updated_at: string | null
         }
         Insert: {
@@ -427,6 +428,7 @@ export type Database = {
           payment_method?: string | null
           shopper_id?: string | null
           status?: string | null
+          type?: Database["public"]["Enums"]["transaction_type"] | null
           updated_at?: string | null
         }
         Update: {
@@ -438,6 +440,7 @@ export type Database = {
           payment_method?: string | null
           shopper_id?: string | null
           status?: string | null
+          type?: Database["public"]["Enums"]["transaction_type"] | null
           updated_at?: string | null
         }
         Relationships: [
@@ -554,6 +557,8 @@ export type Database = {
         | "shipped"
         | "delivered"
       order_type: "fulfillment" | "supplier"
+      transaction_status: "success" | "pending" | "failed"
+      transaction_type: "purchase" | "refund" | "payout"
     }
     CompositeTypes: {
       [_ in never]: never
