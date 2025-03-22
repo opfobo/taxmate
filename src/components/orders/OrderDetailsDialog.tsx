@@ -37,18 +37,8 @@ const OrderDetailsDialog = ({
 
   useEffect(() => {
     if (order) {
-      // Handle image_urls as an array or convert single image_url to array
-      if (order.image_urls && Array.isArray(order.image_urls)) {
-        setImageUrls(order.image_urls);
-      } else if (order.image_url) {
-        // For backward compatibility with single image_url
-        const urls = typeof order.image_url === 'string' && order.image_url.includes(',')
-          ? order.image_url.split(',')
-          : order.image_url ? [order.image_url] : [];
-        setImageUrls(urls);
-      } else {
-        setImageUrls([]);
-      }
+      // Handle image_urls as an array
+      setImageUrls(Array.isArray(order.image_urls) ? order.image_urls : []);
 
       if (order?.id) {
         fetchOrderItems();
@@ -112,10 +102,10 @@ const OrderDetailsDialog = ({
       // Save new image URLs to the order
       const newImageList = [...imageUrls, ...uploadedUrls];
       
-      // Fixed: Use image_url instead of image_urls to match the database schema
+      // Update the image_urls array in the database
       const { error: updateError } = await supabase
         .from("orders")
-        .update({ image_url: newImageList.join(',') })
+        .update({ image_urls: newImageList })
         .eq("id", order.id);
 
       if (updateError) {
@@ -193,6 +183,55 @@ const OrderDetailsDialog = ({
     }
   };
 
+  const handleDeleteImage = async (imageUrl: string) => {
+    if (!order?.id) return;
+    
+    try {
+      // First, get the file path from the URL
+      const urlParts = imageUrl.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      const filePath = `orders/${order.id}/${fileName}`;
+      
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from("order_images")
+        .remove([filePath]);
+      
+      if (storageError) {
+        console.warn("Error deleting image from storage:", storageError);
+        // Continue anyway to update the database
+      }
+      
+      // Remove from the image URLs array
+      const updatedImageUrls = imageUrls.filter(url => url !== imageUrl);
+      
+      // Update the database
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update({ image_urls: updatedImageUrls })
+        .eq("id", order.id);
+        
+      if (updateError) throw updateError;
+      
+      // Update local state
+      setImageUrls(updatedImageUrls);
+      
+      toast({
+        title: t("delete_success"),
+        description: t("image_deleted_successfully"),
+      });
+      
+      onOrderUpdated();
+    } catch (error: any) {
+      console.error("Error deleting image:", error.message);
+      toast({
+        title: t("delete_failed"),
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   if (!order) return null;
 
   return (
@@ -265,7 +304,11 @@ const OrderDetailsDialog = ({
                   className="flex items-center gap-2"
                   size="sm"
                 >
-                  <ImagePlus className="w-4 h-4" />
+                  {uploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <ImagePlus className="w-4 h-4 mr-2" />
+                  )}
                   {uploading ? t("uploading") : t("add_picture")}
                 </Button>
               </label>
@@ -274,12 +317,21 @@ const OrderDetailsDialog = ({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {imageUrls.length > 0 ? (
                 imageUrls.map((url, index) => (
-                  <img
-                    key={index}
-                    src={url}
-                    alt={`${t("order")}-${t("image")}-${index}`}
-                    className="rounded-md w-full h-auto object-cover border"
-                  />
+                  <div key={index} className="relative group">
+                    <img
+                      src={url}
+                      alt={`${t("order")}-${t("image")}-${index}`}
+                      className="rounded-md w-full h-auto object-cover border"
+                    />
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleDeleteImage(url)}
+                    >
+                      {t("delete")}
+                    </Button>
+                  </div>
                 ))
               ) : (
                 <p className="text-muted-foreground">{t("no_images")}</p>
@@ -326,19 +378,6 @@ const OrderDetailsDialog = ({
       )}
     </Dialog>
   );
-};
-
-// Add the missing getStatusColor function
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "pending": return "bg-yellow-100 text-yellow-800";
-    case "accepted": return "bg-blue-100 text-blue-800";
-    case "declined": return "bg-red-100 text-red-800";
-    case "processing": return "bg-purple-100 text-purple-800";
-    case "shipped": return "bg-indigo-100 text-indigo-800";
-    case "delivered": return "bg-green-100 text-green-800";
-    default: return "bg-gray-100 text-gray-800";
-  }
 };
 
 export default OrderDetailsDialog;

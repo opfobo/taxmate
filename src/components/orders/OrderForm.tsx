@@ -82,7 +82,7 @@ const OrderForm = ({ isOpen, onClose, onOrderCreated, orderType }: OrderFormProp
         created_at: now,
         updated_at: now,
         order_date: now.split('T')[0], // Just the date part
-        image_urls: [], // Initialize with empty array for new orders
+        image_urls: [], // Initialize with empty array
       };
 
       const { error } = await supabase.from("orders").insert(orderData);

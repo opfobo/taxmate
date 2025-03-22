@@ -23,7 +23,7 @@ type Order = {
   amount: number;
   currency: string;
   supplier?: { name: string; id: string; };
-  image_url?: string;
+  image_urls?: string[];
 };
 
 interface OrdersTableProps {
@@ -104,9 +104,9 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                 </TableCell>
               )}
               <TableCell>
-                {order.image_url ? (
+                {order.image_urls && order.image_urls.length > 0 ? (
                   <Image 
-                    src={order.image_url} 
+                    src={order.image_urls[0]} 
                     alt={`${t("order")} ${order.order_number}`} 
                     className="h-8 w-8 rounded object-cover" 
                   />
