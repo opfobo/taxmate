@@ -332,6 +332,39 @@ export type Database = {
           },
         ]
       }
+      resources: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          language: string
+          link: string
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          language: string
+          link: string
+          title: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          language?: string
+          link?: string
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       suppliers: {
         Row: {
           contact: string | null
