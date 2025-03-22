@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { User, LogOut, FileText, ClipboardList } from "lucide-react";
+import { User, LogOut, FileText, ClipboardList, ReceiptText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
@@ -34,7 +34,7 @@ const Navbar = () => {
           <Link to="/orders" className={`hover:underline ${location.pathname === "/orders" ? "font-semibold" : ""}`}>
             {t("orders")}
           </Link>
-          <Link to="/tax-reports" className={`hover:underline ${location.pathname === "/tax-reports" ? "font-semibold" : ""}`}>
+          <Link to="/dashboard/tax-reports" className={`hover:underline ${location.pathname === "/dashboard/tax-reports" ? "font-semibold" : ""}`}>
             {t("tax_reports")}
           </Link>
           <Link to="/transactions" className={`hover:underline ${location.pathname === "/transactions" ? "font-semibold" : ""}`}>

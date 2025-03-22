@@ -16,6 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
 import OrdersPage from "./pages/OrdersPage";
+import TaxReportsPage from "./pages/TaxReportsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -60,6 +61,11 @@ const App = () => (
               <Route path="/orders" element={
                 <ProtectedRoute>
                   <OrdersPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/tax-reports" element={
+                <ProtectedRoute>
+                  <TaxReportsPage />
                 </ProtectedRoute>
               } />
               
