@@ -19,6 +19,7 @@ import OrdersPage from "./pages/OrdersPage";
 import TaxReportsPage from "./pages/TaxReportsPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import ResourcesPage from "./pages/ResourcesPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -78,6 +79,11 @@ const App = () => (
               <Route path="/dashboard/resources" element={
                 <ProtectedRoute>
                   <ResourcesPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/analytics" element={
+                <ProtectedRoute>
+                  <AnalyticsPage />
                 </ProtectedRoute>
               } />
               
