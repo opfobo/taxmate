@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -14,13 +13,20 @@ interface TaxReport {
   file_url: string;
   file_type: "pdf" | "csv";
   shopper_id: string;
+  
+  created_at?: string;
+  updated_at?: string;
+  period?: string;
+  taxable_income?: number;
+  expected_tax?: number;
+  vat_paid?: number;
+  vat_refunded?: number;
 }
 
 const TaxReportsPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   
-  // Fetch tax reports for the current user
   const { data: reports, isLoading, error } = useQuery({
     queryKey: ["taxReports", user?.id],
     queryFn: async () => {
@@ -32,7 +38,24 @@ const TaxReportsPage = () => {
         .eq("shopper_id", user.id);
       
       if (error) throw error;
-      return data as TaxReport[];
+      
+      const transformedData = data.map(report => ({
+        id: report.id,
+        title: report.title || `${report.period} Tax Report`,
+        description: report.description || `Taxable income: ${report.taxable_income}, Expected tax: ${report.expected_tax}`,
+        file_url: report.file_url || '#',
+        file_type: report.file_type || 'pdf',
+        shopper_id: report.shopper_id,
+        created_at: report.created_at,
+        updated_at: report.updated_at,
+        period: report.period,
+        taxable_income: report.taxable_income,
+        expected_tax: report.expected_tax,
+        vat_paid: report.vat_paid,
+        vat_refunded: report.vat_refunded
+      })) as TaxReport[];
+      
+      return transformedData;
     },
     enabled: !!user,
   });
