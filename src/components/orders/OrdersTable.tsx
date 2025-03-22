@@ -24,6 +24,8 @@ type Order = {
   currency: string;
   supplier?: { name: string; id: string; };
   image_urls?: string[];
+  image_url?: string;
+  notes?: string;
 };
 
 interface OrdersTableProps {
@@ -40,6 +42,33 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
   orderType
 }) => {
   const { t } = useTranslation();
+
+  // Helper to get the first image URL from various possible sources
+  const getFirstImageUrl = (order: Order): string | undefined => {
+    // If image_urls array exists, use its first item
+    if (Array.isArray(order.image_urls) && order.image_urls.length > 0) {
+      return order.image_urls[0];
+    }
+    
+    // If image_url exists, use it
+    if (order.image_url) {
+      return order.image_url;
+    }
+    
+    // If notes contains encoded image URLs in JSON format
+    if (order.notes && order.notes.startsWith('{') && order.notes.includes('imageUrls')) {
+      try {
+        const parsedNotes = JSON.parse(order.notes);
+        if (Array.isArray(parsedNotes.imageUrls) && parsedNotes.imageUrls.length > 0) {
+          return parsedNotes.imageUrls[0];
+        }
+      } catch (error) {
+        console.error("Error parsing notes JSON:", error);
+      }
+    }
+    
+    return undefined;
+  };
 
   if (isLoading) {
     return (
@@ -104,9 +133,9 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                 </TableCell>
               )}
               <TableCell>
-                {order.image_urls && order.image_urls.length > 0 ? (
+                {getFirstImageUrl(order) ? (
                   <Image 
-                    src={order.image_urls[0]} 
+                    src={getFirstImageUrl(order)!} 
                     alt={`${t("order")} ${order.order_number}`} 
                     className="h-8 w-8 rounded object-cover" 
                   />

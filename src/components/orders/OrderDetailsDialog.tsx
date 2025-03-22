@@ -37,8 +37,17 @@ const OrderDetailsDialog = ({
 
   useEffect(() => {
     if (order) {
-      // Handle image_urls as an array
-      setImageUrls(Array.isArray(order.image_urls) ? order.image_urls : []);
+      // Handle image URLs from different potential sources
+      if (Array.isArray(order.image_urls)) {
+        // If image_urls exists as array, use it
+        setImageUrls(order.image_urls);
+      } else if (order.image_url) {
+        // If there's a single image_url string, convert to array
+        setImageUrls([order.image_url]);
+      } else {
+        // Default to empty array
+        setImageUrls([]);
+      }
 
       if (order?.id) {
         fetchOrderItems();
@@ -102,10 +111,19 @@ const OrderDetailsDialog = ({
       // Save new image URLs to the order
       const newImageList = [...imageUrls, ...uploadedUrls];
       
-      // Update the image_urls array in the database
+      // Update the image_url field in the database
+      // We're using image_url (singular) as Supabase types expect it
+      // but storing the entire array as JSON string
       const { error: updateError } = await supabase
         .from("orders")
-        .update({ image_urls: newImageList })
+        .update({ 
+          image_url: newImageList.length > 0 ? newImageList[0] : null,
+          // Store the full array as a metadata field
+          notes: JSON.stringify({ 
+            originalNotes: order.notes,
+            imageUrls: newImageList 
+          })
+        })
         .eq("id", order.id);
 
       if (updateError) {
@@ -208,7 +226,14 @@ const OrderDetailsDialog = ({
       // Update the database
       const { error: updateError } = await supabase
         .from("orders")
-        .update({ image_urls: updatedImageUrls })
+        .update({ 
+          image_url: updatedImageUrls.length > 0 ? updatedImageUrls[0] : null,
+          // Store the full array as a metadata field
+          notes: JSON.stringify({ 
+            originalNotes: order.notes,
+            imageUrls: updatedImageUrls 
+          })
+        })
         .eq("id", order.id);
         
       if (updateError) throw updateError;
@@ -268,7 +293,7 @@ const OrderDetailsDialog = ({
             </div>
             
             <div className="space-y-4">
-              {order.notes && (
+              {order.notes && !order.notes.startsWith('{') && (
                 <div>
                   <strong>{t("notes")}:</strong> {order.notes}
                 </div>
