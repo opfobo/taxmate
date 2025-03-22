@@ -15,11 +15,15 @@ export const initOrderImagesStorage = async () => {
     const bucketExists = buckets?.some(bucket => bucket.name === 'order-images');
     
     if (!bucketExists) {
-      // Create the bucket if it doesn't exist
-      const { error } = await supabase.storage.createBucket('order-images', {
-        public: true,
-        fileSizeLimit: 10485760 // 10MB
-      });
+  const { error } = await supabase.storage.createBucket("order-images", {
+    public: true,
+    fileSizeLimit: 10485760,
+  });
+
+  if (error && error.message !== "The resource already exists") {
+    console.error("Error creating bucket:", error.message);
+  }
+}
       
       if (error) {
         console.error('Error creating order-images bucket:', error);
