@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -6,6 +7,24 @@ import Navbar from "@/components/Navbar";
 import TaxReportCard from "@/components/tax-reports/TaxReportCard";
 import { FileText, AlertCircle } from "lucide-react";
 
+// Interface for the tax reports as received from the database
+interface TaxReportDB {
+  id: string;
+  period: string;
+  taxable_income: number;
+  expected_tax: number;
+  shopper_id: string;
+  created_at: string;
+  updated_at: string;
+  vat_paid: number | null;
+  vat_refunded: number | null;
+  title?: string;
+  description?: string;
+  file_url?: string;
+  file_type?: "pdf" | "csv";
+}
+
+// Interface for the tax reports as used in the UI
 interface TaxReport {
   id: string;
   title: string;
@@ -39,12 +58,13 @@ const TaxReportsPage = () => {
       
       if (error) throw error;
       
-      const transformedData = data.map(report => ({
+      // Transform the data to match our TaxReport interface
+      const transformedData = data.map((report: TaxReportDB) => ({
         id: report.id,
         title: report.title || `${report.period} Tax Report`,
         description: report.description || `Taxable income: ${report.taxable_income}, Expected tax: ${report.expected_tax}`,
         file_url: report.file_url || '#',
-        file_type: report.file_type || 'pdf',
+        file_type: report.file_type || 'pdf' as "pdf" | "csv",
         shopper_id: report.shopper_id,
         created_at: report.created_at,
         updated_at: report.updated_at,
