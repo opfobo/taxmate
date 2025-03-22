@@ -151,7 +151,7 @@ const ItemDetailsDialog = ({ isOpen, onClose, item, orderId, onItemUpdated }: It
             <ImageUpload
               id={item.id}
               table="order_items"
-              storagePath="order_images"
+              storagePath="order-images"
               field="image_url"
             />
           </div>
