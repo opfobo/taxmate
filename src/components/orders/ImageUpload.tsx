@@ -19,7 +19,7 @@ const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  const bucket = "order_images";
+  const bucket = "order-images";
 
   const fetchImages = async () => {
     const { data, error } = await supabase
