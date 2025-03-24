@@ -18,7 +18,7 @@ const Dashboard = () => {
   const { t } = useTranslation();
 
   // Fetch user data with error handling
-  const { data: userData, isLoading, isError, error } = useQuery({
+  const { data: userData, isLoading: userLoading, isError, error } = useQuery({
     queryKey: ["user", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -118,7 +118,8 @@ const Dashboard = () => {
     document.title = `${t("dashboard")} | TaxMaster`;
   }, [t]);
 
-  const isLoading = ordersLoading || transactionsLoading || taxReportsLoading;
+  // Combined loading state for all data fetching
+  const isDataLoading = ordersLoading || transactionsLoading || taxReportsLoading;
 
   return (
     <div className="min-h-screen bg-background">
@@ -134,7 +135,7 @@ const Dashboard = () => {
         {/* Dashboard Statistics */}
         <DashboardStats 
           stats={dashboardStats} 
-          isLoading={isLoading} 
+          isLoading={isDataLoading} 
         />
 
         <div className="grid grid-cols-1 gap-6 mt-8">
