@@ -17,13 +17,12 @@ import { format } from "date-fns";
 // Interface for the tax reports as received from the database
 interface TaxReportDB {
   id: string;
-  period_start: string;
-  period_end: string;
   shopper_id: string;
-  total_amount: number;
-  total_tax: number;
-  currency: string;
-  report_file?: string;
+  period: string;
+  taxable_income: number;
+  expected_tax: number;
+  vat_paid: number | null;
+  vat_refunded: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -68,21 +67,26 @@ const TaxReportsPage = () => {
       if (error) throw error;
       
       // Transform the data to match our TaxReport interface
-      const transformedData = data.map((report: TaxReportDB) => ({
-        id: report.id,
-        title: `${format(new Date(report.period_start), 'MMM d, yyyy')} - ${format(new Date(report.period_end), 'MMM d, yyyy')}`,
-        description: `${t("total_amount")}: ${report.total_amount} ${report.currency}, ${t("total_tax")}: ${report.total_tax} ${report.currency}`,
-        file_url: report.report_file || undefined,
-        file_type: report.report_file ? (report.report_file.endsWith('.pdf') ? 'pdf' : 'csv') : undefined,
-        shopper_id: report.shopper_id,
-        period_start: report.period_start,
-        period_end: report.period_end,
-        total_amount: report.total_amount,
-        total_tax: report.total_tax,
-        currency: report.currency,
-        created_at: report.created_at,
-        updated_at: report.updated_at
-      })) as TaxReport[];
+      const transformedData = data.map((report: TaxReportDB) => {
+        // Extract date range from period (assuming format like "2023-01-01:2023-03-31")
+        const [startDate, endDate] = report.period.split(":");
+        
+        return {
+          id: report.id,
+          title: `${format(new Date(startDate), 'MMM d, yyyy')} - ${format(new Date(endDate), 'MMM d, yyyy')}`,
+          description: `${t("total_amount")}: ${report.taxable_income} EUR, ${t("total_tax")}: ${report.expected_tax} EUR`,
+          file_url: undefined, // No file URL in the schema
+          file_type: undefined, // No file type in the schema
+          shopper_id: report.shopper_id,
+          period_start: startDate,
+          period_end: endDate,
+          total_amount: report.taxable_income,
+          total_tax: report.expected_tax,
+          currency: "EUR", // Default currency
+          created_at: report.created_at,
+          updated_at: report.updated_at
+        };
+      }) as TaxReport[];
       
       return transformedData;
     },
@@ -98,6 +102,7 @@ const TaxReportsPage = () => {
       // Format dates for the database
       const periodStart = format(dateRange.from, 'yyyy-MM-dd');
       const periodEnd = format(dateRange.to, 'yyyy-MM-dd');
+      const periodString = `${periodStart}:${periodEnd}`;
 
       // 1. Query orders/transactions in the selected date range
       const { data: ordersData, error: ordersError } = await supabase
@@ -113,21 +118,18 @@ const TaxReportsPage = () => {
       const totalAmount = ordersData.reduce((sum, order) => sum + (order.amount || 0), 0);
       // For this example, we'll estimate tax as 19% of total amount
       const totalTax = totalAmount * 0.19;
-      const currency = ordersData.length > 0 ? ordersData[0].currency : "EUR";
       
       // 3. Insert new tax report
       const { data, error } = await supabase
         .from("tax_reports")
-        .insert([{
+        .insert({
           shopper_id: user.id,
-          period_start: periodStart,
-          period_end: periodEnd,
-          total_amount: totalAmount,
-          total_tax: totalTax,
-          currency: currency,
-          // Placeholder URL for the report file
-          report_file: totalAmount > 0 ? `https://example.com/reports/tax-report-${user.id}-${periodStart}-${periodEnd}.pdf` : null
-        }])
+          period: periodString,
+          taxable_income: totalAmount,
+          expected_tax: totalTax,
+          vat_paid: null,
+          vat_refunded: null
+        })
         .select()
         .single();
         
