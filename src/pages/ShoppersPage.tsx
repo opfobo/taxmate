@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,12 +10,17 @@ import ShopperDetailsDrawer from "@/components/shoppers/ShopperDetailsDrawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, Search, ArrowUpDown } from "lucide-react";
+import { AlertCircle, Search, ArrowUpDown, Plus } from "lucide-react";
 import { Shopper } from "@/types/shopper";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import ShopperEditForm from "@/components/shoppers/ShopperEditForm";
+import { useToast } from "@/hooks/use-toast";
 
 const ShoppersPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // State for search, filters and sorting
   const [searchQuery, setSearchQuery] = useState("");
@@ -23,6 +28,14 @@ const ShoppersPage = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedShopper, setSelectedShopper] = useState<Shopper | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  
+  // Empty shopper template for new shopper creation
+  const emptyShopperTemplate: Omit<Shopper, 'id' | 'created_at' | 'updated_at'> = {
+    first_name: '',
+    last_name: '',
+    user_id: user?.id,
+  };
   
   // Fetch shoppers with filters and sorting
   const { data: shoppers, isLoading, error } = useQuery({
@@ -84,16 +97,62 @@ const ShoppersPage = () => {
     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
   };
 
+  // Handle creating a new shopper
+  const handleCreateShopper = async (values: any) => {
+    try {
+      const { data, error } = await supabase
+        .from("shoppers")
+        .insert([{
+          ...values,
+          user_id: user?.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }])
+        .select();
+      
+      if (error) throw error;
+      
+      toast({
+        title: t("shopper_created"),
+        description: t("shopper_created_successfully"),
+      });
+      
+      // Invalidate shoppers query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["shoppers"] });
+      setIsCreateModalOpen(false);
+      
+      // Open the details drawer for the newly created shopper
+      if (data && data.length > 0) {
+        setSelectedShopper(data[0]);
+        setIsDetailsOpen(true);
+      }
+    } catch (error) {
+      console.error("Error creating shopper:", error);
+      toast({
+        title: t("error_creating_shopper"),
+        description: error instanceof Error ? error.message : t("unknown_error"),
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
       <main className="container py-10">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">{t("shoppers")}</h1>
-          <p className="text-muted-foreground mt-2">
-            {t("shoppers_description")}
-          </p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">{t("shoppers")}</h1>
+            <p className="text-muted-foreground mt-2">
+              {t("shoppers_description")}
+            </p>
+          </div>
+          
+          <Button onClick={() => setIsCreateModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t("create_shopper")}
+          </Button>
         </div>
 
         {/* Filters and search */}
@@ -156,9 +215,32 @@ const ShoppersPage = () => {
           onClose={() => setIsDetailsOpen(false)}
           onShopperUpdated={() => {
             // Refresh shoppers data after update
-            // This will be handled by the invalidation in the ShopperEditForm
+            queryClient.invalidateQueries({ queryKey: ["shoppers"] });
           }}
         />
+
+        {/* Create Shopper Modal */}
+        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{t("create_new_shopper")}</DialogTitle>
+              <DialogDescription>
+                {t("fill_shopper_details_below")}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <ShopperEditForm 
+              shopper={{ 
+                id: 'new', 
+                ...emptyShopperTemplate, 
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              } as Shopper} 
+              onComplete={(values) => handleCreateShopper(values)}
+              onCancel={() => setIsCreateModalOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
