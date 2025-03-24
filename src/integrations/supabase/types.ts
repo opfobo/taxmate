@@ -365,6 +365,174 @@ export type Database = {
         }
         Relationships: []
       }
+      settings: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          city: string | null
+          company_name: string | null
+          country: string | null
+          created_at: string | null
+          eori_number: string | null
+          id: string
+          legal_form: string | null
+          postal_code: string | null
+          region: string | null
+          tax_id: string | null
+          updated_at: string | null
+          user_id: string | null
+          vat_number: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          company_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          eori_number?: string | null
+          id?: string
+          legal_form?: string | null
+          postal_code?: string | null
+          region?: string | null
+          tax_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          vat_number?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          company_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          eori_number?: string | null
+          id?: string
+          legal_form?: string | null
+          postal_code?: string | null
+          region?: string | null
+          tax_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          vat_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shoppers: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          phone: string | null
+          postal_code: string | null
+          region: string | null
+          salutation: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          phone?: string | null
+          postal_code?: string | null
+          region?: string | null
+          salutation?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone?: string | null
+          postal_code?: string | null
+          region?: string | null
+          salutation?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shoppers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          plan: string
+          started_at: string
+          status: string
+          trial_until: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          plan: string
+          started_at?: string
+          status: string
+          trial_until?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          plan?: string
+          started_at?: string
+          status?: string
+          trial_until?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           contact: string | null
@@ -590,8 +758,10 @@ export type Database = {
         | "shipped"
         | "delivered"
       order_type: "fulfillment" | "supplier"
+      paid_level: "free" | "starter" | "pro" | "enterprise"
       transaction_status: "success" | "pending" | "failed"
       transaction_type: "purchase" | "refund" | "payout"
+      user_role: "shopper" | "manager" | "admin" | "site_admin"
     }
     CompositeTypes: {
       [_ in never]: never

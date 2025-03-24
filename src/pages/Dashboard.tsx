@@ -7,6 +7,10 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
+import DashboardStats from "@/components/dashboard/DashboardStats";
+import RecentOrdersTable from "@/components/dashboard/RecentOrdersTable";
+import RecentTransactionsTable from "@/components/dashboard/RecentTransactionsTable";
+import RecentTaxReportsTable from "@/components/dashboard/RecentTaxReportsTable";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -47,83 +51,132 @@ const Dashboard = () => {
     staleTime: 60000, // 1 minute
   });
 
+  // Fetch orders, transactions, and tax reports data
+  const { data: orders, isLoading: ordersLoading } = useQuery({
+    queryKey: ["orders", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("shopper_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: transactions, isLoading: transactionsLoading } = useQuery({
+    queryKey: ["transactions", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("shopper_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: taxReports, isLoading: taxReportsLoading } = useQuery({
+    queryKey: ["taxReports", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("tax_reports")
+        .select("*")
+        .eq("shopper_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(5);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Calculate dashboard statistics
+  const dashboardStats = {
+    totalOrders: orders?.length || 0,
+    totalSpent: transactions
+      ?.filter(tx => tx.type === 'purchase' && tx.status === 'success')
+      .reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0,
+    totalRefundedVat: taxReports
+      ?.reduce((sum, report) => sum + (report.vat_refunded || 0), 0) || 0,
+    currency: userData?.currency || "EUR",
+  };
+
   useEffect(() => {
     document.title = `${t("dashboard")} | TaxMaster`;
   }, [t]);
 
+  const isLoading = ordersLoading || transactionsLoading || taxReportsLoading;
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="flex-1 container py-8">
+      <main className="container py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">{t("dashboard")}</h1>
           <p className="text-muted-foreground">
-            {t("welcome_dashboard")}
+            {t("shopper_dashboard_description")}
           </p>
         </div>
 
-        {isLoading ? (
-          <div className="flex justify-center py-10">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-          </div>
-        ) : isError ? (
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="text-center text-destructive">
-                <p>{t("profile_data_error")}</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  {t("refresh_page")}
-                </p>
-              </div>
+        {/* Dashboard Statistics */}
+        <DashboardStats 
+          stats={dashboardStats} 
+          isLoading={isLoading} 
+        />
+
+        <div className="grid grid-cols-1 gap-6 mt-8">
+          {/* Recent Orders */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl">{t("recent_orders")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RecentOrdersTable 
+                orders={orders || []} 
+                isLoading={ordersLoading} 
+              />
             </CardContent>
           </Card>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">{t("account_information")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{t("name")}:</span>
-                    <span>{userData?.name || t("not_provided")}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{t("email")}:</span>
-                    <span>{userData?.email || t("not_provided")}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{t("role")}:</span>
-                    <span className="capitalize">{userData?.role || t("not_assigned")}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">{t("tax_overview")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  {t("tax_info_will_appear")}
-                </p>
-              </CardContent>
-            </Card>
+          {/* Recent Transactions */}
+          <Card className="mt-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl">{t("recent_transactions")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RecentTransactionsTable 
+                transactions={transactions || []} 
+                isLoading={transactionsLoading} 
+              />
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">{t("recent_transactions")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  {t("transactions_will_appear")}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+          {/* Recent Tax Reports */}
+          <Card className="mt-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl">{t("tax_reports")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RecentTaxReportsTable 
+                taxReports={taxReports || []} 
+                isLoading={taxReportsLoading} 
+              />
+            </CardContent>
+          </Card>
+        </div>
       </main>
     </div>
   );
