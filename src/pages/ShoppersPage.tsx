@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -155,7 +154,6 @@ const ShoppersPage = () => {
           </Button>
         </div>
 
-        {/* Filters and search */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -188,7 +186,6 @@ const ShoppersPage = () => {
           </Button>
         </div>
 
-        {/* Error state */}
         {error && (
           <div className="bg-destructive/10 p-4 rounded-lg flex items-start gap-3 my-4">
             <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
@@ -201,25 +198,21 @@ const ShoppersPage = () => {
           </div>
         )}
 
-        {/* Shoppers table */}
         <ShoppersTable 
           shoppers={shoppers || []} 
           isLoading={isLoading} 
           onShopperSelect={handleShopperSelect} 
         />
         
-        {/* Shopper details drawer */}
         <ShopperDetailsDrawer
           shopper={selectedShopper}
           open={isDetailsOpen}
           onClose={() => setIsDetailsOpen(false)}
           onShopperUpdated={() => {
-            // Refresh shoppers data after update
             queryClient.invalidateQueries({ queryKey: ["shoppers"] });
           }}
         />
 
-        {/* Create Shopper Modal */}
         <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
           <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>

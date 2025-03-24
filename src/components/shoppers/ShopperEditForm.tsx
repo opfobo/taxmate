@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,7 +15,7 @@ import { Loader2 } from "lucide-react";
 
 interface ShopperEditFormProps {
   shopper: Shopper;
-  onComplete: () => void;
+  onComplete: (values: FormValues) => void;
   onCancel: () => void;
 }
 
@@ -78,7 +77,7 @@ const ShopperEditForm = ({ shopper, onComplete, onCancel }: ShopperEditFormProps
         title: t("shopper_updated"),
         description: t("shopper_details_saved_successfully"),
       });
-      onComplete();
+      onComplete(form.getValues());
     },
     onError: (error) => {
       console.error("Error updating shopper:", error);
@@ -92,13 +91,20 @@ const ShopperEditForm = ({ shopper, onComplete, onCancel }: ShopperEditFormProps
 
   // Handle form submission
   const onSubmit = (data: FormValues) => {
+    // If this is a new shopper (id is 'new'), pass the form data to onComplete
+    if (shopper.id === 'new') {
+      onComplete(data);
+      return;
+    }
+    
+    // Otherwise update an existing shopper
     updateShopperMutation.mutate(data);
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("edit_shopper")}</CardTitle>
+        <CardTitle>{shopper.id === 'new' ? t("create_shopper") : t("edit_shopper")}</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -306,7 +312,7 @@ const ShopperEditForm = ({ shopper, onComplete, onCancel }: ShopperEditFormProps
                 {updateShopperMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {t("save_changes")}
+                {shopper.id === 'new' ? t("create") : t("save_changes")}
               </Button>
             </CardFooter>
           </form>
