@@ -1,27 +1,31 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import TaxReportCard from "@/components/tax-reports/TaxReportCard";
-import { FileText, AlertCircle } from "lucide-react";
+import { FileText, AlertCircle, Calendar, Download, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import DateRangePicker from "@/components/orders/DateRangePicker";
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
 
 // Interface for the tax reports as received from the database
 interface TaxReportDB {
   id: string;
-  period: string;
-  taxable_income: number;
-  expected_tax: number;
+  period_start: string;
+  period_end: string;
   shopper_id: string;
+  total_amount: number;
+  total_tax: number;
+  currency: string;
+  report_file?: string;
   created_at: string;
   updated_at: string;
-  vat_paid: number | null;
-  vat_refunded: number | null;
-  title?: string;
-  description?: string;
-  file_url?: string;
-  file_type?: "pdf" | "csv";
 }
 
 // Interface for the tax reports as used in the UI
@@ -29,23 +33,28 @@ interface TaxReport {
   id: string;
   title: string;
   description: string;
-  file_url: string;
-  file_type: "pdf" | "csv";
+  file_url?: string;
+  file_type?: "pdf" | "csv";
   shopper_id: string;
-  
-  created_at?: string;
-  updated_at?: string;
-  period?: string;
-  taxable_income?: number;
-  expected_tax?: number;
-  vat_paid?: number;
-  vat_refunded?: number;
+  period_start: string;
+  period_end: string;
+  total_amount: number;
+  total_tax: number;
+  currency: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const TaxReportsPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
+  const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
+  
+  // Fetch tax reports
   const { data: reports, isLoading, error } = useQuery({
     queryKey: ["taxReports", user?.id],
     queryFn: async () => {
@@ -61,18 +70,18 @@ const TaxReportsPage = () => {
       // Transform the data to match our TaxReport interface
       const transformedData = data.map((report: TaxReportDB) => ({
         id: report.id,
-        title: report.title || `${report.period} Tax Report`,
-        description: report.description || `Taxable income: ${report.taxable_income}, Expected tax: ${report.expected_tax}`,
-        file_url: report.file_url || '#',
-        file_type: report.file_type || 'pdf' as "pdf" | "csv",
+        title: `${format(new Date(report.period_start), 'MMM d, yyyy')} - ${format(new Date(report.period_end), 'MMM d, yyyy')}`,
+        description: `${t("total_amount")}: ${report.total_amount} ${report.currency}, ${t("total_tax")}: ${report.total_tax} ${report.currency}`,
+        file_url: report.report_file || undefined,
+        file_type: report.report_file ? (report.report_file.endsWith('.pdf') ? 'pdf' : 'csv') : undefined,
         shopper_id: report.shopper_id,
+        period_start: report.period_start,
+        period_end: report.period_end,
+        total_amount: report.total_amount,
+        total_tax: report.total_tax,
+        currency: report.currency,
         created_at: report.created_at,
-        updated_at: report.updated_at,
-        period: report.period,
-        taxable_income: report.taxable_income,
-        expected_tax: report.expected_tax,
-        vat_paid: report.vat_paid,
-        vat_refunded: report.vat_refunded
+        updated_at: report.updated_at
       })) as TaxReport[];
       
       return transformedData;
@@ -80,16 +89,104 @@ const TaxReportsPage = () => {
     enabled: !!user,
   });
 
+  // Generate new tax report
+  const generateReportMutation = useMutation({
+    mutationFn: async (dateRange: DateRange) => {
+      if (!user) throw new Error("User not authenticated");
+      if (!dateRange.from || !dateRange.to) throw new Error("Please select a date range");
+      
+      // Format dates for the database
+      const periodStart = format(dateRange.from, 'yyyy-MM-dd');
+      const periodEnd = format(dateRange.to, 'yyyy-MM-dd');
+
+      // 1. Query orders/transactions in the selected date range
+      const { data: ordersData, error: ordersError } = await supabase
+        .from("orders")
+        .select("amount, currency")
+        .eq("shopper_id", user.id)
+        .gte("order_date", periodStart)
+        .lte("order_date", periodEnd);
+        
+      if (ordersError) throw ordersError;
+      
+      // 2. Calculate totals
+      const totalAmount = ordersData.reduce((sum, order) => sum + (order.amount || 0), 0);
+      // For this example, we'll estimate tax as 19% of total amount
+      const totalTax = totalAmount * 0.19;
+      const currency = ordersData.length > 0 ? ordersData[0].currency : "EUR";
+      
+      // 3. Insert new tax report
+      const { data, error } = await supabase
+        .from("tax_reports")
+        .insert([{
+          shopper_id: user.id,
+          period_start: periodStart,
+          period_end: periodEnd,
+          total_amount: totalAmount,
+          total_tax: totalTax,
+          currency: currency,
+          // Placeholder URL for the report file
+          report_file: totalAmount > 0 ? `https://example.com/reports/tax-report-${user.id}-${periodStart}-${periodEnd}.pdf` : null
+        }])
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: t("report_generated"),
+        description: t("tax_report_success_description"),
+      });
+      setIsGenerateDialogOpen(false);
+      setDateRange({ from: undefined, to: undefined });
+      // Invalidate the tax reports query to refetch the data
+      queryClient.invalidateQueries({ queryKey: ["taxReports", user?.id] });
+    },
+    onError: (error) => {
+      toast({
+        title: t("error_generating_report"),
+        description: error instanceof Error ? error.message : t("unknown_error"),
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleGenerateReport = () => {
+    if (!dateRange.from || !dateRange.to) {
+      toast({
+        title: t("invalid_date_range"),
+        description: t("please_select_both_start_and_end_dates"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    generateReportMutation.mutate(dateRange);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
       <main className="container py-10">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">{t("tax_reports")}</h1>
-          <p className="text-muted-foreground mt-2">
-            {t("tax_reports_description")}
-          </p>
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">{t("tax_reports")}</h1>
+            <p className="text-muted-foreground mt-2">
+              {t("tax_reports_description")}
+            </p>
+          </div>
+          
+          <Button 
+            onClick={() => setIsGenerateDialogOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            {t("generate_report")}
+          </Button>
         </div>
 
         {isLoading && (
@@ -126,6 +223,54 @@ const TaxReportsPage = () => {
           ))}
         </div>
       </main>
+
+      {/* Generate Tax Report Dialog */}
+      <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{t("generate_tax_report")}</DialogTitle>
+            <DialogDescription>
+              {t("select_date_range_for_report")}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("report_period")}</label>
+              <DateRangePicker
+                value={dateRange}
+                onChange={setDateRange}
+              />
+            </div>
+            
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsGenerateDialogOpen(false)}
+              >
+                {t("cancel")}
+              </Button>
+              <Button
+                onClick={handleGenerateReport}
+                disabled={!dateRange.from || !dateRange.to || generateReportMutation.isPending}
+                className="gap-2"
+              >
+                {generateReportMutation.isPending ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                    {t("generating")}
+                  </>
+                ) : (
+                  <>
+                    <Calendar className="h-4 w-4" />
+                    {t("generate_report")}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
