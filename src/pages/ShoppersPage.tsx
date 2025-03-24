@@ -109,14 +109,14 @@ const ShoppersPage = () => {
           </div>
           
           <Select
-            value={regionFilter || ""}
-            onValueChange={(value) => setRegionFilter(value || null)}
+            value={regionFilter || "all"}
+            onValueChange={(value) => setRegionFilter(value === "all" ? null : value)}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder={t("region")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">{t("all_regions")}</SelectItem>
+              <SelectItem value="all">{t("all_regions")}</SelectItem>
               {regions?.map((region) => (
                 <SelectItem key={region} value={region}>{region}</SelectItem>
               ))}

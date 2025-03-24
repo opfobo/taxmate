@@ -121,7 +121,7 @@ const ShopperEditForm = ({ shopper, onComplete, onCancel }: ShopperEditFormProps
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">{t("none")}</SelectItem>
+                        <SelectItem value="none">{t("none")}</SelectItem>
                         <SelectItem value="Mr">{t("mr")}</SelectItem>
                         <SelectItem value="Mrs">{t("mrs")}</SelectItem>
                         <SelectItem value="Ms">{t("ms")}</SelectItem>
