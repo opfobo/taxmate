@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
-import { AlertCircle, Mail, Phone, MapPin, Calendar, Edit, ArrowLeft } from "lucide-react";
+import { AlertCircle, Mail, Phone, MapPin, Calendar, Edit, ArrowLeft, Loader2 } from "lucide-react";
 import OrdersTable from "@/components/orders/OrdersTable";
 import TransactionsTable from "@/components/transactions/TransactionsTable";
 import ShopperEditForm from "./ShopperEditForm";
