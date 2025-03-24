@@ -10,7 +10,7 @@ import ShopperDetailsDrawer from "@/components/shoppers/ShopperDetailsDrawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, Search, ArrowUpDown, Plus } from "lucide-react";
+import { AlertCircle, Search, ArrowUpDown, Plus, Loader2 } from "lucide-react";
 import { Shopper } from "@/types/shopper";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import ShopperEditForm from "@/components/shoppers/ShopperEditForm";
@@ -236,7 +236,7 @@ const ShoppersPage = () => {
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
               } as Shopper} 
-              onComplete={(values) => handleCreateShopper(values)}
+              onComplete={handleCreateShopper}
               onCancel={() => setIsCreateModalOpen(false)}
             />
           </DialogContent>
