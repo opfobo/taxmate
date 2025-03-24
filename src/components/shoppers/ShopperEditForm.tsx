@@ -13,6 +13,24 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 
+// Define the form schema
+const formSchema = z.object({
+  salutation: z.string().optional(),
+  first_name: z.string().min(1, "First name is required"),
+  last_name: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  phone: z.string().optional(),
+  address_line1: z.string().optional(),
+  address_line2: z.string().optional(),
+  city: z.string().optional(),
+  region: z.string().optional(),
+  postal_code: z.string().optional(),
+  country: z.string().optional(),
+});
+
+// Export the FormValues type so it can be used in the interface
+export type FormValues = z.infer<typeof formSchema>;
+
 interface ShopperEditFormProps {
   shopper: Shopper;
   onComplete: (values: FormValues) => void;
@@ -22,23 +40,6 @@ interface ShopperEditFormProps {
 const ShopperEditForm = ({ shopper, onComplete, onCancel }: ShopperEditFormProps) => {
   const { t } = useTranslation();
   const { toast } = useToast();
-
-  // Define form validation schema
-  const formSchema = z.object({
-    salutation: z.string().optional(),
-    first_name: z.string().min(1, t("first_name_required")),
-    last_name: z.string().min(1, t("last_name_required")),
-    email: z.string().email(t("invalid_email")).optional().or(z.literal("")),
-    phone: z.string().optional(),
-    address_line1: z.string().optional(),
-    address_line2: z.string().optional(),
-    city: z.string().optional(),
-    region: z.string().optional(),
-    postal_code: z.string().optional(),
-    country: z.string().optional(),
-  });
-
-  type FormValues = z.infer<typeof formSchema>;
 
   // Initialize form with shopper data
   const form = useForm<FormValues>({
