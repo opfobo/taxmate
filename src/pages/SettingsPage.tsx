@@ -114,32 +114,7 @@ const SettingsPage = () => {
     enabled: !!user,
   });
 
-  // Fetch user settings when component mounts
-  useEffect(() => {
-    if (settings) {
-      // Set form values from fetched settings
-      form.reset({
-        tax_id: settings.tax_id || "",
-        vat_number: settings.vat_number || "",
-        eori_number: settings.eori_number || "",
-        company_name: settings.company_name || "",
-        legal_form: settings.legal_form || "",
-        address_line1: settings.address_line1 || "",
-        address_line2: settings.address_line2 || "",
-        postal_code: settings.postal_code || "",
-        city: settings.city || "",
-        region: settings.region || "",
-        country: settings.country || "",
-      });
-      
-      // Set email notification preferences
-      if (settings.email_notifications !== undefined) {
-        setEmailNotifications(settings.email_notifications);
-      }
-    }
-  }, [settings, form]);
-
-  // Fetch user profile data
+  // Fetch user profile data for email notifications
   const { data: userData } = useQuery({
     queryKey: ["user", user?.id],
     queryFn: async () => {
@@ -160,6 +135,33 @@ const SettingsPage = () => {
     },
     enabled: !!user?.id,
   });
+
+  // Fetch user settings when component mounts
+  useEffect(() => {
+    if (settings) {
+      // Set form values from fetched settings
+      form.reset({
+        tax_id: settings.tax_id || "",
+        vat_number: settings.vat_number || "",
+        eori_number: settings.eori_number || "",
+        company_name: settings.company_name || "",
+        legal_form: settings.legal_form || "",
+        address_line1: settings.address_line1 || "",
+        address_line2: settings.address_line2 || "",
+        postal_code: settings.postal_code || "",
+        city: settings.city || "",
+        region: settings.region || "",
+        country: settings.country || "",
+      });
+    }
+  }, [settings, form]);
+
+  // Update email notification state when user data is loaded
+  useEffect(() => {
+    if (userData && userData.email_notifications !== undefined) {
+      setEmailNotifications(userData.email_notifications);
+    }
+  }, [userData]);
 
   // Mutation to update settings
   const updateSettingsMutation = useMutation({
@@ -217,6 +219,9 @@ const SettingsPage = () => {
         title: t("settings_updated"),
         description: t("preferences_saved"),
       });
+      
+      // Invalidate user data query to reflect the updated changes
+      queryClient.invalidateQueries({ queryKey: ["user", user.id] });
     } catch (error: any) {
       console.error("Error updating settings:", error);
       toast({
