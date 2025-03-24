@@ -5,29 +5,33 @@ import { useTranslation } from "@/hooks/useTranslation";
 interface StatusFilterProps {
   value: string | null;
   onChange: (value: string | null) => void;
+  statusOptions?: string[];
+  placeholder?: string;
+  allLabel?: string;
+  width?: string;
 }
 
-const StatusFilter = ({ value, onChange }: StatusFilterProps) => {
+const StatusFilter = ({ 
+  value, 
+  onChange, 
+  statusOptions = ["success", "pending", "failed"],
+  placeholder,
+  allLabel,
+  width = "w-[160px]"
+}: StatusFilterProps) => {
   const { t } = useTranslation();
   
-  // List of transaction statuses
-  const statuses = [
-    "success",
-    "pending", 
-    "failed"
-  ];
-
   return (
     <Select
       value={value || "all"}
       onValueChange={(val) => onChange(val === "all" ? null : val)}
     >
-      <SelectTrigger className="w-[160px]">
-        <SelectValue placeholder={t("status")} />
+      <SelectTrigger className={width}>
+        <SelectValue placeholder={placeholder || t("status")} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">{t("all_statuses")}</SelectItem>
-        {statuses.map((status) => (
+        <SelectItem value="all">{allLabel || t("all_statuses")}</SelectItem>
+        {statusOptions.map((status) => (
           <SelectItem key={status} value={status}>
             {t(status)}
           </SelectItem>
