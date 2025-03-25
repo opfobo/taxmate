@@ -108,8 +108,8 @@ export type Database = {
           credit_card: string | null
           id: string
           payback_points: number | null
-          user_id: string | null
           transaction_id: string | null
+          user_id: string | null
         }
         Insert: {
           cashback_amount: number
@@ -118,8 +118,8 @@ export type Database = {
           credit_card?: string | null
           id?: string
           payback_points?: number | null
-          user_id?: string | null
           transaction_id?: string | null
+          user_id?: string | null
         }
         Update: {
           cashback_amount?: number
@@ -128,17 +128,10 @@ export type Database = {
           credit_card?: string | null
           id?: string
           payback_points?: number | null
-          user_id?: string | null
           transaction_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "cashback_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "cashback_transaction_id_fkey"
             columns: ["transaction_id"]
@@ -160,6 +153,7 @@ export type Database = {
           total_price: number
           unit_price: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -172,6 +166,7 @@ export type Database = {
           total_price?: number
           unit_price?: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -184,6 +179,7 @@ export type Database = {
           total_price?: number
           unit_price?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -250,7 +246,6 @@ export type Database = {
           order_number: string
           payment_status: string | null
           shipping_address_id: string | null
-          user_id: string | null
           status: string | null
           status_history: Json | null
           supplier_id: string | null
@@ -271,7 +266,6 @@ export type Database = {
           order_number: string
           payment_status?: string | null
           shipping_address_id?: string | null
-          user_id?: string | null
           status?: string | null
           status_history?: Json | null
           supplier_id?: string | null
@@ -292,7 +286,6 @@ export type Database = {
           order_number?: string
           payment_status?: string | null
           shipping_address_id?: string | null
-          user_id?: string | null
           status?: string | null
           status_history?: Json | null
           supplier_id?: string | null
@@ -314,13 +307,6 @@ export type Database = {
             columns: ["shipping_address_id"]
             isOneToOne: false
             referencedRelation: "addresses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -569,9 +555,9 @@ export type Database = {
           expected_tax: number
           id: string
           period: string
-          user_id: string | null
           taxable_income: number
           updated_at: string | null
+          user_id: string | null
           vat_paid: number | null
           vat_refunded: number | null
         }
@@ -580,9 +566,9 @@ export type Database = {
           expected_tax: number
           id?: string
           period: string
-          user_id?: string | null
           taxable_income: number
           updated_at?: string | null
+          user_id?: string | null
           vat_paid?: number | null
           vat_refunded?: number | null
         }
@@ -591,21 +577,13 @@ export type Database = {
           expected_tax?: number
           id?: string
           period?: string
-          user_id?: string | null
           taxable_income?: number
           updated_at?: string | null
+          user_id?: string | null
           vat_paid?: number | null
           vat_refunded?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "tax_reports_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       transactions: {
         Row: {
@@ -615,10 +593,10 @@ export type Database = {
           id: string
           order_id: string | null
           payment_method: string | null
-          user_id: string | null
           status: string | null
           type: Database["public"]["Enums"]["transaction_type"] | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           amount: number
@@ -627,10 +605,10 @@ export type Database = {
           id?: string
           order_id?: string | null
           payment_method?: string | null
-          user_id?: string | null
           status?: string | null
           type?: Database["public"]["Enums"]["transaction_type"] | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           amount?: number
@@ -639,10 +617,10 @@ export type Database = {
           id?: string
           order_id?: string | null
           payment_method?: string | null
-          user_id?: string | null
           status?: string | null
           type?: Database["public"]["Enums"]["transaction_type"] | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -650,13 +628,6 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transactions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
