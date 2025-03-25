@@ -82,7 +82,7 @@ const Dashboard = () => {
       const { data, error } = await supabase
         .from("orders")
         .select("*")
-        .eq("shopper_id", user.id)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(5);
       
@@ -115,7 +115,7 @@ const Dashboard = () => {
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
-        .eq("shopper_id", user.id)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(5);
       
@@ -148,7 +148,7 @@ const Dashboard = () => {
       const { data, error } = await supabase
         .from("tax_reports")
         .select("*")
-        .eq("shopper_id", user.id)
+        .eq("user_id", user.id)
         .order("updated_at", { ascending: false })
         .limit(5);
       
@@ -226,7 +226,7 @@ const Dashboard = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">{t("dashboard")}</h1>
           <p className="text-muted-foreground">
-            {t("shopper_dashboard_description")}
+            {t("user_dashboard_description")}
           </p>
         </div>
 
