@@ -11,7 +11,7 @@ interface TaxReport {
   description: string;
   file_url?: string;
   file_type?: "pdf" | "csv";
-  shopper_id: string;
+  user_id: string;
   period_start: string;
   period_end: string;
   total_amount: number;
