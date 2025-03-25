@@ -84,7 +84,7 @@ const AnalyticsPage = () => {
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
-        .eq("shopper_id", user.id)
+        .eq("user_id", user.id)
         .eq("type", "purchase")
         .eq("status", "success");
         
@@ -114,7 +114,7 @@ const AnalyticsPage = () => {
             name
           )
         `)
-        .eq("shopper_id", user.id);
+        .eq("user_id", user.id);
         
       if (error) throw error;
       return data;
