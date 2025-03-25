@@ -17,7 +17,7 @@ import { format } from "date-fns";
 // Interface for the tax reports as received from the database
 interface TaxReportDB {
   id: string;
-  shopper_id: string;
+  user_id: string;
   period: string;
   taxable_income: number;
   expected_tax: number;
@@ -34,7 +34,7 @@ interface TaxReport {
   description: string;
   file_url?: string;
   file_type?: "pdf" | "csv";
-  shopper_id: string;
+  user_id: string;
   period_start: string;
   period_end: string;
   total_amount: number;
@@ -62,7 +62,7 @@ const TaxReportsPage = () => {
       const { data, error } = await supabase
         .from("tax_reports")
         .select("*")
-        .eq("shopper_id", user.id);
+        .eq("user_id", user.id);
       
       if (error) throw error;
       
@@ -77,7 +77,7 @@ const TaxReportsPage = () => {
           description: `${t("total_amount")}: ${report.taxable_income} EUR, ${t("total_tax")}: ${report.expected_tax} EUR`,
           file_url: undefined, // No file URL in the schema
           file_type: undefined, // No file type in the schema
-          shopper_id: report.shopper_id,
+          user_id: report.user_id,
           period_start: startDate,
           period_end: endDate,
           total_amount: report.taxable_income,
@@ -108,7 +108,7 @@ const TaxReportsPage = () => {
       const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
         .select("amount, currency")
-        .eq("shopper_id", user.id)
+        .eq("user_id", user.id)
         .gte("order_date", periodStart)
         .lte("order_date", periodEnd);
         
@@ -123,7 +123,7 @@ const TaxReportsPage = () => {
       const { data, error } = await supabase
         .from("tax_reports")
         .insert({
-          shopper_id: user.id,
+          user_id: user.id,
           period: periodString,
           taxable_income: totalAmount,
           expected_tax: totalTax,
