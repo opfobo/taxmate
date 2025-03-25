@@ -44,7 +44,7 @@ const ShopperDetailsDrawer = ({
       const { data, error } = await supabase
         .from("orders")
         .select("*")
-        .eq("shopper_id", shopper.id)
+        .eq("user_id", shopper.id)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
@@ -63,7 +63,7 @@ const ShopperDetailsDrawer = ({
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
-        .eq("shopper_id", shopper.id)
+        .eq("user_id", shopper.id)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
