@@ -19,7 +19,7 @@ export interface Transaction {
   currency: string;
   type: "purchase" | "refund" | "payout";
   status: "success" | "pending" | "failed";
-  shopper_id: string;
+  user_id: string;
   order_id?: string;
   payment_method?: string;
   updated_at?: string;
@@ -45,7 +45,7 @@ const TransactionsPage = () => {
       let query = supabase
         .from("transactions")
         .select("*")
-        .eq("shopper_id", user.id)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .range((currentPage - 1) * pageSize, currentPage * pageSize - 1);
       
@@ -78,7 +78,7 @@ const TransactionsPage = () => {
       const { count: totalCount, error: countError } = await supabase
         .from("transactions")
         .select("*", { count: "exact", head: true })
-        .eq("shopper_id", user.id);
+        .eq("user_id", user.id);
       
       if (countError) throw countError;
       
