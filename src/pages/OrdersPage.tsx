@@ -11,7 +11,8 @@ import {
   Plus,
   X,
   Filter,
-  AlertTriangle 
+  AlertTriangle,
+  Pencil 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +65,7 @@ const OrdersPage = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
   const [isSupplierFormOpen, setIsSupplierFormOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<any | null>(null);
 
   // Save filter state to sessionStorage when changed
   useEffect(() => {
@@ -187,6 +189,11 @@ const OrdersPage = () => {
     setIsDetailsOpen(true);
   };
 
+  const handleEditOrder = (order: any) => {
+    setEditingOrder(order);
+    setIsOrderFormOpen(true);
+  };
+
   const handleTabChange = (value: string) => {
     // Fix: Cast the value to OrderType to ensure type safety
     if (value === "fulfillment" || value === "supplier") {
@@ -196,6 +203,7 @@ const OrdersPage = () => {
   };
 
   const handleAddOrder = () => {
+    setEditingOrder(null); // Ensure we're not in edit mode
     setIsOrderFormOpen(true);
   };
 
@@ -206,10 +214,7 @@ const OrdersPage = () => {
   const handleOrderCreated = () => {
     refetch();
     setIsOrderFormOpen(false);
-    toast({
-      title: t("order_created"),
-      description: t("order_created_successfully"),
-    });
+    setEditingOrder(null);
   };
 
   const handleSupplierCreated = () => {
@@ -330,6 +335,7 @@ const OrdersPage = () => {
                   orders={orders}
                   isLoading={isLoading}
                   onViewDetails={handleViewOrderDetails}
+                  onEditOrder={handleEditOrder}
                   orderType={activeTab}
                 />
               )}
@@ -348,9 +354,13 @@ const OrdersPage = () => {
 
         <OrderForm
           isOpen={isOrderFormOpen}
-          onClose={() => setIsOrderFormOpen(false)}
+          onClose={() => {
+            setIsOrderFormOpen(false);
+            setEditingOrder(null);
+          }}
           onOrderCreated={handleOrderCreated}
           orderType={activeTab}
+          editOrder={editingOrder}
         />
 
         <SupplierForm

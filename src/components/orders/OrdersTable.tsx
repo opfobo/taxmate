@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Loader2 } from "lucide-react";
+import { Eye, Loader2, Pencil } from "lucide-react";
 import ImagePreview from "@/components/orders/ImagePreview";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +33,7 @@ interface OrdersTableProps {
   orders: Order[];
   isLoading: boolean;
   onViewDetails: (order: Order) => void;
+  onEditOrder?: (order: Order) => void;
   orderType: "fulfillment" | "supplier";
 }
 
@@ -40,6 +41,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
   orders,
   isLoading,
   onViewDetails,
+  onEditOrder,
   orderType
 }) => {
   const { t } = useTranslation();
@@ -138,13 +140,27 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                 />
               </TableCell>
               <TableCell className="text-right">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => onViewDetails(order)}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
+                <div className="flex justify-end space-x-1">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => onViewDetails(order)}
+                    title={t("view_details")}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  
+                  {onEditOrder && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => onEditOrder(order)}
+                      title={t("edit_order")}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}
