@@ -37,7 +37,7 @@ const ShopperDetailsDrawer = ({
 
   // Fetch shopper's orders
   const { data: orders, isLoading: isOrdersLoading } = useQuery({
-    queryKey: ["shopper-orders", shopper?.id],
+    queryKey: ["user-orders", shopper?.id],
     queryFn: async () => {
       if (!shopper?.id) return [];
       
@@ -56,7 +56,7 @@ const ShopperDetailsDrawer = ({
 
   // Fetch shopper's transactions
   const { data: transactions, isLoading: isTransactionsLoading } = useQuery({
-    queryKey: ["shopper-transactions", shopper?.id],
+    queryKey: ["user-transactions", shopper?.id],
     queryFn: async () => {
       if (!shopper?.id) return [];
       
