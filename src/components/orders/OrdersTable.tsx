@@ -24,7 +24,6 @@ type Order = {
   amount: number;
   currency: string;
   supplier?: { name: string; id: string; };
-  image_urls?: string[];
   image_url?: string;
   notes?: string;
   order_items?: { id: string }[];
@@ -48,11 +47,6 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
   // Helper to get all image URLs from various possible sources
   const getImageUrls = (order: Order): string[] => {
     const urls: string[] = [];
-    
-    // If image_urls array exists, use it
-    if (Array.isArray(order.image_urls) && order.image_urls.length > 0) {
-      return order.image_urls;
-    }
     
     // If image_url exists, include it
     if (order.image_url) {

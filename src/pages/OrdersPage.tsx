@@ -140,6 +140,8 @@ const OrdersPage = () => {
               .list(`order-${order.id}`);
             
             if (!imageError && imageList && imageList.length > 0) {
+              // Instead of setting image_urls directly, we'll store them in the notes field
+              // as JSON, which will be parsed by our getImageUrls helper function
               const imageUrls = await Promise.all(
                 imageList.map(async (file) => {
                   const { data: url } = supabase.storage
@@ -148,7 +150,18 @@ const OrdersPage = () => {
                   return url.publicUrl;
                 })
               );
-              order.image_urls = imageUrls;
+              
+              // Store image URLs in notes as JSON
+              if (imageUrls.length > 0) {
+                // Set the first image as image_url for backward compatibility
+                order.image_url = imageUrls[0];
+                
+                // Store all images in notes as JSON
+                order.notes = JSON.stringify({
+                  originalNotes: order.notes,
+                  imageUrls: imageUrls
+                });
+              }
             }
           } catch (imageError) {
             console.error(`Error fetching images for order ${order.id}:`, imageError);

@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -37,17 +36,32 @@ const OrderDetailsDialog = ({
 
   useEffect(() => {
     if (order) {
-      // Handle image URLs from different potential sources
-      if (Array.isArray(order.image_urls)) {
-        // If image_urls exists as array, use it
-        setImageUrls(order.image_urls);
-      } else if (order.image_url) {
-        // If there's a single image_url string, convert to array
-        setImageUrls([order.image_url]);
-      } else {
-        // Default to empty array
-        setImageUrls([]);
+      // Extract image URLs from different potential sources
+      const extractedUrls: string[] = [];
+      
+      // If there's a single image_url string, add it
+      if (order.image_url) {
+        extractedUrls.push(order.image_url);
       }
+      
+      // If notes contains encoded image URLs in JSON format
+      if (order.notes && order.notes.startsWith('{') && order.notes.includes('imageUrls')) {
+        try {
+          const parsedNotes = JSON.parse(order.notes);
+          if (Array.isArray(parsedNotes.imageUrls)) {
+            // Add any URLs not already in the array
+            parsedNotes.imageUrls.forEach((url: string) => {
+              if (!extractedUrls.includes(url)) {
+                extractedUrls.push(url);
+              }
+            });
+          }
+        } catch (error) {
+          console.error("Error parsing notes JSON:", error);
+        }
+      }
+      
+      setImageUrls(extractedUrls);
 
       if (order?.id) {
         fetchOrderItems();
@@ -91,7 +105,7 @@ const OrderDetailsDialog = ({
 
       for (const file of Array.from(files)) {
         const fileExt = file.name.split(".").pop();
-        const filePath = `orders/${order.id}/${uuidv4()}.${fileExt}`;
+        const filePath = `order-${order.id}/${uuidv4()}.${fileExt}`;
 
         const { error } = await supabase.storage
           .from("order-images")
@@ -112,15 +126,13 @@ const OrderDetailsDialog = ({
       const newImageList = [...imageUrls, ...uploadedUrls];
       
       // Update the image_url field in the database
-      // We're using image_url (singular) as Supabase types expect it
-      // but storing the entire array as JSON string
       const { error: updateError } = await supabase
         .from("orders")
         .update({ 
           image_url: newImageList.length > 0 ? newImageList[0] : null,
           // Store the full array as a metadata field
           notes: JSON.stringify({ 
-            originalNotes: order.notes,
+            originalNotes: order.notes && !order.notes.startsWith('{') ? order.notes : "",
             imageUrls: newImageList 
           })
         })
@@ -201,6 +213,7 @@ const OrderDetailsDialog = ({
     }
   };
 
+  // Update the handleDeleteImage function to be consistent with our approach
   const handleDeleteImage = async (imageUrl: string) => {
     if (!order?.id) return;
     
@@ -230,7 +243,7 @@ const OrderDetailsDialog = ({
           image_url: updatedImageUrls.length > 0 ? updatedImageUrls[0] : null,
           // Store the full array as a metadata field
           notes: JSON.stringify({ 
-            originalNotes: order.notes,
+            originalNotes: order.notes && !order.notes.startsWith('{') ? order.notes : "",
             imageUrls: updatedImageUrls 
           })
         })
