@@ -10,7 +10,8 @@ import {
   Search, 
   Plus,
   X,
-  Filter 
+  Filter,
+  AlertTriangle 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import { DateRange } from "react-day-picker";
+import EmptyState from "@/components/dashboard/EmptyState";
 
 // Define the correct order_type enum values to match the database
 type OrderType = "fulfillment" | "supplier";
@@ -93,7 +95,7 @@ const OrdersPage = () => {
           image_url,
           notes,
           supplier:suppliers(id, name),
-          order_items(*)
+          order_items(id)
         `)
         .eq("user_id", user?.id || "")
         .eq("type", activeTab)
@@ -120,7 +122,38 @@ const OrdersPage = () => {
 
       if (error) {
         console.error("Error fetching orders:", error);
+        toast({
+          title: t("error"),
+          description: t("error_fetching_orders"),
+          variant: "destructive",
+        });
         throw new Error(error.message);
+      }
+
+      // For each order, fetch images from storage if available
+      if (data && data.length > 0) {
+        for (const order of data) {
+          // Fetch images from storage for this order
+          try {
+            const { data: imageList, error: imageError } = await supabase.storage
+              .from("order-images")
+              .list(`order-${order.id}`);
+            
+            if (!imageError && imageList && imageList.length > 0) {
+              const imageUrls = await Promise.all(
+                imageList.map(async (file) => {
+                  const { data: url } = supabase.storage
+                    .from("order-images")
+                    .getPublicUrl(`order-${order.id}/${file.name}`);
+                  return url.publicUrl;
+                })
+              );
+              order.image_urls = imageUrls;
+            }
+          } catch (imageError) {
+            console.error(`Error fetching images for order ${order.id}:`, imageError);
+          }
+        }
       }
 
       return data || [];
@@ -130,7 +163,7 @@ const OrdersPage = () => {
     }
   };
 
-  const { data: orders = [], isLoading, refetch } = useQuery({
+  const { data: orders = [], isLoading, error, refetch } = useQuery({
     queryKey: ["orders", activeTab, searchQuery, statusFilter, dateRange],
     queryFn: fetchOrders,
     enabled: !!user,
@@ -273,12 +306,20 @@ const OrdersPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <OrdersTable
-                orders={orders}
-                isLoading={isLoading}
-                onViewDetails={handleViewOrderDetails}
-                orderType={activeTab}
-              />
+              {error ? (
+                <EmptyState 
+                  icon={AlertTriangle}
+                  title={t("error_loading_orders")}
+                  description={t("try_again_later")}
+                />
+              ) : (
+                <OrdersTable
+                  orders={orders}
+                  isLoading={isLoading}
+                  onViewDetails={handleViewOrderDetails}
+                  orderType={activeTab}
+                />
+              )}
             </CardContent>
           </Card>
         </Tabs>

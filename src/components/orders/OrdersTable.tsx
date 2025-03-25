@@ -13,7 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Loader2 } from "lucide-react";
-import Image from "@/components/Image";
+import ImagePreview from "@/components/orders/ImagePreview";
+import { cn } from "@/lib/utils";
 
 type Order = {
   id: string;
@@ -26,6 +27,7 @@ type Order = {
   image_urls?: string[];
   image_url?: string;
   notes?: string;
+  order_items?: { id: string }[];
 };
 
 interface OrdersTableProps {
@@ -43,31 +45,33 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  // Helper to get the first image URL from various possible sources
-  const getFirstImageUrl = (order: Order): string | undefined => {
-    // If image_urls array exists, use its first item
+  // Helper to get all image URLs from various possible sources
+  const getImageUrls = (order: Order): string[] => {
+    const urls: string[] = [];
+    
+    // If image_urls array exists, use it
     if (Array.isArray(order.image_urls) && order.image_urls.length > 0) {
-      return order.image_urls[0];
+      return order.image_urls;
     }
     
-    // If image_url exists, use it
+    // If image_url exists, include it
     if (order.image_url) {
-      return order.image_url;
+      urls.push(order.image_url);
     }
     
     // If notes contains encoded image URLs in JSON format
     if (order.notes && order.notes.startsWith('{') && order.notes.includes('imageUrls')) {
       try {
         const parsedNotes = JSON.parse(order.notes);
-        if (Array.isArray(parsedNotes.imageUrls) && parsedNotes.imageUrls.length > 0) {
-          return parsedNotes.imageUrls[0];
+        if (Array.isArray(parsedNotes.imageUrls)) {
+          urls.push(...parsedNotes.imageUrls);
         }
       } catch (error) {
         console.error("Error parsing notes JSON:", error);
       }
     }
     
-    return undefined;
+    return urls;
   };
 
   if (isLoading) {
@@ -87,14 +91,15 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending": return "bg-yellow-100 text-yellow-800";
-      case "accepted": return "bg-blue-100 text-blue-800";
-      case "declined": return "bg-red-100 text-red-800";
-      case "processing": return "bg-purple-100 text-purple-800";
-      case "shipped": return "bg-indigo-100 text-indigo-800";
-      case "delivered": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
+    switch (status.toLowerCase()) {
+      case "pending": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "processing": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "shipped": return "bg-purple-100 text-purple-800 border-purple-200";
+      case "delivered": return "bg-green-100 text-green-800 border-green-200";
+      case "canceled": return "bg-red-100 text-red-800 border-red-200";
+      case "accepted": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "declined": return "bg-red-100 text-red-800 border-red-200";
+      default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
@@ -108,7 +113,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
             <TableHead>{t("status")}</TableHead>
             <TableHead>{t("amount")}</TableHead>
             {orderType === "supplier" && <TableHead>{t("supplier")}</TableHead>}
-            <TableHead>{t("image")}</TableHead>
+            <TableHead>{t("images")}</TableHead>
             <TableHead className="text-right">{t("actions")}</TableHead>
           </TableRow>
         </TableHeader>
@@ -120,7 +125,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                 {order.order_date && format(new Date(order.order_date), "PP")}
               </TableCell>
               <TableCell>
-                <Badge className={getStatusColor(order.status || "pending")}>
+                <Badge className={cn("px-2 py-1", getStatusColor(order.status || "pending"))}>
                   {t(order.status || "pending")}
                 </Badge>
               </TableCell>
@@ -133,15 +138,10 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                 </TableCell>
               )}
               <TableCell>
-                {getFirstImageUrl(order) ? (
-                  <Image 
-                    src={getFirstImageUrl(order)!} 
-                    alt={`${t("order")} ${order.order_number}`} 
-                    className="h-8 w-8 rounded object-cover" 
-                  />
-                ) : (
-                  <span className="text-muted-foreground">-</span>
-                )}
+                <ImagePreview 
+                  imageUrls={getImageUrls(order)}
+                  alt={`${t("order")} ${order.order_number}`}
+                />
               </TableCell>
               <TableCell className="text-right">
                 <Button 
