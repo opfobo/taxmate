@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -50,8 +49,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { ConsumerForm } from "@/components/orders/ConsumerForm";
 
-// Define the form schema with Zod
 const orderFormSchema = z.object({
   orderNumber: z.string().min(1, { message: "Order number is required" }),
   orderDate: z.string().optional(),
@@ -60,13 +59,11 @@ const orderFormSchema = z.object({
   status: z.string().default("pending"),
   notes: z.string().optional(),
   supplierId: z.string().optional().nullable(),
-  // New fields for supplier orders
   purchaseOrigin: z.string().optional().default("domestic"),
   supplierVatId: z.string().optional(),
   supplierCountry: z.string().optional(),
   vatAmount: z.string().optional(),
   vatRate: z.string().optional(),
-  // Field for consumer orders
   consumerId: z.string().optional().nullable(),
 });
 
@@ -77,7 +74,7 @@ interface OrderFormProps {
   onClose: () => void;
   onOrderCreated: () => void;
   orderType: "fulfillment" | "supplier";
-  editOrder?: any; // Optional order to edit
+  editOrder?: any;
 }
 
 const ORDER_STATUSES = [
@@ -115,8 +112,9 @@ const OrderForm = ({
   const [loadingConsumers, setLoadingConsumers] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [ocrData, setOcrData] = useState<any>(null);
+  const [isConsumerFormOpen, setIsConsumerFormOpen] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
 
-  // Initialize the form with react-hook-form
   const form = useForm<OrderFormValues>({
     defaultValues: {
       orderNumber: "",
@@ -143,7 +141,6 @@ const OrderForm = ({
         fetchConsumers();
       }
       
-      // Reset form when opening
       if (!editOrder) {
         form.reset({
           orderNumber: "",
@@ -162,8 +159,8 @@ const OrderForm = ({
         });
         setImageUrls([]);
         setOcrData(null);
+        setOrderId(null);
       } else {
-        // Fill form with edit order data
         form.reset({
           orderNumber: editOrder.order_number || "",
           orderDate: editOrder.order_date ? format(new Date(editOrder.order_date), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
@@ -180,21 +177,20 @@ const OrderForm = ({
           consumerId: editOrder.consumer_id || null,
         });
 
-        // Set OCR data if available
+        setOrderId(editOrder.id);
+
         if (editOrder.ocr_customer_data) {
           setOcrData(editOrder.ocr_customer_data);
         } else {
           setOcrData(null);
         }
 
-        // Set image URLs if available
         if (editOrder.image_url) {
           setImageUrls([editOrder.image_url]);
         } else {
           setImageUrls([]);
         }
 
-        // Check for additional images in notes
         if (editOrder.notes && editOrder.notes.startsWith('{') && editOrder.notes.includes('imageUrls')) {
           try {
             const parsedNotes = JSON.parse(editOrder.notes);
@@ -270,7 +266,6 @@ const OrderForm = ({
       const now = new Date().toISOString();
       const orderDate = values.orderDate || format(new Date(), "yyyy-MM-dd");
       
-      // Prepare notes with any existing image URLs
       let finalNotes = values.notes || null;
       if (imageUrls.length > 0) {
         finalNotes = JSON.stringify({
@@ -292,9 +287,7 @@ const OrderForm = ({
         created_at: editOrder ? undefined : now,
         updated_at: now,
         order_date: orderDate,
-        // Set first image as primary image_url for compatibility
         image_url: imageUrls.length > 0 ? imageUrls[0] : null,
-        // Add supplier-specific fields if order type is supplier
         ...(orderType === "supplier" && {
           purchase_origin: values.purchaseOrigin,
           supplier_vat_id: values.supplierVatId || null,
@@ -305,31 +298,46 @@ const OrderForm = ({
       };
 
       let error;
+      let newOrderId;
       
       if (editOrder) {
-        // Update existing order
         const { error: updateError } = await supabase
           .from("orders")
           .update(orderData)
           .eq("id", editOrder.id);
         error = updateError;
+        newOrderId = editOrder.id;
       } else {
-        // Insert new order
-        const { error: insertError } = await supabase
+        const { data, error: insertError } = await supabase
           .from("orders")
-          .insert(orderData);
+          .insert(orderData)
+          .select("id")
+          .single();
         error = insertError;
+        newOrderId = data?.id;
+        
+        if (data) {
+          setOrderId(data.id);
+        }
       }
 
       if (error) throw error;
 
       onOrderCreated();
-      onClose();
       
-      toast({
-        title: editOrder ? t("order_updated") : t("order_created"),
-        description: editOrder ? t("order_updated_successfully") : t("order_created_successfully"),
-      });
+      if (!editOrder && imageUrls.length > 0) {
+        toast({
+          title: t("order_created"),
+          description: t("order_created_successfully"),
+        });
+      } else {
+        onClose();
+        
+        toast({
+          title: editOrder ? t("order_updated") : t("order_created"),
+          description: editOrder ? t("order_updated_successfully") : t("order_created_successfully"),
+        });
+      }
     } catch (error: any) {
       console.error("Error saving order:", error.message);
       toast({
@@ -342,16 +350,19 @@ const OrderForm = ({
     }
   };
 
-  const createConsumer = async () => {
-    // This would be expanded to open a modal or form to create a new consumer
-    // For now it's just a stub
+  const handleConsumerCreated = (consumerId: string) => {
+    form.setValue("consumerId", consumerId);
+    
+    fetchConsumers();
+    
+    setIsConsumerFormOpen(false);
+    
     toast({
-      title: t("not_implemented"),
-      description: t("feature_coming_soon"),
+      title: t("consumer_added"),
+      description: t("consumer_added_successfully"),
     });
   };
 
-  // Format OCR data for display
   const formatOcrData = (data: any) => {
     if (!data) return null;
     
@@ -386,7 +397,6 @@ const OrderForm = ({
 
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Basic Order Information */}
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-md">{t("order_information")}</CardTitle>
@@ -558,7 +568,6 @@ const OrderForm = ({
                   </CardContent>
                 </Card>
 
-                {/* Customer Information Section - Show only for Fulfillment Orders */}
                 {orderType === "fulfillment" && (
                   <Card>
                     <CardHeader className="pb-2">
@@ -600,7 +609,7 @@ const OrderForm = ({
                               <Button 
                                 type="button" 
                                 size="sm"
-                                onClick={createConsumer}
+                                onClick={() => setIsConsumerFormOpen(true)}
                               >
                                 <Plus className="h-4 w-4 mr-1" />
                                 {t("new")}
@@ -620,7 +629,6 @@ const OrderForm = ({
                   </Card>
                 )}
 
-                {/* Purchase Details Section - Show only for Supplier Orders */}
                 {orderType === "supplier" && (
                   <Card>
                     <CardHeader className="pb-2">
@@ -751,32 +759,42 @@ const OrderForm = ({
                         />
                       </div>
 
-                      {/* Image Upload Section */}
                       <div className="space-y-2">
                         <Label className="flex items-center">
                           <Image className="h-4 w-4 mr-2" />
                           {t("invoice_images")}
                         </Label>
-                        {editOrder ? (
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {t("upload_invoice_for_ocr")}
+                        </p>
+                        
+                        {(editOrder || orderId) ? (
                           <div className="space-y-2">
-                            {imageUrls.length > 0 ? (
+                            {imageUrls.length > 0 && (
                               <div className="border rounded-md p-3 bg-muted/30">
                                 <ImagePreview
                                   imageUrls={imageUrls}
                                   alt={`${t("order_images")}`}
                                 />
                               </div>
-                            ) : (
-                              <p className="text-sm text-muted-foreground">{t("no_images")}</p>
                             )}
-                            <p className="text-sm text-muted-foreground">{t("add_images_after_save")}</p>
+                            
+                            <div className="border rounded-md p-3">
+                              <ImageUpload
+                                id={orderId || editOrder?.id}
+                                table="orders"
+                                storagePath={`order-${orderId || editOrder?.id}`}
+                                field="image_url"
+                              />
+                            </div>
                           </div>
                         ) : (
-                          <p className="text-sm text-muted-foreground">{t("add_images_after_save")}</p>
+                          <div className="border rounded-md p-3 bg-muted/30 text-sm text-muted-foreground">
+                            {t("save_order_first_to_upload")}
+                          </div>
                         )}
                       </div>
 
-                      {/* OCR Data Display */}
                       {ocrData && (
                         <div className="space-y-2">
                           <Label>{t("parsed_invoice_data")}</Label>
@@ -796,7 +814,6 @@ const OrderForm = ({
                   </Card>
                 )}
 
-                {/* Notes Field - Available for both order types */}
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-md flex items-center">
@@ -851,6 +868,12 @@ const OrderForm = ({
           </div>
         </ScrollArea>
       </DialogContent>
+      
+      <ConsumerForm 
+        isOpen={isConsumerFormOpen}
+        onClose={() => setIsConsumerFormOpen(false)}
+        onConsumerCreated={handleConsumerCreated}
+      />
     </Dialog>
   );
 };
