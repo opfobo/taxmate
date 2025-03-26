@@ -16,6 +16,10 @@ export interface ImageUploadProps {
 }
 
 const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
+  interface RecordData {
+  notes?: string;
+  image_url?: string | null;
+}
   const { t } = useTranslation();
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -97,11 +101,14 @@ const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
         if (field && id && table) {
           try {
             // Check if there's existing JSON data in notes
-            const { data: recordData, error: fetchError } = await supabase
-              .from(table)
-              .select("notes, image_url")
-              .eq("id", id)
-              .single();
+            const { data, error: fetchError } = await supabase
+  .from(table)
+  .select("notes, image_url")
+  .eq("id", id)
+  .single();
+
+const recordData = data as RecordData;
+
               
             if (fetchError) {
               console.error(`Error fetching ${table} data:`, fetchError);
@@ -197,11 +204,14 @@ const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
       
       // Update the record
       try {
-        const { data: recordData, error: fetchError } = await supabase
-          .from(table)
-          .select("notes, image_url")
-          .eq("id", id)
-          .single();
+        const { data, error: fetchError } = await supabase
+  .from(table)
+  .select("notes, image_url")
+  .eq("id", id)
+  .single();
+
+const recordData = data as RecordData;
+
           
         if (fetchError) {
           console.error(`Error fetching ${table} data:`, fetchError);
