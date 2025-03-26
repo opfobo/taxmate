@@ -17,6 +17,7 @@ import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
 import OrdersPage from "./pages/OrdersPage";
 import ShoppersPage from "./pages/ShoppersPage";
+import ConsumersPage from "./pages/ConsumersPage";
 import TaxReportsPage from "./pages/TaxReportsPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import ResourcesPage from "./pages/ResourcesPage";
@@ -70,6 +71,11 @@ const App = () => (
               <Route path="/shoppers" element={
                 <ProtectedRoute>
                   <ShoppersPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/consumers" element={
+                <ProtectedRoute>
+                  <ConsumersPage />
                 </ProtectedRoute>
               } />
               <Route path="/dashboard/tax-reports" element={

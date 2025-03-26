@@ -17,9 +17,10 @@ export interface ImageUploadProps {
 
 const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
   interface RecordData {
-  notes?: string;
-  image_url?: string | null;
-}
+    notes?: string;
+    image_url?: string | null;
+  }
+  
   const { t } = useTranslation();
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -102,17 +103,15 @@ const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
           try {
             // Check if there's existing JSON data in notes
             const { data, error: fetchError } = await supabase
-  .from(table)
-  .select("notes, image_url")
-  .eq("id", id)
-  .single();
+              .from(table)
+              .select("notes, image_url")
+              .eq("id", id)
+              .single();
 
-const recordData = data as RecordData;
-
-              
             if (fetchError) {
               console.error(`Error fetching ${table} data:`, fetchError);
-            } else if (recordData) {
+            } else if (data) {
+              const recordData = data as RecordData;
               let updateData: Record<string, any> = {};
               
               // Always set the first image as the primary image_url
@@ -122,7 +121,7 @@ const recordData = data as RecordData;
               let originalNotes = "";
               let existingImageUrls: string[] = [];
               
-              if (recordData.notes && typeof recordData.notes === 'string') {
+              if (recordData && recordData.notes && typeof recordData.notes === 'string') {
                 if (recordData.notes.startsWith('{')) {
                   try {
                     const parsedNotes = JSON.parse(recordData.notes);
@@ -205,25 +204,23 @@ const recordData = data as RecordData;
       // Update the record
       try {
         const { data, error: fetchError } = await supabase
-  .from(table)
-  .select("notes, image_url")
-  .eq("id", id)
-  .single();
+          .from(table)
+          .select("notes, image_url")
+          .eq("id", id)
+          .single();
 
-const recordData = data as RecordData;
-
-          
         if (fetchError) {
           console.error(`Error fetching ${table} data:`, fetchError);
           return;
         }
         
-        if (recordData) {
+        if (data) {
+          const recordData = data as RecordData;
           let updateData: Record<string, any> = {};
           const remainingImages = images.filter(img => img !== fileUrl);
           
           // Update image_url if the deleted image was the primary one
-          if (recordData.image_url === fileUrl) {
+          if (recordData && recordData.image_url === fileUrl) {
             updateData.image_url = remainingImages.length > 0 ? remainingImages[0] : null;
           }
           
@@ -231,7 +228,7 @@ const recordData = data as RecordData;
           let originalNotes = "";
           let updatedImageUrls: string[] = [];
           
-          if (recordData.notes && typeof recordData.notes === 'string' && recordData.notes.startsWith('{')) {
+          if (recordData && recordData.notes && typeof recordData.notes === 'string' && recordData.notes.startsWith('{')) {
             try {
               const parsedNotes = JSON.parse(recordData.notes);
               
