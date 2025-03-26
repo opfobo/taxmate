@@ -97,7 +97,7 @@ const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
         if (field && id && table) {
           try {
             // Check if there's existing JSON data in notes
-            const { data: orderData, error: fetchError } = await supabase
+            const { data: recordData, error: fetchError } = await supabase
               .from(table)
               .select("notes, image_url")
               .eq("id", id)
@@ -105,44 +105,43 @@ const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
               
             if (fetchError) {
               console.error(`Error fetching ${table} data:`, fetchError);
-            } else {
+            } else if (recordData) {
               let updateData: Record<string, any> = {};
               
               // Always set the first image as the primary image_url
               updateData.image_url = uploadedUrls[0];
               
               // If we have existing notes, check if it's in JSON format with imageUrls
-              if (orderData?.notes && typeof orderData.notes === 'string' && orderData.notes.startsWith('{')) {
-                try {
-                  const parsedNotes = JSON.parse(orderData.notes);
-                  
-                  // If it already has imageUrls, append the new ones
-                  if (Array.isArray(parsedNotes.imageUrls)) {
-                    updateData.notes = JSON.stringify({
-                      originalNotes: parsedNotes.originalNotes || "",
-                      imageUrls: [...parsedNotes.imageUrls, ...uploadedUrls]
-                    });
-                  } else {
-                    // If it has JSON but no imageUrls
-                    updateData.notes = JSON.stringify({
-                      ...parsedNotes,
-                      imageUrls: uploadedUrls
-                    });
+              let originalNotes = "";
+              let existingImageUrls: string[] = [];
+              
+              if (recordData.notes && typeof recordData.notes === 'string') {
+                if (recordData.notes.startsWith('{')) {
+                  try {
+                    const parsedNotes = JSON.parse(recordData.notes);
+                    
+                    // If it already has imageUrls, get them
+                    if (parsedNotes && Array.isArray(parsedNotes.imageUrls)) {
+                      existingImageUrls = parsedNotes.imageUrls;
+                    }
+                    
+                    // Get original notes if available
+                    originalNotes = parsedNotes.originalNotes || "";
+                  } catch (e) {
+                    // If the notes can't be parsed as JSON, treat as plain text
+                    originalNotes = recordData.notes;
                   }
-                } catch (e) {
-                  // If the notes can't be parsed as JSON, create new JSON
-                  updateData.notes = JSON.stringify({
-                    originalNotes: orderData.notes || "",
-                    imageUrls: uploadedUrls
-                  });
+                } else {
+                  // If notes are plain text
+                  originalNotes = recordData.notes;
                 }
-              } else {
-                // If no existing notes or notes are plain text
-                updateData.notes = JSON.stringify({
-                  originalNotes: orderData?.notes || "",
-                  imageUrls: uploadedUrls
-                });
               }
+              
+              // Combine existing and new image URLs
+              updateData.notes = JSON.stringify({
+                originalNotes: originalNotes,
+                imageUrls: [...existingImageUrls, ...uploadedUrls]
+              });
               
               // Update the record with new data
               const { error: updateError } = await supabase
@@ -196,9 +195,9 @@ const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
       // Update the images list
       setImages(images.filter(img => img !== fileUrl));
       
-      // Update the order record
+      // Update the record
       try {
-        const { data: orderData, error: fetchError } = await supabase
+        const { data: recordData, error: fetchError } = await supabase
           .from(table)
           .select("notes, image_url")
           .eq("id", id)
@@ -209,44 +208,51 @@ const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
           return;
         }
         
-        let updateData: Record<string, any> = {};
-        const remainingImages = images.filter(img => img !== fileUrl);
-        
-        // Update image_url if the deleted image was the primary one
-        if (orderData?.image_url === fileUrl) {
-          updateData.image_url = remainingImages.length > 0 ? remainingImages[0] : null;
-        }
-        
-        // Update notes if they contain image URLs
-        if (orderData?.notes && typeof orderData.notes === 'string' && orderData.notes.startsWith('{')) {
-          try {
-            const parsedNotes = JSON.parse(orderData.notes);
-            
-            if (Array.isArray(parsedNotes.imageUrls)) {
-              // Filter out the deleted image
-              const updatedImageUrls = parsedNotes.imageUrls.filter(
-                (url: string) => url !== fileUrl
-              );
-              
-              updateData.notes = JSON.stringify({
-                originalNotes: parsedNotes.originalNotes || "",
-                imageUrls: updatedImageUrls
-              });
-            }
-          } catch (e) {
-            console.error("Error parsing notes:", e);
+        if (recordData) {
+          let updateData: Record<string, any> = {};
+          const remainingImages = images.filter(img => img !== fileUrl);
+          
+          // Update image_url if the deleted image was the primary one
+          if (recordData.image_url === fileUrl) {
+            updateData.image_url = remainingImages.length > 0 ? remainingImages[0] : null;
           }
-        }
-        
-        // Only update if we have changes
-        if (Object.keys(updateData).length > 0) {
-          const { error: updateError } = await supabase
-            .from(table)
-            .update(updateData)
-            .eq("id", id);
-            
-          if (updateError) {
-            console.error(`Error updating ${table} after image deletion:`, updateError);
+          
+          // Update notes if they contain image URLs
+          let originalNotes = "";
+          let updatedImageUrls: string[] = [];
+          
+          if (recordData.notes && typeof recordData.notes === 'string' && recordData.notes.startsWith('{')) {
+            try {
+              const parsedNotes = JSON.parse(recordData.notes);
+              
+              originalNotes = parsedNotes.originalNotes || "";
+              
+              if (Array.isArray(parsedNotes.imageUrls)) {
+                // Filter out the deleted image
+                updatedImageUrls = parsedNotes.imageUrls.filter(
+                  (url: string) => url !== fileUrl
+                );
+              }
+            } catch (e) {
+              console.error("Error parsing notes:", e);
+            }
+          }
+          
+          updateData.notes = JSON.stringify({
+            originalNotes: originalNotes,
+            imageUrls: updatedImageUrls
+          });
+          
+          // Only update if we have changes
+          if (Object.keys(updateData).length > 0) {
+            const { error: updateError } = await supabase
+              .from(table)
+              .update(updateData)
+              .eq("id", id);
+              
+            if (updateError) {
+              console.error(`Error updating ${table} after image deletion:`, updateError);
+            }
           }
         }
         
