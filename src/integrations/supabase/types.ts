@@ -141,6 +141,54 @@ export type Database = {
           },
         ]
       }
+      consumers: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          postal_code: string | null
+          region: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          postal_code?: string | null
+          region?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          postal_code?: string | null
+          region?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -241,18 +289,27 @@ export type Database = {
           currency: string | null
           id: string
           image_url: string | null
+          is_sales_order: boolean | null
           notes: string | null
+          ocr_customer_data: Json | null
           order_date: string | null
           order_number: string
           payment_status: string | null
+          purchase_origin: string | null
+          purchase_type: Database["public"]["Enums"]["purchase_type"] | null
           shipping_address_id: string | null
+          source_order_id: string | null
           status: string | null
           status_history: Json | null
+          supplier_country: string | null
           supplier_id: string | null
+          supplier_vat_id: string | null
           tracking_number: string | null
           type: string | null
           updated_at: string | null
           user_id: string | null
+          vat_amount: number | null
+          vat_rate: number | null
         }
         Insert: {
           amount: number
@@ -261,18 +318,27 @@ export type Database = {
           currency?: string | null
           id?: string
           image_url?: string | null
+          is_sales_order?: boolean | null
           notes?: string | null
+          ocr_customer_data?: Json | null
           order_date?: string | null
           order_number: string
           payment_status?: string | null
+          purchase_origin?: string | null
+          purchase_type?: Database["public"]["Enums"]["purchase_type"] | null
           shipping_address_id?: string | null
+          source_order_id?: string | null
           status?: string | null
           status_history?: Json | null
+          supplier_country?: string | null
           supplier_id?: string | null
+          supplier_vat_id?: string | null
           tracking_number?: string | null
           type?: string | null
           updated_at?: string | null
           user_id?: string | null
+          vat_amount?: number | null
+          vat_rate?: number | null
         }
         Update: {
           amount?: number
@@ -281,18 +347,27 @@ export type Database = {
           currency?: string | null
           id?: string
           image_url?: string | null
+          is_sales_order?: boolean | null
           notes?: string | null
+          ocr_customer_data?: Json | null
           order_date?: string | null
           order_number?: string
           payment_status?: string | null
+          purchase_origin?: string | null
+          purchase_type?: Database["public"]["Enums"]["purchase_type"] | null
           shipping_address_id?: string | null
+          source_order_id?: string | null
           status?: string | null
           status_history?: Json | null
+          supplier_country?: string | null
           supplier_id?: string | null
+          supplier_vat_id?: string | null
           tracking_number?: string | null
           type?: string | null
           updated_at?: string | null
           user_id?: string | null
+          vat_amount?: number | null
+          vat_rate?: number | null
         }
         Relationships: [
           {
@@ -307,6 +382,13 @@ export type Database = {
             columns: ["shipping_address_id"]
             isOneToOne: false
             referencedRelation: "addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_source_order_id_fkey"
+            columns: ["source_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
           {
@@ -730,6 +812,7 @@ export type Database = {
         | "delivered"
       order_type: "fulfillment" | "supplier"
       paid_level: "free" | "starter" | "pro" | "enterprise"
+      purchase_type: "domestic" | "eu_b2b" | "foreign_consumer"
       transaction_status: "success" | "pending" | "failed"
       transaction_type: "purchase" | "refund" | "payout"
       user_role: "shopper" | "manager" | "admin" | "site_admin"
