@@ -36,20 +36,16 @@ const OrderDetailsDialog = ({
 
   useEffect(() => {
     if (order) {
-      // Extract image URLs from different potential sources
       const extractedUrls: string[] = [];
       
-      // If there's a single image_url string, add it
       if (order.image_url) {
         extractedUrls.push(order.image_url);
       }
       
-      // If notes contains encoded image URLs in JSON format
-      if (order.notes && order.notes.startsWith('{') && order.notes.includes('imageUrls')) {
+      if (order?.notes && order.notes.startsWith('{') && order.notes.includes('imageUrls')) {
         try {
           const parsedNotes = JSON.parse(order.notes);
           if (Array.isArray(parsedNotes.imageUrls)) {
-            // Add any URLs not already in the array
             parsedNotes.imageUrls.forEach((url: string) => {
               if (!extractedUrls.includes(url)) {
                 extractedUrls.push(url);
@@ -122,15 +118,12 @@ const OrderDetailsDialog = ({
         uploadedUrls.push(publicUrl);
       }
 
-      // Save new image URLs to the order
       const newImageList = [...imageUrls, ...uploadedUrls];
       
-      // Update the image_url field in the database
       const { error: updateError } = await supabase
         .from("orders")
         .update({ 
           image_url: newImageList.length > 0 ? newImageList[0] : null,
-          // Store the full array as a metadata field
           notes: JSON.stringify({ 
             originalNotes: order.notes && !order.notes.startsWith('{') ? order.notes : "",
             imageUrls: newImageList 
@@ -180,7 +173,6 @@ const OrderDetailsDialog = ({
       
       fetchOrderItems();
       
-      // Open item details dialog to edit the new item
       if (data) {
         setSelectedItem(data);
         setIsItemDetailsOpen(true);
@@ -213,35 +205,28 @@ const OrderDetailsDialog = ({
     }
   };
 
-  // Update the handleDeleteImage function to be consistent with our approach
   const handleDeleteImage = async (imageUrl: string) => {
     if (!order?.id) return;
     
     try {
-      // First, get the file path from the URL
       const urlParts = imageUrl.split('/');
       const fileName = urlParts[urlParts.length - 1];
       const filePath = `orders/${order.id}/${fileName}`;
       
-      // Delete from storage
       const { error: storageError } = await supabase.storage
         .from("order-images")
         .remove([filePath]);
       
       if (storageError) {
         console.warn("Error deleting image from storage:", storageError);
-        // Continue anyway to update the database
       }
       
-      // Remove from the image URLs array
       const updatedImageUrls = imageUrls.filter(url => url !== imageUrl);
       
-      // Update the database
       const { error: updateError } = await supabase
         .from("orders")
         .update({ 
           image_url: updatedImageUrls.length > 0 ? updatedImageUrls[0] : null,
-          // Store the full array as a metadata field
           notes: JSON.stringify({ 
             originalNotes: order.notes && !order.notes.startsWith('{') ? order.notes : "",
             imageUrls: updatedImageUrls 
@@ -251,7 +236,6 @@ const OrderDetailsDialog = ({
         
       if (updateError) throw updateError;
       
-      // Update local state
       setImageUrls(updatedImageUrls);
       
       toast({
@@ -276,11 +260,11 @@ const OrderDetailsDialog = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-    <DialogTitle>{t("order_details")}</DialogTitle>
-    <DialogDescription>
-      {t("detailed_information_about_order")}
-    </DialogDescription>
-  </DialogHeader>
+          <DialogTitle>{t("order_details")}</DialogTitle>
+          <DialogDescription>
+            {t("detailed_information_about_order")}
+          </DialogDescription>
+        </DialogHeader>
 
         <ScrollArea className="h-[600px] pr-4 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -326,7 +310,6 @@ const OrderDetailsDialog = ({
             </div>
           </div>
 
-          {/* Images Gallery */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <strong>{t("images")}:</strong>
@@ -380,7 +363,6 @@ const OrderDetailsDialog = ({
             </div>
           </div>
 
-          {/* Order Items Section */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <strong>{t("order_items")}:</strong>

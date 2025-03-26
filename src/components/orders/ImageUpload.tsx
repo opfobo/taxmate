@@ -10,7 +10,7 @@ import { Loader2, Trash } from "lucide-react";
 
 export interface ImageUploadProps {
   id: string;
-  table: string;
+  table: "orders" | "order_items"; // Restrict to tables we know have the right columns
   storagePath: string;
   field: string;
 }
@@ -104,7 +104,7 @@ const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
               .single();
               
             if (fetchError) {
-              console.error("Error fetching order data:", fetchError);
+              console.error(`Error fetching ${table} data:`, fetchError);
             } else {
               let updateData: Record<string, any> = {};
               
@@ -112,7 +112,7 @@ const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
               updateData.image_url = uploadedUrls[0];
               
               // If we have existing notes, check if it's in JSON format with imageUrls
-              if (orderData?.notes && orderData.notes.startsWith('{')) {
+              if (orderData?.notes && typeof orderData.notes === 'string' && orderData.notes.startsWith('{')) {
                 try {
                   const parsedNotes = JSON.parse(orderData.notes);
                   
@@ -151,11 +151,11 @@ const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
                 .eq("id", id);
                 
               if (updateError) {
-                console.error("Error updating record with images:", updateError);
+                console.error(`Error updating ${table} with images:`, updateError);
               }
             }
           } catch (error) {
-            console.error("Error processing order data:", error);
+            console.error(`Error processing ${table} data:`, error);
           }
         }
       }
@@ -205,7 +205,7 @@ const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
           .single();
           
         if (fetchError) {
-          console.error("Error fetching order data:", fetchError);
+          console.error(`Error fetching ${table} data:`, fetchError);
           return;
         }
         
@@ -218,7 +218,7 @@ const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
         }
         
         // Update notes if they contain image URLs
-        if (orderData?.notes && orderData.notes.startsWith('{')) {
+        if (orderData?.notes && typeof orderData.notes === 'string' && orderData.notes.startsWith('{')) {
           try {
             const parsedNotes = JSON.parse(orderData.notes);
             
@@ -246,12 +246,12 @@ const ImageUpload = ({ id, table, storagePath, field }: ImageUploadProps) => {
             .eq("id", id);
             
           if (updateError) {
-            console.error("Error updating record after image deletion:", updateError);
+            console.error(`Error updating ${table} after image deletion:`, updateError);
           }
         }
         
       } catch (error) {
-        console.error("Error processing order update after deletion:", error);
+        console.error(`Error processing ${table} update after deletion:`, error);
       }
       
       toast({

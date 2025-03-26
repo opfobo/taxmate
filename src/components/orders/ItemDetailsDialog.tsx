@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -32,10 +31,7 @@ const ItemDetailsDialog = ({ isOpen, onClose, item, orderId, onItemUpdated }: It
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
 
   useEffect(() => {
-    // Reset the updated item when the dialog opens or item changes
     setUpdatedItem({ ...item });
-    
-    // Fetch suppliers for the dropdown
     fetchSuppliers();
   }, [item, isOpen]);
 
@@ -57,7 +53,6 @@ const ItemDetailsDialog = ({ isOpen, onClose, item, orderId, onItemUpdated }: It
   const handleSave = async () => {
     setIsSaving(true);
     
-    // Calculate the total price
     const totalPrice = updatedItem.quantity * updatedItem.unit_price;
     
     const { error } = await supabase
