@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ConsumerWithOrderStats } from "@/types/consumer";
@@ -24,7 +23,7 @@ interface OrderData {
   status: string;
   amount: number;
   created_at: string;
-  order_date?: string; // Make it optional since we'll handle that case
+  order_date?: string;
 }
 
 const ConsumerDetailsDrawer = ({
@@ -35,7 +34,8 @@ const ConsumerDetailsDrawer = ({
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
 
-  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery<OrderData[]>({
+  // Using a simple Array type instead of a generic type to avoid deep instantiation
+  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ["consumer-orders", consumer.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -46,7 +46,7 @@ const ConsumerDetailsDrawer = ({
         .limit(5);
 
       if (error) throw error;
-      return data || [];
+      return data as OrderData[] || [];
     },
   });
 
@@ -81,7 +81,7 @@ const ConsumerDetailsDrawer = ({
             />
           ) : (
             <div className="space-y-6">
-              {/* Kontaktinformationen */}
+              {/* Contact Information */}
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-1">
                   <h3 className="text-sm font-medium text-muted-foreground">
@@ -123,7 +123,7 @@ const ConsumerDetailsDrawer = ({
                 </div>
               </div>
 
-              {/* Statistiken */}
+              {/* Statistics */}
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-muted-foreground">{t("order_statistics")}</h3>
                 <div className="grid grid-cols-3 gap-4">
@@ -151,7 +151,7 @@ const ConsumerDetailsDrawer = ({
                 </div>
               </div>
 
-              {/* Letzte Bestellungen */}
+              {/* Recent Orders */}
               {recentOrders.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-sm font-medium text-muted-foreground">{t("recent_orders")}</h3>

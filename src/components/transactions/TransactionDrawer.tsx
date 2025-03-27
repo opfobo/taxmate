@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -357,10 +356,7 @@ const TransactionDrawer = ({
                                         <div>
                                           <span className="font-medium">{order.order_number}</span>
                                           <span className="ml-2">
-                                            ({new Intl.NumberFormat("de-DE", {
-                                              style: "currency",
-                                              currency: order.currency || "EUR"
-                                            }).format(order.amount)})
+                                            {formatCurrency(order.amount, order.currency || "EUR")}
                                           </span>
                                         </div>
                                         <Check

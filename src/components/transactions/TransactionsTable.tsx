@@ -1,4 +1,3 @@
-
 import { useTranslation } from "@/hooks/useTranslation";
 import { Transaction } from "@/pages/TransactionsPage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -35,10 +34,10 @@ const TransactionsTable = ({ transactions, onEdit, onDelete }: TransactionsTable
   const { t } = useTranslation();
 
   // Function to format currency
-  const formatCurrency = (amount: number, currency: string) => {
+  const formatCurrency = (amount: number, currency: string = "EUR") => {
     return new Intl.NumberFormat("de-DE", {
       style: "currency",
-      currency: currency || "EUR",
+      currency: currency,
     }).format(amount);
   };
 
@@ -93,7 +92,7 @@ const TransactionsTable = ({ transactions, onEdit, onDelete }: TransactionsTable
                 {formatCurrency(transaction.amount, transaction.currency || "EUR")}
               </TableCell>
               <TableCell className="capitalize">
-                {t(transaction.type)}
+                {t(transaction.type || "unknown")}
               </TableCell>
               <TableCell>
                 {transaction.payment_method || "-"}
@@ -120,10 +119,7 @@ const TransactionsTable = ({ transactions, onEdit, onDelete }: TransactionsTable
                             <div key={order.id} className="flex justify-between">
                               <span className="font-mono">{order.order_number}</span>
                               <span className="ml-4 font-medium">
-                                {new Intl.NumberFormat("de-DE", {
-                                  style: "currency",
-                                  currency: order.currency || "EUR"
-                                }).format(order.amount)}
+                                {formatCurrency(order.amount, order.currency || "EUR")}
                               </span>
                             </div>
                           ))}
