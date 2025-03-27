@@ -55,7 +55,6 @@ interface TransactionDrawerProps {
   onSubmit: (data: Partial<Transaction>, isEditing: boolean) => void;
 }
 
-// Define valid transaction status values
 type TransactionStatus = "success" | "pending" | "failed" | "matched" | "unmatched";
 
 type FormValues = {
