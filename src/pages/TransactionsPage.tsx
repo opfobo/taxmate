@@ -163,8 +163,8 @@ const TransactionsPage = () => {
       };
       
       data.forEach((transaction: any) => {
-        if (transaction.type) {
-          summary[transaction.type] += Number(transaction.amount);
+        if (transaction.type && (transaction.type === 'purchase' || transaction.type === 'refund' || transaction.type === 'payout')) {
+          summary[transaction.type as 'purchase' | 'refund' | 'payout'] += Number(transaction.amount);
         }
         if (transaction.type === "purchase") {
           summary.total -= Number(transaction.amount);

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ConsumerWithOrderStats } from "@/types/consumer";
@@ -16,11 +17,12 @@ interface ConsumerDetailsDrawerProps {
   onConsumerUpdated: () => void;
 }
 
+// Define a separate interface for order data to avoid deep type instantiation
 interface OrderData {
   id: string;
   order_number: string | null;
   order_date: string | null;
-  amount: number | string;
+  amount: number;
   status: string | null;
 }
 
@@ -32,7 +34,6 @@ const ConsumerDetailsDrawer = ({
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
 
-  // Typisierung direkt hier, um TypeScript zu entlasten
   const { data: recentOrders = [], isLoading: ordersLoading } = useQuery<OrderData[]>({
     queryKey: ["consumer-orders", consumer.id],
     queryFn: async () => {

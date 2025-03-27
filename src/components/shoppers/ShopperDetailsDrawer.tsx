@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
-import { AlertCircle, Mail, Phone, MapPin, Calendar, Edit, ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, Loader2, Mail, MapPin, Phone, Edit } from "lucide-react";
 import OrdersTable from "@/components/orders/OrdersTable";
 import TransactionsTable from "@/components/transactions/TransactionsTable";
 import ShopperEditForm from "./ShopperEditForm";
@@ -35,7 +34,6 @@ const ShopperDetailsDrawer = ({
   const [activeTab, setActiveTab] = useState("info");
   const [showEditForm, setShowEditForm] = useState(false);
 
-  // Fetch shopper's orders
   const { data: orders, isLoading: isOrdersLoading } = useQuery({
     queryKey: ["user-orders", shopper?.id],
     queryFn: async () => {
@@ -54,7 +52,6 @@ const ShopperDetailsDrawer = ({
     enabled: !!shopper?.id && open,
   });
 
-  // Fetch shopper's transactions
   const { data: transactions, isLoading: isTransactionsLoading } = useQuery({
     queryKey: ["user-transactions", shopper?.id],
     queryFn: async () => {
@@ -73,20 +70,24 @@ const ShopperDetailsDrawer = ({
     enabled: !!shopper?.id && open,
   });
 
-  // Handle form submission from the edit form
   const handleEditComplete = () => {
     setShowEditForm(false);
-    // Invalidate shopper data to refresh it
     queryClient.invalidateQueries({ queryKey: ["shoppers", user?.id] });
     if (onShopperUpdated) {
       onShopperUpdated();
     }
   };
 
-  // Return early if no shopper
+  const handleEditTransaction = (transaction: Transaction) => {
+    console.log("Edit transaction:", transaction);
+  };
+
+  const handleDeleteTransaction = (id: string) => {
+    console.log("Delete transaction:", id);
+  };
+
   if (!shopper) return null;
 
-  // Format the full address
   const formatAddress = () => {
     const parts = [
       shopper.address_line1,
@@ -101,9 +102,7 @@ const ShopperDetailsDrawer = ({
     return parts.join(", ");
   };
 
-  // Function to handle view details of an order
   const handleViewOrderDetails = (order: any) => {
-    // This would ideally open the order details modal/drawer
     console.log("View order details:", order);
   };
 
@@ -167,7 +166,6 @@ const ShopperDetailsDrawer = ({
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Email */}
                       <div className="flex items-start gap-2">
                         <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
                         <div>
@@ -176,7 +174,6 @@ const ShopperDetailsDrawer = ({
                         </div>
                       </div>
                       
-                      {/* Phone */}
                       <div className="flex items-start gap-2">
                         <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
                         <div>
@@ -185,7 +182,6 @@ const ShopperDetailsDrawer = ({
                         </div>
                       </div>
                       
-                      {/* Address */}
                       <div className="flex items-start gap-2 col-span-1 md:col-span-2">
                         <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
                         <div>
@@ -194,7 +190,6 @@ const ShopperDetailsDrawer = ({
                         </div>
                       </div>
                       
-                      {/* Registration Date */}
                       <div className="flex items-start gap-2">
                         <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
                         <div>
@@ -252,7 +247,11 @@ const ShopperDetailsDrawer = ({
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       </div>
                     ) : transactions && transactions.length > 0 ? (
-                      <TransactionsTable transactions={transactions} />
+                      <TransactionsTable 
+                        transactions={transactions} 
+                        onEdit={handleEditTransaction}
+                        onDelete={handleDeleteTransaction}
+                      />
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">
                         <p>{t("no_transactions_found")}</p>
