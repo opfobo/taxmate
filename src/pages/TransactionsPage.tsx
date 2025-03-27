@@ -281,24 +281,67 @@ const TransactionsPage = () => {
       <main className="container py-0">
         <div className="mb-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <TransactionsFilters
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              statusFilter={statusFilter}
-              onStatusChange={setStatusFilter}
-              typeFilter={typeFilter}
-              onTypeChange={setTypeFilter}
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-              
-            />
-            <Button onClick={() => {
-              setSelectedTransaction(null);
-              setIsTransactionDrawerOpen(true);
-            }}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              {t("record_transaction")}
-            </Button>
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+  {/* Suche */}
+  <div className="flex-1">
+    <div className="relative">
+      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      <Input
+        type="search"
+        placeholder={`${t("search")} ${t("transactions")}...`}
+        className="pl-9"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+      />
+    </div>
+  </div>
+
+  {/* Status */}
+  <StatusFilter
+    value={statusFilter}
+    onChange={setStatusFilter}
+  />
+
+  {/* Type */}
+  <TypeFilter
+    value={typeFilter}
+    onChange={setTypeFilter}
+  />
+
+  {/* Datum */}
+  <DateRangePicker
+    value={dateRange}
+    onChange={setDateRange}
+  />
+
+  {/* Clear Button nur wenn Filter aktiv */}
+  {(statusFilter || typeFilter || dateRange?.from || dateRange?.to || searchQuery) && (
+    <Button
+      onClick={() => {
+        setSearchQuery("");
+        setStatusFilter(null);
+        setTypeFilter(null);
+        setDateRange(undefined);
+      }}
+      variant="outline"
+      size="icon"
+      className="flex-shrink-0"
+      title={t("clear_filters")}
+    >
+      <X className="h-4 w-4" />
+    </Button>
+  )}
+
+  {/* Neuerfassung */}
+  <Button onClick={() => {
+    setSelectedTransaction(null);
+    setIsTransactionDrawerOpen(true);
+  }} className="flex items-center gap-2">
+    <PlusCircle className="h-4 w-4" />
+    {t("record_transaction")}
+  </Button>
+</div>
+
           </div>
           {summaryData && (
             <div className="mt-4">
