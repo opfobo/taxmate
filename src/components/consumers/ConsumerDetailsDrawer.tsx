@@ -36,20 +36,21 @@ const ConsumerDetailsDrawer = ({
   const [isEditing, setIsEditing] = useState(false);
 
   // Type the response explicitly to avoid deep instantiation
-  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery<OrderData[], Error>({
-    queryKey: ["consumer-orders", consumer.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, order_number, status, amount, created_at, order_date")
-        .eq("consumer_id", consumer.id)
-        .order("created_at", { ascending: false })
-        .limit(5);
+const { data: recentOrders = [], isLoading: ordersLoading } = useQuery({
+  queryKey: ["consumer-orders", consumer.id],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("id, order_number, status, amount, created_at, order_date")
+      .eq("consumer_id", consumer.id)
+      .order("created_at", { ascending: false })
+      .limit(5);
 
-      if (error) throw error;
-      return (data || []) as OrderData[];
-    },
-  });
+    if (error) throw error;
+    return (data || []) as OrderData[];
+  },
+});
+
 
   const handleEditComplete = () => {
     setIsEditing(false);
