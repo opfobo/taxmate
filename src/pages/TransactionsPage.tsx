@@ -175,19 +175,19 @@ const TransactionsPage = () => {
         currency: "EUR"
       };
       data.forEach((transaction: any) => {
-        const validType = ["purchase", "refund", "payout"].includes(type);
-        if (validType && transaction.type) {
-          summary[transaction.type as 'purchase' | 'refund' | 'payout'] += Number(transaction.amount);
-        }
-        if (transaction.type === "purchase") {
-          summary.total -= Number(transaction.amount);
-        } else {
-          summary.total += Number(transaction.amount);
-        }
-        if (transaction.currency) {
-          summary.currency = transaction.currency;
-        }
-      });
+  const validType = ["purchase", "refund", "payout"].includes(transaction.type);
+  if (validType && transaction.type) {
+    summary[transaction.type as 'purchase' | 'refund' | 'payout'] += Number(transaction.amount);
+  }
+  if (transaction.type === "purchase") {
+    summary.total -= Number(transaction.amount);
+  } else {
+    summary.total += Number(transaction.amount);
+  }
+  if (transaction.currency) {
+    summary.currency = transaction.currency;
+  }
+});
       return summary;
     },
     enabled: !!user
