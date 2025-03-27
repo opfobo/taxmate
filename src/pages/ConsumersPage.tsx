@@ -1,7 +1,7 @@
-
+import { useLocation } from "react-router-dom";
+import Navbar from "@/components/Navbar";
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { PageLayout } from "@/components/PageLayout";
 import ConsumersTable from "@/components/consumers/ConsumersTable";
 import ConsumerDetailsDrawer from "@/components/consumers/ConsumerDetailsDrawer";
 import ConsumerForm from "@/components/consumers/ConsumerForm";
@@ -18,6 +18,9 @@ const ConsumersPage = () => {
   const [selectedConsumer, setSelectedConsumer] = useState<ConsumerWithOrderStats | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const location = useLocation();
+  const isTabMode = location.pathname.startsWith("/dashboard/orders/");
+
 
   // Fetch consumers with order statistics
   const { data: consumers, isLoading, refetch } = useQuery({
@@ -97,8 +100,9 @@ const ConsumersPage = () => {
   };
 
   return (
-    <PageLayout>
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="min-h-screen bg-background">
+    {!isTabMode && <Navbar />}
+    <main className="container mx-auto py-6 space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold tracking-tight">{t("consumers")}</h1>
           <Button onClick={handleCreateConsumer}>
@@ -147,8 +151,8 @@ const ConsumersPage = () => {
             />
           </DialogContent>
         </Dialog>
-      </div>
-    </PageLayout>
+      </main>
+  </div>
   );
 };
 
