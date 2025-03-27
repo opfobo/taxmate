@@ -1,8 +1,9 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
-import { Edit, X, ShoppingBag, Clock, CreditCard, Loader2, Pencil, Save, Trash2 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import { Edit, ShoppingBag, Clock, CreditCard, Loader2, Pencil, Save, Trash2, X } from "lucide-react";
+import React, { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -20,6 +21,7 @@ interface OrderData {
   order_date: string;
   amount: number;
   currency?: string;
+  created_at?: string;
 }
 
 interface ConsumerDetailsDrawerProps {
@@ -41,7 +43,7 @@ const ConsumerDetailsDrawer: React.FC<ConsumerDetailsDrawerProps> = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, order_number, status, order_date, amount, currency")
+        .select("id, order_number, status, order_date, amount, currency, created_at")
         .eq("consumer_id", consumer.id)
         .order("created_at", { ascending: false })
         .limit(5);
