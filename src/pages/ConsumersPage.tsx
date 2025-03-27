@@ -64,7 +64,7 @@ const ConsumersPage = () => {
             .select("amount")
             .eq("consumer_id", consumer.id);
 
-          const totalVolume = ordersData?.reduce((sum, order) => sum + (parseFloat(order.amount) || 0), 0) || 0;
+          const totalVolume = ordersData?.reduce((sum, order) => sum + (parseFloat(String(order.amount)) || 0), 0) || 0;
 
           return {
             ...consumer,

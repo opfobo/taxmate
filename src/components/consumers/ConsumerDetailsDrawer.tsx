@@ -17,6 +17,14 @@ interface ConsumerDetailsDrawerProps {
   onConsumerUpdated: () => void;
 }
 
+interface OrderData {
+  id: string;
+  order_number: string;
+  order_date: string | null;
+  amount: number;
+  status: string | null;
+}
+
 const ConsumerDetailsDrawer = ({ 
   consumer, 
   onClose, 
@@ -37,7 +45,7 @@ const ConsumerDetailsDrawer = ({
         .limit(5);
 
       if (error) throw error;
-      return data || [];
+      return data as OrderData[] || [];
     }
   });
 
