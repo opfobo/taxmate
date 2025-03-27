@@ -36,7 +36,8 @@ const ConsumerDetailsDrawer = ({
   const [isEditing, setIsEditing] = useState(false);
 
   // Type the response explicitly to avoid deep instantiation
-  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery({
+  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery<OrderData[], Error>({
+
     queryKey: ["consumer-orders", consumer.id],
     queryFn: async () => {
       const { data, error } = await supabase
