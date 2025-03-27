@@ -18,7 +18,7 @@ const ResourceCard = ({ resource }: ResourceCardProps) => {
   const { t } = useTranslation();
   
   const getTypeIcon = () => {
-    switch (resource.type) {
+    switch (resource?.type) {
       case 'video':
         return <PlayCircle className="h-5 w-5" />;
       case 'article':
@@ -59,7 +59,7 @@ const ResourceCard = ({ resource }: ResourceCardProps) => {
         <div className="flex items-center gap-2 mb-2">
           {getTypeIcon()}
           <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
-            {t(resource.type)}
+            {t(resource?.type ?? "unknown")}
           </span>
         </div>
         <CardTitle>{resource.title}</CardTitle>
@@ -72,7 +72,7 @@ const ResourceCard = ({ resource }: ResourceCardProps) => {
         <Button 
           onClick={handleResourceClick} 
           className="w-full"
-          variant={resource.type === 'video' ? 'default' : 'outline'}
+          variant={resource?.type === 'video' ? 'default' : 'outline'}
         >
           {getTypeIcon()}
           {getButtonText()}
