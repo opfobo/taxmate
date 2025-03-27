@@ -72,7 +72,7 @@ const addToRemoveQueue = (toastId: string) => {
 }
 
 export const reducer = (state: State, action: Action): State => {
-  switch (action.type) {
+  switch (action?.type) {
     case "ADD_TOAST":
       return {
         ...state,
