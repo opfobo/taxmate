@@ -76,7 +76,7 @@ const TransactionDrawer = ({
     defaultValues: {
       amount: transaction?.amount || 0,
       currency: transaction?.currency || "EUR",
-      type: transaction?.type || "purchase",
+      type: transaction?.type ?? "purchase",
       status: transaction?.status || "unmatched",
       payment_method: transaction?.payment_method || "",
       order_id: transaction?.order_id || null,
