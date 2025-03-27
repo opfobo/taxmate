@@ -57,7 +57,7 @@ const AddressForm = ({ userId, address, onClose }: AddressFormProps) => {
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
     defaultValues: {
-      type: (address?.type as AddressType) || "home",
+      type: (address?.type as AddressType) ?? "home",
       street: address?.street || "",
       additional_info: address?.additional_info || "",
       zip: address?.zip || "",
