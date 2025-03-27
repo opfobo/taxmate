@@ -328,7 +328,8 @@ const TransactionsPage = () => {
       });
     }
   };
-  return <div className="min-h-screen bg-background">
+  return (
+  <div className="min-h-screen bg-background">
         {!isTabMode && <Navbar />}
       
       <main className="container py-0">
@@ -422,6 +423,8 @@ const TransactionsPage = () => {
 
       {/* Transaction drawer for creating/editing transactions */}
       <TransactionDrawer open={isTransactionDrawerOpen} onOpenChange={setIsTransactionDrawerOpen} transaction={selectedTransaction} orders={ordersData || []} onSubmit={handleTransactionSave} />
-    </div>;
+        </div>
+  );
+
 };
 export default TransactionsPage;
