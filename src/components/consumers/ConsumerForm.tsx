@@ -107,7 +107,7 @@ const ConsumerForm = ({ existingConsumer, onComplete, onCancel }: ConsumerFormPr
   };
 
   return (
-    <Form {...form}>
+    <Form control={form.control}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-4">
           {/* Full Name */}
