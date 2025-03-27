@@ -4,13 +4,21 @@ import { Input } from "@/components/ui/input";
 import { DateRange } from "react-day-picker";
 import { Search } from "lucide-react";
 import DateRangePicker from "@/components/orders/DateRangePicker";
-import StatusFilter from "@/components/transactions/StatusFilter";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface TransactionsFiltersProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   statusFilter: string | null;
   onStatusChange: (status: string | null) => void;
+  typeFilter: string | null;
+  onTypeChange: (type: string | null) => void;
   dateRange: DateRange | undefined;
   onDateRangeChange: (range: DateRange | undefined) => void;
 }
@@ -20,6 +28,8 @@ const TransactionsFilters = ({
   onSearchChange,
   statusFilter,
   onStatusChange,
+  typeFilter,
+  onTypeChange,
   dateRange,
   onDateRangeChange
 }: TransactionsFiltersProps) => {
@@ -39,11 +49,36 @@ const TransactionsFilters = ({
       </div>
 
       {/* Status filter */}
-      <StatusFilter value={statusFilter} onChange={onStatusChange} />
+      <Select value={statusFilter || ""} onValueChange={(value) => onStatusChange(value || null)}>
+        <SelectTrigger className="w-[160px]">
+          <SelectValue placeholder={t("status")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">{t("all_statuses")}</SelectItem>
+          <SelectItem value="matched">{t("matched")}</SelectItem>
+          <SelectItem value="unmatched">{t("unmatched")}</SelectItem>
+          <SelectItem value="success">{t("success")}</SelectItem>
+          <SelectItem value="pending">{t("pending")}</SelectItem>
+          <SelectItem value="failed">{t("failed")}</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Type filter */}
+      <Select value={typeFilter || ""} onValueChange={(value) => onTypeChange(value || null)}>
+        <SelectTrigger className="w-[160px]">
+          <SelectValue placeholder={t("type")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">{t("all_types")}</SelectItem>
+          <SelectItem value="purchase">{t("purchase")}</SelectItem>
+          <SelectItem value="refund">{t("refund")}</SelectItem>
+          <SelectItem value="payout">{t("payout")}</SelectItem>
+        </SelectContent>
+      </Select>
 
       {/* Date range filter */}
       <DateRangePicker
-        value={dateRange || { from: undefined, to: undefined }}
+        value={dateRange}
         onChange={onDateRangeChange}
       />
     </div>

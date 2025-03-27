@@ -1,15 +1,20 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import TransactionsTable from "@/components/transactions/TransactionsTable";
 import TransactionsFilters from "@/components/transactions/TransactionsFilters";
+import TransactionsSummary from "@/components/transactions/TransactionsSummary";
+import TransactionForm from "@/components/transactions/TransactionForm";
 import { DateRange } from "react-day-picker";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, PlusCircle } from "lucide-react";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 // Interface for transactions from the database
 export interface Transaction {
@@ -18,44 +23,64 @@ export interface Transaction {
   amount: number;
   currency: string;
   type: "purchase" | "refund" | "payout";
-  status: "success" | "pending" | "failed";
+  status: "success" | "pending" | "failed" | "unmatched" | "matched";
   user_id: string;
-  order_id?: string;
-  payment_method?: string;
-  updated_at?: string;
+  order_id?: string | null;
+  payment_method?: string | null;
+  updated_at?: string | null;
+  // For UI display only - not stored in database
+  order_number?: string | null;
+  order_status?: string | null;
+}
+
+export interface Order {
+  id: string;
+  order_number: string;
+  status: string;
+  amount: number;
+  currency: string | null;
+  created_at: string | null;
 }
 
 const TransactionsPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { toast } = useToast();
   
   // State for filters and pagination
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: undefined, to: undefined });
   const [currentPage, setCurrentPage] = useState(1);
+  const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const pageSize = 10;
 
   // Fetch transactions with filters
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["transactions", user?.id, searchQuery, statusFilter, dateRange, currentPage],
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["transactions", user?.id, searchQuery, statusFilter, typeFilter, dateRange, currentPage],
     queryFn: async () => {
       if (!user) throw new Error("User not authenticated");
       
       let query = supabase
         .from("transactions")
-        .select("*")
+        .select("*, orders(id, order_number, status)")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .range((currentPage - 1) * pageSize, currentPage * pageSize - 1);
       
       // Apply filters if set
       if (searchQuery) {
-        query = query.ilike("id", `%${searchQuery}%`);
+        query = query.or(`id.ilike.%${searchQuery}%,payment_method.ilike.%${searchQuery}%`);
       }
       
       if (statusFilter) {
         query = query.eq("status", statusFilter);
+      }
+      
+      if (typeFilter) {
+        query = query.eq("type", typeFilter);
       }
       
       if (dateRange?.from) {
@@ -70,7 +95,7 @@ const TransactionsPage = () => {
         query = query.lte("created_at", toDate.toISOString());
       }
       
-      const { data, error, count } = await query;
+      const { data, error } = await query;
       
       if (error) throw error;
       
@@ -81,11 +106,97 @@ const TransactionsPage = () => {
         .eq("user_id", user.id);
       
       if (countError) throw countError;
+
+      // Format transactions to include order details
+      const formattedTransactions = data.map((transaction: any) => {
+        const orderData = transaction.orders || null;
+        return {
+          ...transaction,
+          order_number: orderData ? orderData.order_number : null,
+          order_status: orderData ? orderData.status : null,
+          orders: undefined // Remove the nested orders object
+        };
+      });
       
       return {
-        transactions: data as Transaction[],
+        transactions: formattedTransactions as Transaction[],
         total: totalCount || 0
       };
+    },
+    enabled: !!user,
+  });
+
+  // Fetch summary data for transactions
+  const { data: summaryData } = useQuery({
+    queryKey: ["transactions-summary", user?.id, dateRange],
+    queryFn: async () => {
+      if (!user) throw new Error("User not authenticated");
+      
+      let query = supabase
+        .from("transactions")
+        .select("type, amount, currency")
+        .eq("user_id", user.id);
+      
+      if (dateRange?.from) {
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        query = query.gte("created_at", fromDate.toISOString());
+      }
+      
+      if (dateRange?.to) {
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        query = query.lte("created_at", toDate.toISOString());
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      // Calculate totals by type
+      const summary = {
+        purchase: 0,
+        refund: 0,
+        payout: 0,
+        total: 0,
+        currency: "EUR" // Default currency
+      };
+      
+      data.forEach((transaction: any) => {
+        if (transaction.type) {
+          summary[transaction.type] += Number(transaction.amount);
+        }
+        if (transaction.type === "purchase") {
+          summary.total -= Number(transaction.amount);
+        } else {
+          summary.total += Number(transaction.amount);
+        }
+        // Use the currency from the first transaction (assuming one currency is used)
+        if (transaction.currency) {
+          summary.currency = transaction.currency;
+        }
+      });
+      
+      return summary;
+    },
+    enabled: !!user,
+  });
+
+  // Fetch available orders for matching
+  const { data: ordersData } = useQuery({
+    queryKey: ["available-orders", user?.id],
+    queryFn: async () => {
+      if (!user) throw new Error("User not authenticated");
+      
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, order_number, status, amount, currency, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      
+      return data as Order[];
     },
     enabled: !!user,
   });
@@ -100,16 +211,145 @@ const TransactionsPage = () => {
     }
   };
 
+  // Handle transaction create/update
+  const handleTransactionSave = async (transactionData: Partial<Transaction>, isEditing: boolean) => {
+    try {
+      if (isEditing && selectedTransaction) {
+        // Update existing transaction
+        const { error } = await supabase
+          .from("transactions")
+          .update({
+            amount: transactionData.amount,
+            currency: transactionData.currency,
+            type: transactionData.type,
+            status: transactionData.status,
+            payment_method: transactionData.payment_method,
+            order_id: transactionData.order_id,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", selectedTransaction.id);
+        
+        if (error) throw error;
+        
+        toast({
+          title: t("transaction_updated"),
+          description: t("transaction_updated_description"),
+        });
+      } else {
+        // Create new transaction
+        const { error } = await supabase
+          .from("transactions")
+          .insert({
+            amount: transactionData.amount,
+            currency: transactionData.currency || "EUR",
+            type: transactionData.type,
+            status: transactionData.order_id ? "matched" : "unmatched",
+            payment_method: transactionData.payment_method,
+            order_id: transactionData.order_id,
+            user_id: user?.id
+          });
+        
+        if (error) throw error;
+        
+        toast({
+          title: t("transaction_created"),
+          description: t("transaction_created_description"),
+        });
+      }
+      
+      // Close form and refetch data
+      setIsTransactionFormOpen(false);
+      setSelectedTransaction(null);
+      refetch();
+    } catch (error) {
+      console.error("Error saving transaction:", error);
+      toast({
+        variant: "destructive",
+        title: t("error"),
+        description: error instanceof Error ? error.message : t("unknown_error"),
+      });
+    }
+  };
+
+  // Handle transaction delete
+  const handleTransactionDelete = async (transactionId: string) => {
+    try {
+      const { error } = await supabase
+        .from("transactions")
+        .delete()
+        .eq("id", transactionId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: t("transaction_deleted"),
+        description: t("transaction_deleted_description"),
+      });
+      
+      refetch();
+    }
+    catch (error) {
+      console.error("Error deleting transaction:", error);
+      toast({
+        variant: "destructive",
+        title: t("error"),
+        description: error instanceof Error ? error.message : t("unknown_error"),
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
       <main className="container py-10">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">{t("transactions")}</h1>
-          <p className="text-muted-foreground mt-2">
-            {t("transactions_description")}
-          </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">{t("transactions")}</h1>
+              <p className="text-muted-foreground mt-2">
+                {t("transactions_description")}
+              </p>
+            </div>
+            
+            <Dialog open={isTransactionFormOpen} onOpenChange={setIsTransactionFormOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => {
+                  setSelectedTransaction(null);
+                  setIsTransactionFormOpen(true);
+                }}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  {t("record_transaction")}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>
+                    {selectedTransaction ? t("edit_transaction") : t("record_transaction")}
+                  </DialogTitle>
+                </DialogHeader>
+                <TransactionForm
+                  transaction={selectedTransaction}
+                  orders={ordersData || []}
+                  onSubmit={handleTransactionSave}
+                  onCancel={() => {
+                    setIsTransactionFormOpen(false);
+                    setSelectedTransaction(null);
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {summaryData && (
+            <TransactionsSummary
+              purchases={summaryData.purchase}
+              refunds={summaryData.refund}
+              payouts={summaryData.payout}
+              total={summaryData.total}
+              currency={summaryData.currency}
+            />
+          )}
         </div>
 
         {/* Filters */}
@@ -118,6 +358,8 @@ const TransactionsPage = () => {
           onSearchChange={setSearchQuery}
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
+          typeFilter={typeFilter}
+          onTypeChange={setTypeFilter}
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
         />
@@ -145,7 +387,14 @@ const TransactionsPage = () => {
         {/* Transactions table */}
         {data && (
           <>
-            <TransactionsTable transactions={data.transactions} />
+            <TransactionsTable
+              transactions={data.transactions}
+              onEdit={(transaction) => {
+                setSelectedTransaction(transaction);
+                setIsTransactionFormOpen(true);
+              }}
+              onDelete={handleTransactionDelete}
+            />
             
             {/* Pagination */}
             {totalPages > 1 && (
