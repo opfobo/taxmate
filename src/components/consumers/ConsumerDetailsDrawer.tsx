@@ -34,7 +34,7 @@ const ConsumerDetailsDrawer = ({
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
 
-  // Using a simple Array type instead of a generic type to avoid deep instantiation
+  // Changed to explicitly type the array with the OrderData interface to avoid deep instantiation
   const { data: recentOrders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ["consumer-orders", consumer.id],
     queryFn: async () => {
@@ -46,7 +46,7 @@ const ConsumerDetailsDrawer = ({
         .limit(5);
 
       if (error) throw error;
-      return data as OrderData[] || [];
+      return (data || []) as OrderData[];
     },
   });
 

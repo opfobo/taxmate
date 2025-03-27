@@ -45,6 +45,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { X, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 
 interface TransactionDrawerProps {
   open: boolean;
@@ -93,7 +94,6 @@ const TransactionDrawer = ({
     },
   });
 
-  // Update form values when transaction changes
   useEffect(() => {
     if (transaction) {
       form.reset({
@@ -107,7 +107,6 @@ const TransactionDrawer = ({
         linked_order_ids: transaction.linked_order_ids || [],
       });
 
-      // Set selected orders based on linked_order_ids
       if (transaction.linked_order_ids && transaction.linked_order_ids.length > 0) {
         const filteredOrders = orders.filter(order => 
           transaction.linked_order_ids?.includes(order.id)
@@ -134,23 +133,19 @@ const TransactionDrawer = ({
   const handleSubmit = (data: FormValues) => {
     onSubmit({
       ...data,
-      // Convert amount to number if it's a string
       amount: typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount,
     }, isEditing);
   };
 
-  // Handle order selection/deselection
   const toggleOrder = (order: Order) => {
     const currentValues = form.getValues().linked_order_ids || [];
     let newValues: string[];
     let newSelectedOrders: Order[];
 
     if (currentValues.includes(order.id)) {
-      // Remove order
       newValues = currentValues.filter(id => id !== order.id);
       newSelectedOrders = selectedOrders.filter(o => o.id !== order.id);
     } else {
-      // Add order
       newValues = [...currentValues, order.id];
       newSelectedOrders = [...selectedOrders, order];
     }
@@ -159,13 +154,10 @@ const TransactionDrawer = ({
     setSelectedOrders(newSelectedOrders);
   };
 
-  // Calculate total amount of selected orders
   const totalSelectedAmount = selectedOrders.reduce((sum, order) => sum + order.amount, 0);
   
-  // Calculate difference between transaction amount and total selected orders amount
   const amountDifference = form.watch('amount') - totalSelectedAmount;
   
-  // Determine if amounts match (within 1% tolerance)
   const amountsMatch = Math.abs(amountDifference) <= (form.watch('amount') * 0.01);
 
   return (
@@ -356,7 +348,7 @@ const TransactionDrawer = ({
                                         <div>
                                           <span className="font-medium">{order.order_number}</span>
                                           <span className="ml-2">
-                                            {formatCurrency(order.amount, order.currency || "EUR")}
+                                            {formatCurrency(order.amount)}
                                           </span>
                                         </div>
                                         <Check
@@ -379,7 +371,6 @@ const TransactionDrawer = ({
                   )}
                 />
                 
-                {/* Selected orders display */}
                 {selectedOrders.length > 0 && (
                   <div className="space-y-2">
                     <div className="text-sm font-medium">{t("selected_orders")}</div>
@@ -389,10 +380,7 @@ const TransactionDrawer = ({
                           <div>
                             <span className="font-mono">{order.order_number}</span>
                             <span className="ml-2 text-muted-foreground">
-                              ({new Intl.NumberFormat("de-DE", {
-                                style: "currency",
-                                currency: order.currency || "EUR"
-                              }).format(order.amount)})
+                              {formatCurrency(order.amount)}
                             </span>
                           </div>
                           <Button
@@ -409,32 +397,22 @@ const TransactionDrawer = ({
                         <div className="flex justify-between text-sm">
                           <span className="font-semibold">{t("total_orders_amount")}</span>
                           <span>
-                            {new Intl.NumberFormat("de-DE", {
-                              style: "currency",
-                              currency: selectedOrders[0]?.currency || "EUR"
-                            }).format(totalSelectedAmount)}
+                            {formatCurrency(totalSelectedAmount)}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm mt-1">
                           <span className="font-semibold">{t("transaction_amount")}</span>
                           <span>
-                            {new Intl.NumberFormat("de-DE", {
-                              style: "currency",
-                              currency: form.watch('currency') || "EUR"
-                            }).format(form.watch('amount'))}
+                            {formatCurrency(form.watch('amount'))}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm mt-1">
                           <span className="font-semibold">{t("difference")}</span>
                           <span className={amountsMatch ? "text-green-600" : "text-amber-600"}>
-                            {new Intl.NumberFormat("de-DE", {
-                              style: "currency",
-                              currency: form.watch('currency') || "EUR"
-                            }).format(amountDifference)}
+                            {formatCurrency(amountDifference)}
                           </span>
                         </div>
                         
-                        {/* Match indicator */}
                         <div className="mt-2">
                           {amountsMatch ? (
                             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">

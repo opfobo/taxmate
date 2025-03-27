@@ -81,7 +81,11 @@ const TransactionsPage = () => {
       }
       
       if (typeFilter) {
-        query = query.eq("type", typeFilter);
+        // Validate and convert transaction type to the required type
+        const validType = ["purchase", "refund", "payout"].includes(typeFilter);
+        if (validType) {
+          query = query.eq("type", typeFilter as "purchase" | "refund" | "payout");
+        }
       }
       
       if (dateRange?.from) {
@@ -237,14 +241,26 @@ const TransactionsPage = () => {
   const handleTransactionSave = async (transactionData: Partial<Transaction>, isEditing: boolean) => {
     try {
       if (isEditing && selectedTransaction) {
+        // Make sure to validate the transaction status before sending it to the database
+        const status = transactionData.status || "unmatched";
+        const validStatus = ["success", "pending", "failed", "matched", "unmatched"].includes(status) 
+          ? status 
+          : "unmatched";
+          
+        // Make sure to validate transaction type
+        const type = transactionData.type || "purchase";
+        const validType = ["purchase", "refund", "payout"].includes(type)
+          ? type as "purchase" | "refund" | "payout"
+          : "purchase";
+        
         // Update existing transaction
         const { error } = await supabase
           .from("transactions")
           .update({
             amount: transactionData.amount,
             currency: transactionData.currency,
-            type: transactionData.type,
-            status: transactionData.status,
+            type: validType,
+            status: validStatus,
             payment_method: transactionData.payment_method,
             order_id: transactionData.order_id,
             notes: transactionData.notes,
@@ -260,14 +276,25 @@ const TransactionsPage = () => {
           description: t("transaction_updated_description"),
         });
       } else {
+        // Create new transaction - validate types
+        const status = transactionData.status || "unmatched";
+        const validStatus = ["success", "pending", "failed", "matched", "unmatched"].includes(status) 
+          ? status 
+          : "unmatched";
+          
+        const type = transactionData.type || "purchase";
+        const validType = ["purchase", "refund", "payout"].includes(type)
+          ? type as "purchase" | "refund" | "payout"
+          : "purchase";
+          
         // Create new transaction
         const { error } = await supabase
           .from("transactions")
           .insert({
             amount: transactionData.amount,
             currency: transactionData.currency || "EUR",
-            type: transactionData.type,
-            status: transactionData.status || "unmatched",
+            type: validType,
+            status: validStatus,
             payment_method: transactionData.payment_method,
             order_id: transactionData.order_id,
             notes: transactionData.notes,

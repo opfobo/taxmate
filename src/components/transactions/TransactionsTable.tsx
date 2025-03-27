@@ -1,3 +1,4 @@
+
 import { useTranslation } from "@/hooks/useTranslation";
 import { Transaction } from "@/pages/TransactionsPage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -23,6 +24,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
+import { formatCurrency } from "@/lib/utils";
 
 interface TransactionsTableProps {
   transactions: Transaction[];
@@ -32,14 +34,6 @@ interface TransactionsTableProps {
 
 const TransactionsTable = ({ transactions, onEdit, onDelete }: TransactionsTableProps) => {
   const { t } = useTranslation();
-
-  // Function to format currency
-  const formatCurrency = (amount: number, currency: string = "EUR") => {
-    return new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency: currency,
-    }).format(amount);
-  };
 
   // Function to render status badge with appropriate color
   const renderStatusBadge = (status: string) => {
@@ -89,7 +83,7 @@ const TransactionsTable = ({ transactions, onEdit, onDelete }: TransactionsTable
                 {format(new Date(transaction.created_at), "PP")}
               </TableCell>
               <TableCell>
-                {formatCurrency(transaction.amount, transaction.currency || "EUR")}
+                {formatCurrency(transaction.amount)}
               </TableCell>
               <TableCell className="capitalize">
                 {t(transaction.type || "unknown")}
@@ -119,7 +113,7 @@ const TransactionsTable = ({ transactions, onEdit, onDelete }: TransactionsTable
                             <div key={order.id} className="flex justify-between">
                               <span className="font-mono">{order.order_number}</span>
                               <span className="ml-4 font-medium">
-                                {formatCurrency(order.amount, order.currency || "EUR")}
+                                {formatCurrency(order.amount)}
                               </span>
                             </div>
                           ))}
