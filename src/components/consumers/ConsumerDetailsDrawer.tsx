@@ -38,7 +38,11 @@ const ConsumerDetailsDrawer: React.FC<ConsumerDetailsDrawerProps> = ({
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
 
-  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery({
+  const {
+  data: recentOrders = [],
+  isLoading: ordersLoading,
+} = useQuery<OrderData[], Error>({
+
     queryKey: ["consumer-orders", consumer.id],
     queryFn: async () => {
       const { data, error } = await supabase
