@@ -1,4 +1,3 @@
-import "@/i18n"; // ← WICHTIG: i18n initialisieren, bevor App gerendert wird
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
