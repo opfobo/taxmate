@@ -6,34 +6,35 @@ export const initOrderImagesStorage = async () => {
     // Check if the bucket exists
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
 
-    if (listError) {
-      console.error('Error listing buckets:', listError.message);
+    if (listError || !buckets) {
+      console.warn("Skipping bucket creation: unable to list buckets or no data returned.");
       return;
     }
 
-    const bucketExists = buckets?.some(bucket => bucket.name === 'order-images');
+    const bucketExists = buckets.some(bucket => bucket.name === 'order-images');
+    if (bucketExists) {
+      console.log('Bucket already exists, skipping creation.');
+      return;
+    }
 
-    if (!bucketExists) {
-      const { error } = await supabase.storage.createBucket("order-images", {
-        public: true, // set to false if you want private access only
-        fileSizeLimit: 10485760, // 10MB limit
-      });
+    const { error } = await supabase.storage.createBucket("order-images", {
+      public: true,
+      fileSizeLimit: 10485760, // 10MB
+    });
 
-      if (error && error.message !== "The resource already exists") {
-        console.error("Error creating bucket:", error.message);
-      } else {
-        console.log("Successfully created order-images bucket");
+    if (error && error.message !== "The resource already exists") {
+      console.error("Error creating bucket:", error.message);
+    } else {
+      console.log("Successfully created order-images bucket");
 
-        // Optional: Trigger a signed URL creation to confirm access
-        // This won't succeed unless a file exists, so only log error if it's a policy issue
-        const { error: policyError } = await supabase
-          .storage
-          .from("order-images")
-          .createSignedUrl("dummy.txt", 60);
+      // Optional test: Try creating a signed URL (may fail if file doesn't exist)
+      const { error: policyError } = await supabase
+        .storage
+        .from("order-images")
+        .createSignedUrl("dummy.txt", 60);
 
-        if (policyError && !policyError.message.includes("not found")) {
-          console.error("Error setting public access policy:", policyError.message);
-        }
+      if (policyError && !policyError.message.includes("not found")) {
+        console.error("Error setting public access policy:", policyError.message);
       }
     }
   } catch (error) {
