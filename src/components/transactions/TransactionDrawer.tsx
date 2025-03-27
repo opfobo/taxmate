@@ -32,7 +32,6 @@ import { Crosshair, Link, Plus, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 
-// Define the transaction schema
 const transactionSchema = z.object({
   amount: z.coerce.number()
     .gt(0, { message: "Amount must be greater than 0" }),
@@ -72,7 +71,6 @@ const TransactionDrawer = ({
   const [isMultiOrderLinkingOpen, setIsMultiOrderLinkingOpen] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<Order[]>([]);
 
-  // Initialize the form
   const form = useForm<z.infer<typeof transactionSchema>>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
@@ -88,7 +86,6 @@ const TransactionDrawer = ({
     mode: "onChange",
   });
 
-  // Update form values when transaction prop changes (for editing)
   useEffect(() => {
     if (transaction) {
       form.reset({
@@ -102,34 +99,27 @@ const TransactionDrawer = ({
         linked_order_ids: transaction.linked_order_ids || [],
       });
       
-      // Initialize selectedOrders when editing a transaction
       if (transaction.matched_orders) {
         setSelectedOrders(transaction.matched_orders);
       } else {
         setSelectedOrders([]);
       }
     } else {
-      // Reset selectedOrders when creating a new transaction
       setSelectedOrders([]);
     }
   }, [transaction, form]);
 
-  // Handle form submission
   const handleFormSubmit = async (values: z.infer<typeof transactionSchema>) => {
     try {
-      // Extract linked order IDs from selectedOrders
       const linkedOrderIds = selectedOrders.map((order) => order.id);
       
-      // Include linkedOrderIds in the values to be submitted
       const valuesWithLinkedOrders = {
         ...values,
         linked_order_ids: linkedOrderIds,
       };
       
-      // Submit the form
       await onSubmit(valuesWithLinkedOrders, !!transaction);
       
-      // Reset the form after successful submission if creating a new transaction
       if (!transaction) {
         form.reset();
         setSelectedOrders([]);
@@ -144,17 +134,14 @@ const TransactionDrawer = ({
     }
   };
 
-  // Function to handle linking/unlinking orders
   const handleOrderSelection = (order: Order) => {
     const isOrderSelected = selectedOrders.some((selectedOrder) => selectedOrder.id === order.id);
     
     if (isOrderSelected) {
-      // If the order is already selected, remove it from the selectedOrders array
       setSelectedOrders((prevSelectedOrders) =>
         prevSelectedOrders.filter((selectedOrder) => selectedOrder.id !== order.id)
       );
     } else {
-      // If the order is not selected, add it to the selectedOrders array
       setSelectedOrders((prevSelectedOrders) => [...prevSelectedOrders, order]);
     }
   };
@@ -201,7 +188,6 @@ const TransactionDrawer = ({
                       <SelectItem value="USD">USD</SelectItem>
                       <SelectItem value="EUR">EUR</SelectItem>
                       <SelectItem value="GBP">GBP</SelectItem>
-                      {/* Add more currencies as needed */}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -268,11 +254,9 @@ const TransactionDrawer = ({
               )}
             />
             
-            {/* Order Linking Section */}
             <div className="space-y-2">
               <FormLabel>{t("link_orders")}</FormLabel>
               
-              {/* Display linked orders as badges */}
               {selectedOrders.length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {selectedOrders.map((order) => (
@@ -290,7 +274,6 @@ const TransactionDrawer = ({
                 </div>
               )}
               
-              {/* Button to open multi-order linking popover */}
               <Popover open={isMultiOrderLinkingOpen} onOpenChange={setIsMultiOrderLinkingOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm">

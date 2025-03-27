@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ConsumerWithOrderStats } from "@/types/consumer";
@@ -50,7 +49,6 @@ const { data: recentOrders = [], isLoading: ordersLoading } = useQuery({
     return (data || []) as OrderData[];
   },
 });
-
 
   const handleEditComplete = () => {
     setIsEditing(false);

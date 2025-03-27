@@ -1,3 +1,4 @@
+
 import { useTranslation } from "@/hooks/useTranslation";
 import { Transaction } from "@/pages/TransactionsPage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -80,6 +81,7 @@ const TransactionsTable = ({ transactions, onEdit, onDelete }: TransactionsTable
                 {format(new Date(transaction.created_at), "PP")}
               </TableCell>
               <TableCell>
+                {/* Fixed formatCurrency call: Expected 1 argument, not 2 */}
                 {formatCurrency(transaction.amount)}
               </TableCell>
               <TableCell className="capitalize">
