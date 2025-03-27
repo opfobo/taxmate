@@ -332,25 +332,41 @@ const TransactionsPage = () => {
         {!isTabMode && <Navbar />}
       
       <main className="container py-0">
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold">{t("transactions")}</h1>
-              <p className="text-muted-foreground mt-2">
-                {t("transactions_description")}
-              </p>
-            </div>
-            
-            <Button onClick={() => {
-            setSelectedTransaction(null);
-            setIsTransactionDrawerOpen(true);
-          }}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              {t("record_transaction")}
-            </Button>
-          </div>
+       <div className="mb-6">
+  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <TransactionsFilters
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      statusFilter={statusFilter}
+      onStatusChange={setStatusFilter}
+      typeFilter={typeFilter}
+      onTypeChange={setTypeFilter}
+      dateRange={dateRange}
+      onDateRangeChange={setDateRange}
+    />
+    <Button onClick={() => {
+      setSelectedTransaction(null);
+      setIsTransactionDrawerOpen(true);
+    }}>
+      <PlusCircle className="mr-2 h-4 w-4" />
+      {t("record_transaction")}
+    </Button>
+  </div>
+  {summaryData && (
+    <div className="mt-4">
+      <TransactionsSummary
+        purchases={summaryData.purchase}
+        refunds={summaryData.refund}
+        payouts={summaryData.payout}
+        total={summaryData.total}
+        currency={summaryData.currency}
+      />
+    </div>
+  )}
+</div>
 
-          {summaryData && <TransactionsSummary purchases={summaryData.purchase} refunds={summaryData.refund} payouts={summaryData.payout} total={summaryData.total} currency={summaryData.currency} />}
+
+         
         </div>
 
         {/* Filters */}
