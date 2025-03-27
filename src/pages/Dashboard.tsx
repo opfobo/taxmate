@@ -179,7 +179,7 @@ const Dashboard = () => {
   const totalOrders = orders?.length || 0;
   
   const totalSpent = transactions
-    ?.filter(tx => tx.type === 'purchase' && tx.status === 'success')
+    ?.filter(tx => tx?.type === 'purchase' && tx?.status === 'success')
     .reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0;
   
   const openOrders = orders
@@ -356,7 +356,7 @@ const Dashboard = () => {
                   {transactions?.map((transaction) => (
                     <div key={transaction.id}>
                       <ActivityItem 
-                        title={t(transaction.type || "transaction")}
+                        title={t(transaction?.type ?? "transaction")}
                         subtitle={transaction.payment_method || t("payment")}
                         timestamp={transaction.created_at}
                         status={transaction.status}
