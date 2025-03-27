@@ -1,3 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { formatCurrency } from "@/lib/utils";
+import { Edit, X, ShoppingBag, Clock, CreditCard } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { supabase } from "@/integrations/supabase/client";
