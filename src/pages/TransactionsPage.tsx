@@ -11,9 +11,10 @@ import TransactionsFilters from "@/components/transactions/TransactionsFilters";
 import TransactionsSummary from "@/components/transactions/TransactionsSummary";
 import TransactionDrawer from "@/components/transactions/TransactionDrawer";
 import { DateRange } from "react-day-picker";
-import { AlertCircle, PlusCircle } from "lucide-react";
+import { AlertCircle, PlusCircle, X, Filter } from "lucide-react";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 // Interface for transactions from the database
 export interface Transaction {
@@ -42,6 +43,7 @@ export interface Order {
   currency: string | null;
   created_at: string | null;
 }
+
 const TransactionsPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -274,45 +276,83 @@ const TransactionsPage = () => {
     }
   };
 
+  const activeFilterCount = [
+    searchQuery.trim().length > 0,
+    statusFilter !== null,
+    typeFilter !== null,
+    dateRange?.from !== undefined || dateRange?.to !== undefined
+  ].filter(Boolean).length;
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter(null);
+    setTypeFilter(null);
+    setDateRange({ from: undefined, to: undefined });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {!isTabMode && <Navbar />}
       
-      <main className="container py-0">
-        <div className="mb-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <main className="container py-6">
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex-1">
             <TransactionsFilters
-  searchQuery={searchQuery}
-  onSearchChange={setSearchQuery}
-  statusFilter={statusFilter}
-  onStatusChange={setStatusFilter}
-  typeFilter={typeFilter}
-  onTypeChange={setTypeFilter}
-  dateRange={dateRange}
-  onDateRangeChange={setDateRange}
-/>
-<Button onClick={() => {
-  setSelectedTransaction(null);
-  setIsTransactionDrawerOpen(true);
-}}>
-  <PlusCircle className="mr-2 h-4 w-4" />
-  {t("record_transaction")}
-</Button>
-
-
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              statusFilter={statusFilter}
+              onStatusChange={setStatusFilter}
+              typeFilter={typeFilter}
+              onTypeChange={setTypeFilter}
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+            />
           </div>
-          {summaryData && (
-            <div className="mt-4">
-              <TransactionsSummary
-                purchases={summaryData.purchase}
-                refunds={summaryData.refund}
-                payouts={summaryData.payout}
-                total={summaryData.total}
-                currency={summaryData.currency}
-              />
-            </div>
+          
+          {activeFilterCount > 0 && (
+            <Button 
+              onClick={handleClearFilters} 
+              variant="outline" 
+              size="icon"
+              className="flex-shrink-0 h-10 w-10"
+              title={t("clear_filters")}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           )}
+          
+          <Button onClick={() => {
+            setSelectedTransaction(null);
+            setIsTransactionDrawerOpen(true);
+          }} className="flex items-center gap-2">
+            <PlusCircle className="h-4 w-4" />
+            {t("record_transaction")}
+          </Button>
         </div>
+
+        {activeFilterCount > 0 && (
+          <div className="mb-4 flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              {t("active_filters")}:
+            </span>
+            <Badge variant="outline" className="font-mono">
+              {activeFilterCount}
+            </Badge>
+          </div>
+        )}
+
+        {summaryData && (
+          <div className="mb-6">
+            <TransactionsSummary
+              purchases={summaryData.purchase}
+              refunds={summaryData.refund}
+              payouts={summaryData.payout}
+              total={summaryData.total}
+              currency={summaryData.currency}
+            />
+          </div>
+        )}
 
         {/* Loading state */}
         {isLoading && <div className="flex justify-center my-12">

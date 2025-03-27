@@ -1,14 +1,23 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { ConsumerWithOrderStats } from "@/types/consumer";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Edit, X, ShoppingBag, Clock, CreditCard } from "lucide-react";
-import ConsumerForm from "@/components/consumers/ConsumerForm";
-import { format } from "date-fns";
-import { formatCurrency } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Consumer, ConsumerWithOrderStats } from "@/types/consumer";
+import { Loader2, Pencil, Save, Trash2, X } from "lucide-react";
+import ConsumerForm from "./ConsumerForm";
+import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
+interface OrderData {
+  id: string;
+  order_number: string;
+  status: string;
+  order_date: string;
+  amount: number;
+  currency?: string;
+}
 
 interface ConsumerDetailsDrawerProps {
   consumer: ConsumerWithOrderStats;
@@ -16,39 +25,28 @@ interface ConsumerDetailsDrawerProps {
   onConsumerUpdated: () => void;
 }
 
-// Define a separate interface for order data with explicit types
-interface OrderData {
-  id: string;
-  order_number: string;
-  status: string;
-  amount: number;
-  created_at: string;
-  order_date?: string;
-}
-
-const ConsumerDetailsDrawer = ({
+const ConsumerDetailsDrawer: React.FC<ConsumerDetailsDrawerProps> = ({
   consumer,
   onClose,
-  onConsumerUpdated,
-}: ConsumerDetailsDrawerProps) => {
+  onConsumerUpdated
+}) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
 
-  // Type the response explicitly to avoid deep instantiation
-const { data: recentOrders = [], isLoading: ordersLoading } = useQuery({
-  queryKey: ["consumer-orders", consumer.id],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("id, order_number, status, amount, created_at, order_date")
-      .eq("consumer_id", consumer.id)
-      .order("created_at", { ascending: false })
-      .limit(5);
+  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ["consumer-orders", consumer.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, order_number, status, order_date, amount, currency")
+        .eq("consumer_id", consumer.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
 
-    if (error) throw error;
-    return (data || []) as OrderData[];
-  },
-});
+      if (error) throw error;
+      return (data || []) as OrderData[];
+    },
+  });
 
   const handleEditComplete = () => {
     setIsEditing(false);

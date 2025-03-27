@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import StatusFilter from "@/components/transactions/StatusFilter";
 
 interface TransactionsFiltersProps {
   searchQuery: string;
@@ -36,10 +37,10 @@ const TransactionsFilters = ({
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 mb-6">
+    <div className="flex flex-col md:flex-row gap-4 w-full">
       {/* Search filter */}
       <div className="flex-grow relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder={t("search_transactions")}
           value={searchQuery}
@@ -49,19 +50,11 @@ const TransactionsFilters = ({
       </div>
 
       {/* Status filter */}
-      <Select value={statusFilter || "all"} onValueChange={(value) => onStatusChange(value === "all" ? null : value)}>
-        <SelectTrigger className="w-[160px]">
-          <SelectValue placeholder={t("status")} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">{t("all_statuses")}</SelectItem>
-          <SelectItem value="matched">{t("matched")}</SelectItem>
-          <SelectItem value="unmatched">{t("unmatched")}</SelectItem>
-          <SelectItem value="success">{t("success")}</SelectItem>
-          <SelectItem value="pending">{t("pending")}</SelectItem>
-          <SelectItem value="failed">{t("failed")}</SelectItem>
-        </SelectContent>
-      </Select>
+      <StatusFilter 
+        value={statusFilter}
+        onChange={onStatusChange}
+        statusOptions={["matched", "unmatched", "success", "pending", "failed"]}
+      />
 
       {/* Type filter */}
       <Select value={typeFilter || "all"} onValueChange={(value) => onTypeChange(value === "all" ? null : value)}>
@@ -78,7 +71,7 @@ const TransactionsFilters = ({
 
       {/* Date range filter */}
       <DateRangePicker
-        value={dateRange}
+        value={dateRange || { from: undefined, to: undefined }}
         onChange={onDateRangeChange}
       />
     </div>
