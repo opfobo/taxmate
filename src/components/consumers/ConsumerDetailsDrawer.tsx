@@ -5,7 +5,7 @@ import { ConsumerWithOrderStats } from "@/types/consumer";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Edit, X, ShoppingBag, Clock, CreditCard } from "lucide-react";
-import { ConsumerForm } from "@/components/consumers/ConsumerForm";
+import ConsumerForm from "@/components/consumers/ConsumerForm";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";

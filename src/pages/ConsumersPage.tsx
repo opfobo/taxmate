@@ -2,9 +2,9 @@
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageLayout } from "@/components/PageLayout";
-import { ConsumersTable } from "@/components/consumers/ConsumersTable";
-import { ConsumerDetailsDrawer } from "@/components/consumers/ConsumerDetailsDrawer";
-import { ConsumerForm } from "@/components/consumers/ConsumerForm";
+import ConsumersTable from "@/components/consumers/ConsumersTable";
+import ConsumerDetailsDrawer from "@/components/consumers/ConsumerDetailsDrawer";
+import ConsumerForm from "@/components/consumers/ConsumerForm";
 import { Consumer, ConsumerWithOrderStats } from "@/types/consumer";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
