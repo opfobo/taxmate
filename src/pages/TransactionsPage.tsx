@@ -290,12 +290,12 @@ const TransactionsPage = () => {
               onTypeChange={setTypeFilter}
               dateRange={dateRange}
               onDateRangeChange={setDateRange}
-              <Button onClick={() => {
+              
+            />
+            <Button onClick={() => {
               setSelectedTransaction(null);
               setIsTransactionDrawerOpen(true);
             }}>
-            />
-            
               <PlusCircle className="mr-2 h-4 w-4" />
               {t("record_transaction")}
             </Button>
