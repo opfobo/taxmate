@@ -101,7 +101,7 @@ const TransactionsTable = ({ transactions, onEdit, onDelete }: TransactionsTable
                       <TooltipTrigger asChild>
                         <div className="flex items-center gap-1 cursor-default">
                           <span className="font-medium">
-                            {t("orders_count", { count: transaction.matched_orders.length })}
+                            {`${transaction.matched_orders.length} ${t("orders")}`}
                           </span>
                           <Info className="h-4 w-4 text-muted-foreground" />
                         </div>
