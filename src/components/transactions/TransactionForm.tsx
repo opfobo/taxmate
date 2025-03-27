@@ -36,7 +36,7 @@ const TransactionForm = ({ transaction, orders, onSubmit, onCancel }: Transactio
     defaultValues: {
       amount: transaction?.amount || 0,
       currency: transaction?.currency || "EUR",
-      type: transaction?.type || "purchase",
+      type: transaction?.type ?? "purchase",
       payment_method: transaction?.payment_method || "",
       order_id: transaction?.order_id || undefined,
     },
