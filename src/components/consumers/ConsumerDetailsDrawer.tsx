@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ConsumerWithOrderStats } from "@/types/consumer";
@@ -36,8 +35,7 @@ const ConsumerDetailsDrawer = ({
   const [isEditing, setIsEditing] = useState(false);
 
   // Type the response explicitly to avoid deep instantiation
-  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery<OrderData[], Error>({
-
+  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery<OrderData[]>({
     queryKey: ["consumer-orders", consumer.id],
     queryFn: async () => {
       const { data, error } = await supabase

@@ -34,7 +34,6 @@ interface TransactionsTableProps {
 const TransactionsTable = ({ transactions, onEdit, onDelete }: TransactionsTableProps) => {
   const { t } = useTranslation();
 
-  // Function to render status badge with appropriate color
   const renderStatusBadge = (status: string) => {
     switch (status) {
       case "success":
@@ -50,7 +49,6 @@ const TransactionsTable = ({ transactions, onEdit, onDelete }: TransactionsTable
     }
   };
 
-  // Function to truncate text
   const truncateText = (text: string, maxLength: number = 20) => {
     if (!text) return "";
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
@@ -94,7 +92,6 @@ const TransactionsTable = ({ transactions, onEdit, onDelete }: TransactionsTable
                 {renderStatusBadge(transaction.status || "pending")}
               </TableCell>
               <TableCell>
-                {/* Show matched orders or linked order */}
                 {transaction.matched_orders && transaction.matched_orders.length > 0 ? (
                   <TooltipProvider>
                     <Tooltip>
