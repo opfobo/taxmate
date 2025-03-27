@@ -43,11 +43,16 @@ export interface Order {
   currency: string | null;
   created_at: string | null;
 }
-
 const TransactionsPage = () => {
-  const { t } = useTranslation();
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const {
+    t
+  } = useTranslation();
+  const {
+    user
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
   const location = useLocation();
   const isTabMode = location.pathname.startsWith("/dashboard/orders/");
 
@@ -65,7 +70,12 @@ const TransactionsPage = () => {
   const pageSize = 10;
 
   // Fetch transactions with filters
-  const { data, isLoading, error, refetch } = useQuery({
+  const {
+    data,
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
     queryKey: ["transactions", user?.id, searchQuery, statusFilter, typeFilter, dateRange, currentPage],
     queryFn: async () => {
       if (!user) throw new Error("User not authenticated");
@@ -96,21 +106,26 @@ const TransactionsPage = () => {
         toDate.setHours(23, 59, 59, 999);
         query = query.lte("created_at", toDate.toISOString());
       }
-      const { data, error } = await query;
+      const {
+        data,
+        error
+      } = await query;
       if (error) throw error;
-
-      const { count: totalCount, error: countError } = await supabase.from("transactions").select("*", {
+      const {
+        count: totalCount,
+        error: countError
+      } = await supabase.from("transactions").select("*", {
         count: "exact",
         head: true
       }).eq("user_id", user.id);
       if (countError) throw countError;
-
       const formattedTransactions = await Promise.all(data.map(async (transaction: any) => {
         const orderData = transaction.orders || null;
-
         let matchedOrders = null;
         if (transaction.linked_order_ids && transaction.linked_order_ids.length > 0) {
-          const { data: matchedOrdersData } = await supabase.from("orders").select("id, order_number, status, amount, currency").in("id", transaction.linked_order_ids);
+          const {
+            data: matchedOrdersData
+          } = await supabase.from("orders").select("id, order_number, status, amount, currency").in("id", transaction.linked_order_ids);
           matchedOrders = matchedOrdersData || null;
         }
         return {
@@ -130,7 +145,9 @@ const TransactionsPage = () => {
   });
 
   // Fetch summary data for transactions
-  const { data: summaryData } = useQuery({
+  const {
+    data: summaryData
+  } = useQuery({
     queryKey: ["transactions-summary", user?.id, dateRange],
     queryFn: async () => {
       if (!user) throw new Error("User not authenticated");
@@ -145,9 +162,11 @@ const TransactionsPage = () => {
         toDate.setHours(23, 59, 59, 999);
         query = query.lte("created_at", toDate.toISOString());
       }
-      const { data, error } = await query;
+      const {
+        data,
+        error
+      } = await query;
       if (error) throw error;
-
       const summary = {
         purchase: 0,
         refund: 0,
@@ -175,11 +194,16 @@ const TransactionsPage = () => {
   });
 
   // Fetch available orders for matching
-  const { data: ordersData } = useQuery({
+  const {
+    data: ordersData
+  } = useQuery({
     queryKey: ["available-orders", user?.id],
     queryFn: async () => {
       if (!user) throw new Error("User not authenticated");
-      const { data, error } = await supabase.from("orders").select("id, order_number, status, amount, currency, created_at").eq("user_id", user.id).order("created_at", {
+      const {
+        data,
+        error
+      } = await supabase.from("orders").select("id, order_number, status, amount, currency, created_at").eq("user_id", user.id).order("created_at", {
         ascending: false
       });
       if (error) throw error;
@@ -187,15 +211,12 @@ const TransactionsPage = () => {
     },
     enabled: !!user
   });
-
   const totalPages = data ? Math.ceil(data.total / pageSize) : 0;
-
   const handlePageChange = (page: number) => {
     if (page > 0 && page <= totalPages) {
       setCurrentPage(page);
     }
   };
-
   const handleTransactionSave = async (transactionData: Partial<Transaction>, isEditing: boolean) => {
     try {
       if (isEditing && selectedTransaction) {
@@ -203,8 +224,9 @@ const TransactionsPage = () => {
         const validStatus = ["success", "pending", "failed", "matched", "unmatched"].includes(status) ? status : "unmatched";
         const type = transactionData.type || "purchase";
         const validType = ["purchase", "refund", "payout"].includes(type) ? type as "purchase" | "refund" | "payout" : "purchase";
-
-        const { error } = await supabase.from("transactions").update({
+        const {
+          error
+        } = await supabase.from("transactions").update({
           amount: transactionData.amount,
           currency: transactionData.currency,
           type: validType,
@@ -225,8 +247,9 @@ const TransactionsPage = () => {
         const validStatus = ["success", "pending", "failed", "matched", "unmatched"].includes(status) ? status : "unmatched";
         const type = transactionData.type || "purchase";
         const validType = ["purchase", "refund", "payout"].includes(type) ? type as "purchase" | "refund" | "payout" : "purchase";
-
-        const { error } = await supabase.from("transactions").insert({
+        const {
+          error
+        } = await supabase.from("transactions").insert({
           amount: transactionData.amount,
           currency: transactionData.currency || "EUR",
           type: validType,
@@ -243,7 +266,6 @@ const TransactionsPage = () => {
           description: t("transaction_created_description")
         });
       }
-
       setIsTransactionDrawerOpen(false);
       setSelectedTransaction(null);
       refetch();
@@ -256,10 +278,11 @@ const TransactionsPage = () => {
       });
     }
   };
-
   const handleTransactionDelete = async (transactionId: string) => {
     try {
-      const { error } = await supabase.from("transactions").delete().eq("id", transactionId);
+      const {
+        error
+      } = await supabase.from("transactions").delete().eq("id", transactionId);
       if (error) throw error;
       toast({
         title: t("transaction_deleted"),
@@ -275,63 +298,39 @@ const TransactionsPage = () => {
       });
     }
   };
-
-  const activeFilterCount = [
-    searchQuery.trim().length > 0,
-    statusFilter !== null,
-    typeFilter !== null,
-    dateRange?.from !== undefined || dateRange?.to !== undefined
-  ].filter(Boolean).length;
-
+  const activeFilterCount = [searchQuery.trim().length > 0, statusFilter !== null, typeFilter !== null, dateRange?.from !== undefined || dateRange?.to !== undefined].filter(Boolean).length;
   const handleClearFilters = () => {
     setSearchQuery("");
     setStatusFilter(null);
     setTypeFilter(null);
-    setDateRange({ from: undefined, to: undefined });
+    setDateRange({
+      from: undefined,
+      to: undefined
+    });
   };
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {!isTabMode && <Navbar />}
       
-      <main className="container py-6">
+      <main className="container py-0">
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1">
-            <TransactionsFilters
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              statusFilter={statusFilter}
-              onStatusChange={setStatusFilter}
-              typeFilter={typeFilter}
-              onTypeChange={setTypeFilter}
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-            />
+            <TransactionsFilters searchQuery={searchQuery} onSearchChange={setSearchQuery} statusFilter={statusFilter} onStatusChange={setStatusFilter} typeFilter={typeFilter} onTypeChange={setTypeFilter} dateRange={dateRange} onDateRangeChange={setDateRange} />
           </div>
           
-          {activeFilterCount > 0 && (
-            <Button 
-              onClick={handleClearFilters} 
-              variant="outline" 
-              size="icon"
-              className="flex-shrink-0 h-10 w-10"
-              title={t("clear_filters")}
-            >
+          {activeFilterCount > 0 && <Button onClick={handleClearFilters} variant="outline" size="icon" className="flex-shrink-0 h-10 w-10" title={t("clear_filters")}>
               <X className="h-4 w-4" />
-            </Button>
-          )}
+            </Button>}
           
           <Button onClick={() => {
-            setSelectedTransaction(null);
-            setIsTransactionDrawerOpen(true);
-          }} className="flex items-center gap-2">
+          setSelectedTransaction(null);
+          setIsTransactionDrawerOpen(true);
+        }} className="flex items-center gap-2">
             <PlusCircle className="h-4 w-4" />
             {t("record_transaction")}
           </Button>
         </div>
 
-        {activeFilterCount > 0 && (
-          <div className="mb-4 flex items-center gap-2">
+        {activeFilterCount > 0 && <div className="mb-4 flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
               {t("active_filters")}:
@@ -339,20 +338,11 @@ const TransactionsPage = () => {
             <Badge variant="outline" className="font-mono">
               {activeFilterCount}
             </Badge>
-          </div>
-        )}
+          </div>}
 
-        {summaryData && (
-          <div className="mb-6">
-            <TransactionsSummary
-              purchases={summaryData.purchase}
-              refunds={summaryData.refund}
-              payouts={summaryData.payout}
-              total={summaryData.total}
-              currency={summaryData.currency}
-            />
-          </div>
-        )}
+        {summaryData && <div className="mb-6">
+            <TransactionsSummary purchases={summaryData.purchase} refunds={summaryData.refund} payouts={summaryData.payout} total={summaryData.total} currency={summaryData.currency} />
+          </div>}
 
         {/* Loading state */}
         {isLoading && <div className="flex justify-center my-12">
@@ -371,68 +361,39 @@ const TransactionsPage = () => {
         </div>}
 
         {/* Transactions table */}
-        {data && (
-          <>
-            <TransactionsTable 
-              transactions={data.transactions} 
-              onEdit={transaction => {
-                setSelectedTransaction(transaction);
-                setIsTransactionDrawerOpen(true);
-              }} 
-              onDelete={handleTransactionDelete} 
-            />
+        {data && <>
+            <TransactionsTable transactions={data.transactions} onEdit={transaction => {
+          setSelectedTransaction(transaction);
+          setIsTransactionDrawerOpen(true);
+        }} onDelete={handleTransactionDelete} />
             
             {/* Pagination */}
-            {totalPages > 1 && (
-              <Pagination className="mt-8">
+            {totalPages > 1 && <Pagination className="mt-8">
                 <PaginationContent>
                   <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => handlePageChange(currentPage - 1)} 
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} 
-                    />
+                    <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
                   </PaginationItem>
                   
-                  {[...Array(totalPages)].map((_, i) => (
-                    <PaginationItem key={i}>
-                      <PaginationLink 
-                        isActive={currentPage === i + 1} 
-                        onClick={() => handlePageChange(i + 1)}
-                      >
+                  {[...Array(totalPages)].map((_, i) => <PaginationItem key={i}>
+                      <PaginationLink isActive={currentPage === i + 1} onClick={() => handlePageChange(i + 1)}>
                         {i + 1}
                       </PaginationLink>
-                    </PaginationItem>
-                  ))}
+                    </PaginationItem>)}
                   
                   <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => handlePageChange(currentPage + 1)} 
-                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} 
-                    />
+                    <PaginationNext onClick={() => handlePageChange(currentPage + 1)} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
                   </PaginationItem>
                 </PaginationContent>
-              </Pagination>
-            )}
+              </Pagination>}
             
-            {data.transactions.length === 0 && (
-              <div className="text-center py-12">
+            {data.transactions.length === 0 && <div className="text-center py-12">
                 <p className="text-muted-foreground">{t("no_transactions_found")}</p>
-              </div>
-            )}
-          </>
-        )}
+              </div>}
+          </>}
       </main>
 
       {/* Transaction drawer for creating/editing transactions */}
-      <TransactionDrawer 
-        open={isTransactionDrawerOpen} 
-        onOpenChange={setIsTransactionDrawerOpen} 
-        transaction={selectedTransaction} 
-        orders={ordersData || []} 
-        onSubmit={handleTransactionSave} 
-      />
-    </div>
-  );
+      <TransactionDrawer open={isTransactionDrawerOpen} onOpenChange={setIsTransactionDrawerOpen} transaction={selectedTransaction} orders={ordersData || []} onSubmit={handleTransactionSave} />
+    </div>;
 };
-
 export default TransactionsPage;
