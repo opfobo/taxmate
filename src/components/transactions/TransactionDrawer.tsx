@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Transaction, Order } from "@/pages/TransactionsPage";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from "@/components/ui/sheet";
 import {
   Form,
   FormControl,
@@ -13,431 +17,345 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { cn, formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { X, Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Order } from "@/pages/TransactionsPage";
+import { Crosshair, Link, Plus, X } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
+
+// Define the transaction schema
+const transactionSchema = z.object({
+  amount: z.coerce.number()
+    .gt(0, { message: "Amount must be greater than 0" }),
+  currency: z.string()
+    .min(1, { message: "Currency is required" }),
+  type: z.enum(["purchase", "refund", "payout"]),
+  status: z.enum(["success", "pending", "failed", "unmatched", "matched"]),
+  payment_method: z.string()
+    .min(1, { message: "Payment method is required" }),
+  order_id: z.string()
+    .nullable()
+    .optional(),
+  notes: z.string()
+    .optional(),
+  linked_order_ids: z.string()
+    .array()
+    .optional(),
+});
 
 interface TransactionDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  transaction?: Transaction | null;
+  transaction?: any;
   orders: Order[];
-  onSubmit: (data: Partial<Transaction>, isEditing: boolean) => void;
+  onSubmit: (data: z.infer<typeof transactionSchema>, isEditing: boolean) => Promise<void>;
 }
 
-type TransactionStatus = "success" | "pending" | "failed" | "matched" | "unmatched";
-
-type FormValues = {
-  amount: number;
-  currency: string;
-  type: "purchase" | "refund" | "payout";
-  status: TransactionStatus;
-  payment_method: string;
-  order_id?: string | null;
-  notes?: string | null;
-  linked_order_ids?: string[];
-};
-
-const TransactionDrawer = ({ 
-  open, 
-  onOpenChange, 
-  transaction, 
-  orders, 
-  onSubmit 
+const TransactionDrawer = ({
+  open,
+  onOpenChange,
+  transaction,
+  orders,
+  onSubmit,
 }: TransactionDrawerProps) => {
   const { t } = useTranslation();
-  const isEditing = !!transaction;
+  const { toast } = useToast();
+  const [isMultiOrderLinkingOpen, setIsMultiOrderLinkingOpen] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<Order[]>([]);
-  const [commandOpen, setCommandOpen] = useState(false);
 
-  const form = useForm<FormValues>({
+  // Initialize the form
+  const form = useForm<z.infer<typeof transactionSchema>>({
+    resolver: zodResolver(transactionSchema),
     defaultValues: {
       amount: transaction?.amount || 0,
       currency: transaction?.currency || "EUR",
       type: transaction?.type || "purchase",
-      status: (transaction?.status as TransactionStatus) || "pending",
+      status: transaction?.status || "unmatched",
       payment_method: transaction?.payment_method || "",
-      order_id: transaction?.order_id || undefined,
+      order_id: transaction?.order_id || null,
       notes: transaction?.notes || "",
       linked_order_ids: transaction?.linked_order_ids || [],
     },
+    mode: "onChange",
   });
 
+  // Update form values when transaction prop changes (for editing)
   useEffect(() => {
     if (transaction) {
       form.reset({
-        amount: transaction.amount,
+        amount: transaction.amount || 0,
         currency: transaction.currency || "EUR",
         type: transaction.type || "purchase",
-        status: (transaction.status as TransactionStatus) || "pending",
+        status: transaction.status || "unmatched",
         payment_method: transaction.payment_method || "",
-        order_id: transaction.order_id || undefined,
+        order_id: transaction.order_id || null,
         notes: transaction.notes || "",
         linked_order_ids: transaction.linked_order_ids || [],
       });
-
-      if (transaction.linked_order_ids && transaction.linked_order_ids.length > 0) {
-        const filteredOrders = orders.filter(order => 
-          transaction.linked_order_ids?.includes(order.id)
-        );
-        setSelectedOrders(filteredOrders);
+      
+      // Initialize selectedOrders when editing a transaction
+      if (transaction.matched_orders) {
+        setSelectedOrders(transaction.matched_orders);
       } else {
         setSelectedOrders([]);
       }
     } else {
-      form.reset({
-        amount: 0,
-        currency: "EUR",
-        type: "purchase",
-        status: "pending",
-        payment_method: "",
-        order_id: undefined,
-        notes: "",
-        linked_order_ids: [],
-      });
+      // Reset selectedOrders when creating a new transaction
       setSelectedOrders([]);
     }
-  }, [transaction, orders, form]);
+  }, [transaction, form]);
 
-  const handleSubmit = (data: FormValues) => {
-    onSubmit({
-      ...data,
-      amount: typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount,
-    }, isEditing);
-  };
-
-  const toggleOrder = (order: Order) => {
-    const currentValues = form.getValues().linked_order_ids || [];
-    let newValues: string[];
-    let newSelectedOrders: Order[];
-
-    if (currentValues.includes(order.id)) {
-      newValues = currentValues.filter(id => id !== order.id);
-      newSelectedOrders = selectedOrders.filter(o => o.id !== order.id);
-    } else {
-      newValues = [...currentValues, order.id];
-      newSelectedOrders = [...selectedOrders, order];
+  // Handle form submission
+  const handleFormSubmit = async (values: z.infer<typeof transactionSchema>) => {
+    try {
+      // Extract linked order IDs from selectedOrders
+      const linkedOrderIds = selectedOrders.map((order) => order.id);
+      
+      // Include linkedOrderIds in the values to be submitted
+      const valuesWithLinkedOrders = {
+        ...values,
+        linked_order_ids: linkedOrderIds,
+      };
+      
+      // Submit the form
+      await onSubmit(valuesWithLinkedOrders, !!transaction);
+      
+      // Reset the form after successful submission if creating a new transaction
+      if (!transaction) {
+        form.reset();
+        setSelectedOrders([]);
+      }
+    } catch (error) {
+      console.error("Form submission error:", error);
+      toast({
+        variant: "destructive",
+        title: t("error"),
+        description: t("form_submission_failed"),
+      });
     }
-
-    form.setValue('linked_order_ids', newValues);
-    setSelectedOrders(newSelectedOrders);
   };
 
-  const totalSelectedAmount = selectedOrders.reduce((sum, order) => sum + order.amount, 0);
-  
-  const amountDifference = form.watch('amount') - totalSelectedAmount;
-  
-  const amountsMatch = Math.abs(amountDifference) <= (form.watch('amount') * 0.01);
+  // Function to handle linking/unlinking orders
+  const handleOrderSelection = (order: Order) => {
+    const isOrderSelected = selectedOrders.some((selectedOrder) => selectedOrder.id === order.id);
+    
+    if (isOrderSelected) {
+      // If the order is already selected, remove it from the selectedOrders array
+      setSelectedOrders((prevSelectedOrders) =>
+        prevSelectedOrders.filter((selectedOrder) => selectedOrder.id !== order.id)
+      );
+    } else {
+      // If the order is not selected, add it to the selectedOrders array
+      setSelectedOrders((prevSelectedOrders) => [...prevSelectedOrders, order]);
+    }
+  };
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[90vh] overflow-y-auto">
-        <DrawerHeader>
-          <DrawerTitle>
-            {isEditing ? t("edit_transaction") : t("record_transaction")}
-          </DrawerTitle>
-          <DrawerDescription>
-            {isEditing 
-              ? t("edit_transaction_description") 
-              : t("record_transaction_description")}
-          </DrawerDescription>
-        </DrawerHeader>
-        
-        <div className="px-4">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("amount")}</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="currency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("currency")}</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("select_currency")} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="GBP">GBP</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("transaction_type")}</FormLabel>
-                      <Select 
-                        onValueChange={(value) => field.onChange(value as "purchase" | "refund" | "payout")} 
-                        defaultValue={field.value}
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="sm:max-w-md">
+        <SheetHeader className="space-y-2">
+          <SheetTitle>{transaction ? t("edit_transaction") : t("record_transaction")}</SheetTitle>
+          <SheetDescription>
+            {transaction
+              ? t("edit_transaction_details")
+              : t("enter_transaction_details")}
+          </SheetDescription>
+        </SheetHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("amount")}</FormLabel>
+                  <FormControl>
+                    <Input placeholder="0.00" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="currency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("currency")}</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("select_currency")} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                      {/* Add more currencies as needed */}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("type")}</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("select_type")} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="purchase">{t("purchase")}</SelectItem>
+                      <SelectItem value="refund">{t("refund")}</SelectItem>
+                      <SelectItem value="payout">{t("payout")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("status")}</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("select_status")} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="success">{t("success")}</SelectItem>
+                      <SelectItem value="pending">{t("pending")}</SelectItem>
+                      <SelectItem value="failed">{t("failed")}</SelectItem>
+                      <SelectItem value="unmatched">{t("unmatched")}</SelectItem>
+                      <SelectItem value="matched">{t("matched")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="payment_method"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("payment_method")}</FormLabel>
+                  <FormControl>
+                    <Input placeholder={t("enter_payment_method")} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Order Linking Section */}
+            <div className="space-y-2">
+              <FormLabel>{t("link_orders")}</FormLabel>
+              
+              {/* Display linked orders as badges */}
+              {selectedOrders.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {selectedOrders.map((order) => (
+                    <Badge key={order.id} variant="secondary">
+                      {order.order_number || order.id.substring(0, 8)}
+                      <button 
+                        onClick={() => handleOrderSelection(order)}
+                        className="ml-1 inline-flex items-center justify-center rounded-full p-1 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary/50"
+                        aria-label="Unlink order"
                       >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("select_transaction_type")} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="purchase">{t("purchase")}</SelectItem>
-                          <SelectItem value="refund">{t("refund")}</SelectItem>
-                          <SelectItem value="payout">{t("payout")}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("status")}</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("select_status")} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="pending">{t("pending")}</SelectItem>
-                          <SelectItem value="success">{t("success")}</SelectItem>
-                          <SelectItem value="failed">{t("failed")}</SelectItem>
-                          <SelectItem value="matched">{t("matched")}</SelectItem>
-                          <SelectItem value="unmatched">{t("unmatched")}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="payment_method"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("payment_method")}</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder={t("enter_payment_method")} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("notes")}</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder={t("enter_transaction_notes")}
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="linked_order_ids"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>{t("match_orders")}</FormLabel>
-                      <Popover open={commandOpen} onOpenChange={setCommandOpen}>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              className={cn(
-                                "justify-between",
-                                !field.value?.length && "text-muted-foreground"
-                              )}
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              
+              {/* Button to open multi-order linking popover */}
+              <Popover open={isMultiOrderLinkingOpen} onOpenChange={setIsMultiOrderLinkingOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Link className="mr-2 h-4 w-4" />
+                    {t("link_existing_orders")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[600px] p-0">
+                  <Command>
+                    <CommandInput placeholder={t("search_orders")} />
+                    <CommandList>
+                      <CommandEmpty>{t("no_orders_found")}</CommandEmpty>
+                      <CommandGroup heading={t("available_orders")}>
+                        {orders.map((order) => {
+                          const isOrderSelected = selectedOrders.some(
+                            (selectedOrder) => selectedOrder.id === order.id
+                          );
+                          
+                          return (
+                            <CommandItem
+                              key={order.id}
+                              onSelect={() => handleOrderSelection(order)}
                             >
-                              {field.value?.length
-                                ? t("orders_selected", { count: field.value.length })
-                                : t("select_orders")}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0" align="start">
-                          <Command>
-                            <CommandInput placeholder={t("search_orders")} />
-                            <CommandList>
-                              <CommandEmpty>{t("no_orders_found")}</CommandEmpty>
-                              <CommandGroup>
-                                {orders.map((order) => {
-                                  const isSelected = field.value?.includes(order.id);
-                                  return (
-                                    <CommandItem
-                                      key={order.id}
-                                      value={order.id}
-                                      onSelect={() => toggleOrder(order)}
-                                    >
-                                      <div className="flex items-center justify-between w-full">
-                                        <div>
-                                          <span className="font-medium">{order.order_number}</span>
-                                          <span className="ml-2">
-                                            {formatCurrency(order.amount)}
-                                          </span>
-                                        </div>
-                                        <Check className={cn(`h-4 w-4 ${isSelected ? "opacity-100" : "opacity-0"}`)} />
+                              <div className="flex items-center justify-between w-full">
+                                <span>{order.order_number || order.id.substring(0, 8)}</span>
+                                <Checkbox
+                                  checked={isOrderSelected}
+                                  onCheckedChange={() => handleOrderSelection(order)}
+                                  aria-label={`Link order ${order.order_number || order.id}`}
+                                />
+                              </div>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
 
-                                      </div>
-                                    </CommandItem>
-                                  );
-                                })}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                {selectedOrders.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium">{t("selected_orders")}</div>
-                    <div className="border rounded-md p-2 space-y-2">
-                      {selectedOrders.map(order => (
-                        <div key={order.id} className="flex items-center justify-between text-sm">
-                          <div>
-                            <span className="font-mono">{order.order_number}</span>
-                            <span className="ml-2 text-muted-foreground">
-                              {formatCurrency(order.amount)}
-                            </span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleOrder(order)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                      
-                      <div className="border-t pt-2 mt-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="font-semibold">{t("total_orders_amount")}</span>
-                          <span>
-                            {formatCurrency(totalSelectedAmount)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm mt-1">
-                          <span className="font-semibold">{t("transaction_amount")}</span>
-                          <span>
-                            {formatCurrency(form.watch('amount'))}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm mt-1">
-                          <span className="font-semibold">{t("difference")}</span>
-                          <span className={amountsMatch ? "text-green-600" : "text-amber-600"}>
-                            {formatCurrency(amountDifference)}
-                          </span>
-                        </div>
-                        
-                        <div className="mt-2">
-                          {amountsMatch ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                              {t("amounts_match")}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                              {t("amounts_mismatch")}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <DrawerFooter className="px-0 pt-0">
-                <Button type="submit">
-                  {isEditing ? t("save_changes") : t("record_transaction")}
-                </Button>
-                <DrawerClose asChild>
-                  <Button variant="outline">{t("cancel")}</Button>
-                </DrawerClose>
-              </DrawerFooter>
-            </form>
-          </Form>
-        </div>
-      </DrawerContent>
-    </Drawer>
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("notes")}</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder={t("enter_notes")}
+                      className="resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <SheetFooter>
+              <Button type="submit">{transaction ? t("update_transaction") : t("record_transaction")}</Button>
+            </SheetFooter>
+          </form>
+        </Form>
+      </SheetContent>
+    </Sheet>
   );
 };
 

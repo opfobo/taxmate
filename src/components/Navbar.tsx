@@ -22,17 +22,14 @@ import {
 } from "@/components/ui/sheet";
 import { 
   User, 
-  LogOut, 
-  FileText, 
-  ClipboardList, 
-  ReceiptText, 
-  BookOpen, 
-  ChartBar,
+  LogOut,
   Menu,
   LayoutDashboard,
   Settings,
-  ShoppingCart,
-  FileBarChart
+  FileBarChart,
+  BookOpen,
+  ChartBar,
+  ShoppingBag
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -61,19 +58,14 @@ const Navbar = () => {
       icon: <LayoutDashboard className="h-5 w-5" />
     },
     {
-      to: "/orders",
+      to: "/dashboard/orders",
       label: t("orders"),
-      icon: <ShoppingCart className="h-5 w-5" />
+      icon: <ShoppingBag className="h-5 w-5" />
     },
     {
       to: "/dashboard/tax-reports",
       label: t("tax_reports"),
       icon: <FileBarChart className="h-5 w-5" />
-    },
-    {
-      to: "/dashboard/transactions",
-      label: t("transactions"),
-      icon: <ReceiptText className="h-5 w-5" />
     },
     {
       to: "/dashboard/analytics",
@@ -94,7 +86,7 @@ const Navbar = () => {
           key={link.to}
           to={link.to}
           className={`flex items-center gap-2 px-3 py-2 transition-colors hover:text-primary ${
-            location.pathname === link.to 
+            location.pathname.startsWith(link.to) 
               ? "font-medium text-primary" 
               : "text-muted-foreground"
           }`}
@@ -196,13 +188,13 @@ const Navbar = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
                   <Link to="/profile" className="flex items-center">
-                    <FileText className="mr-2 h-4 w-4" />
+                    <User className="mr-2 h-4 w-4" />
                     {t("profile")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/settings" className="flex items-center">
-                    <ClipboardList className="mr-2 h-4 w-4" />
+                    <Settings className="mr-2 h-4 w-4" />
                     {t("settings")}
                   </Link>
                 </DropdownMenuItem>

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,7 +15,6 @@ import SignupPage from "./pages/auth/SignupPage";
 import Dashboard from "./pages/Dashboard";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
-import OrdersPage from "./pages/OrdersPage";
 import ShoppersPage from "./pages/ShoppersPage";
 import ConsumersPage from "./pages/ConsumersPage";
 import TaxReportsPage from "./pages/TaxReportsPage";
@@ -22,6 +22,11 @@ import TransactionsPage from "./pages/TransactionsPage";
 import ResourcesPage from "./pages/ResourcesPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import NotFound from "./pages/NotFound";
+
+// New Order Pages
+import OrdersLayout from "./layouts/OrdersLayout";
+import SalesOrdersPage from "./pages/orders/SalesOrdersPage";
+import PurchasesOrdersPage from "./pages/orders/PurchasesOrdersPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,41 +67,48 @@ const App = () => (
                   <SettingsPage />
                 </ProtectedRoute>
               } />
-              <Route path="/orders" element={
+              
+              {/* Orders Routes */}
+              <Route path="/dashboard/orders" element={
                 <ProtectedRoute>
-                  <OrdersPage />
+                  <OrdersLayout />
                 </ProtectedRoute>
-              } />
+              }>
+                <Route index element={<Navigate to="/dashboard/orders/sales" replace />} />
+                <Route path="sales" element={<SalesOrdersPage />} />
+                <Route path="purchases" element={<PurchasesOrdersPage />} />
+                <Route path="transactions" element={<TransactionsPage />} />
+                <Route path="consumers" element={<ConsumersPage />} />
+              </Route>
+              
               <Route path="/shoppers" element={
                 <ProtectedRoute>
                   <ShoppersPage />
                 </ProtectedRoute>
               } />
-              <Route path="/consumers" element={
-                <ProtectedRoute>
-                  <ConsumersPage />
-                </ProtectedRoute>
-              } />
+              
               <Route path="/dashboard/tax-reports" element={
                 <ProtectedRoute>
                   <TaxReportsPage />
                 </ProtectedRoute>
               } />
-              <Route path="/dashboard/transactions" element={
-                <ProtectedRoute>
-                  <TransactionsPage />
-                </ProtectedRoute>
-              } />
+              
               <Route path="/dashboard/resources" element={
                 <ProtectedRoute>
                   <ResourcesPage />
                 </ProtectedRoute>
               } />
+              
               <Route path="/dashboard/analytics" element={
                 <ProtectedRoute>
                   <AnalyticsPage />
                 </ProtectedRoute>
               } />
+              
+              {/* Legacy routes - redirect to new structure */}
+              <Route path="/orders" element={<Navigate to="/dashboard/orders/sales" replace />} />
+              <Route path="/consumers" element={<Navigate to="/dashboard/orders/consumers" replace />} />
+              <Route path="/dashboard/transactions" element={<Navigate to="/dashboard/orders/transactions" replace />} />
               
               {/* Catch-all Route */}
               <Route path="*" element={<NotFound />} />
