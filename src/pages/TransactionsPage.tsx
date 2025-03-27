@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -163,14 +162,22 @@ const TransactionsPage = () => {
       };
       
       data.forEach((transaction: any) => {
-        if (transaction.type && (transaction.type === 'purchase' || transaction.type === 'refund' || transaction.type === 'payout')) {
+        // Check if the transaction type is valid before using it
+        const validType = transaction.type === 'purchase' || 
+                          transaction.type === 'refund' || 
+                          transaction.type === 'payout';
+        
+        if (validType) {
+          // Now TypeScript knows that transaction.type is one of the valid types
           summary[transaction.type as 'purchase' | 'refund' | 'payout'] += Number(transaction.amount);
         }
+        
         if (transaction.type === "purchase") {
           summary.total -= Number(transaction.amount);
         } else {
           summary.total += Number(transaction.amount);
         }
+        
         // Use the currency from the first transaction (assuming one currency is used)
         if (transaction.currency) {
           summary.currency = transaction.currency;
