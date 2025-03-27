@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
-import { Edit, X, ShoppingBag, Clock, CreditCard } from "lucide-react";
+import { Edit, X, ShoppingBag, Clock, CreditCard, Loader2, Pencil, Save, Trash2 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Consumer, ConsumerWithOrderStats } from "@/types/consumer";
-import { Loader2, Pencil, Save, Trash2, X } from "lucide-react";
 import ConsumerForm from "./ConsumerForm";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
