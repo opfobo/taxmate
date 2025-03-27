@@ -175,7 +175,7 @@ const TransactionsPage = () => {
         currency: "EUR"
       };
       data.forEach((transaction: any) => {
-        const validType = transaction.type === 'purchase' || transaction.type === 'refund' || transaction.type === 'payout';
+        const validType = ["purchase", "refund", "payout"].includes(type);
         if (validType && transaction.type) {
           summary[transaction.type as 'purchase' | 'refund' | 'payout'] += Number(transaction.amount);
         }
@@ -222,7 +222,7 @@ const TransactionsPage = () => {
       if (isEditing && selectedTransaction) {
         const status = transactionData.status || "unmatched";
         const validStatus = ["success", "pending", "failed", "matched", "unmatched"].includes(status) ? status : "unmatched";
-        const type = transactionData.type || "purchase";
+        const type = transactionData?.type ?? "purchase";
         const validType = ["purchase", "refund", "payout"].includes(type) ? type as "purchase" | "refund" | "payout" : "purchase";
         const {
           error
@@ -245,7 +245,7 @@ const TransactionsPage = () => {
       } else {
         const status = transactionData.status || "unmatched";
         const validStatus = ["success", "pending", "failed", "matched", "unmatched"].includes(status) ? status : "unmatched";
-        const type = transactionData.type || "purchase";
+        const type = transactionData?.type ?? "purchase";
         const validType = ["purchase", "refund", "payout"].includes(type) ? type as "purchase" | "refund" | "payout" : "purchase";
         const {
           error
