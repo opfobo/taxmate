@@ -112,14 +112,14 @@ const TransactionForm = ({ transaction, orders, onSubmit, onCancel }: Transactio
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t("link_to_order")}</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value || "none"}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={t("select_order")} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">{t("no_order")}</SelectItem>
+                  <SelectItem value="none">{t("no_order")}</SelectItem>
                   {orders.map((order) => (
                     <SelectItem key={order.id} value={order.id}>
                       {order.order_number} ({new Intl.NumberFormat("de-DE", {

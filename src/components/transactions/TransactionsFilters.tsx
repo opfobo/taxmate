@@ -49,12 +49,12 @@ const TransactionsFilters = ({
       </div>
 
       {/* Status filter */}
-      <Select value={statusFilter || ""} onValueChange={(value) => onStatusChange(value || null)}>
+      <Select value={statusFilter || "all"} onValueChange={(value) => onStatusChange(value === "all" ? null : value)}>
         <SelectTrigger className="w-[160px]">
           <SelectValue placeholder={t("status")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">{t("all_statuses")}</SelectItem>
+          <SelectItem value="all">{t("all_statuses")}</SelectItem>
           <SelectItem value="matched">{t("matched")}</SelectItem>
           <SelectItem value="unmatched">{t("unmatched")}</SelectItem>
           <SelectItem value="success">{t("success")}</SelectItem>
@@ -64,12 +64,12 @@ const TransactionsFilters = ({
       </Select>
 
       {/* Type filter */}
-      <Select value={typeFilter || ""} onValueChange={(value) => onTypeChange(value || null)}>
+      <Select value={typeFilter || "all"} onValueChange={(value) => onTypeChange(value === "all" ? null : value)}>
         <SelectTrigger className="w-[160px]">
           <SelectValue placeholder={t("type")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">{t("all_types")}</SelectItem>
+          <SelectItem value="all">{t("all_types")}</SelectItem>
           <SelectItem value="purchase">{t("purchase")}</SelectItem>
           <SelectItem value="refund">{t("refund")}</SelectItem>
           <SelectItem value="payout">{t("payout")}</SelectItem>
