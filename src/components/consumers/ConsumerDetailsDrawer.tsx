@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ConsumerWithOrderStats } from "@/types/consumer";
@@ -23,6 +24,7 @@ interface OrderData {
   status: string;
   amount: number;
   created_at: string;
+  order_date?: string; // Make it optional since we'll handle that case
 }
 
 const ConsumerDetailsDrawer = ({
@@ -38,7 +40,7 @@ const ConsumerDetailsDrawer = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, order_number, status, amount, created_at")
+        .select("id, order_number, status, amount, created_at, order_date")
         .eq("consumer_id", consumer.id)
         .order("created_at", { ascending: false })
         .limit(5);
@@ -164,7 +166,11 @@ const ConsumerDetailsDrawer = ({
                             {order.order_number || order.id.substring(0, 8)}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {order.order_date ? format(new Date(order.order_date), "PP") : "-"}
+                            {order.order_date 
+                              ? format(new Date(order.order_date), "PP") 
+                              : order.created_at 
+                              ? format(new Date(order.created_at), "PP") 
+                              : "-"}
                           </p>
                         </div>
                         <div className="text-right">

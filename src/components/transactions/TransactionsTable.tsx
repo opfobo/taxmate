@@ -90,7 +90,7 @@ const TransactionsTable = ({ transactions, onEdit, onDelete }: TransactionsTable
                 {format(new Date(transaction.created_at), "PP")}
               </TableCell>
               <TableCell>
-                {formatCurrency(transaction.amount, transaction.currency)}
+                {formatCurrency(transaction.amount, transaction.currency || "EUR")}
               </TableCell>
               <TableCell className="capitalize">
                 {t(transaction.type)}
@@ -99,7 +99,7 @@ const TransactionsTable = ({ transactions, onEdit, onDelete }: TransactionsTable
                 {transaction.payment_method || "-"}
               </TableCell>
               <TableCell>
-                {renderStatusBadge(transaction.status)}
+                {renderStatusBadge(transaction.status || "pending")}
               </TableCell>
               <TableCell>
                 {/* Show matched orders or linked order */}

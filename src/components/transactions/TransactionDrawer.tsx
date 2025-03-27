@@ -55,11 +55,14 @@ interface TransactionDrawerProps {
   onSubmit: (data: Partial<Transaction>, isEditing: boolean) => void;
 }
 
+// Define valid transaction status values
+type TransactionStatus = "success" | "pending" | "failed" | "matched" | "unmatched";
+
 type FormValues = {
   amount: number;
   currency: string;
   type: "purchase" | "refund" | "payout";
-  status: string;
+  status: TransactionStatus;
   payment_method: string;
   order_id?: string | null;
   notes?: string | null;
@@ -83,7 +86,7 @@ const TransactionDrawer = ({
       amount: transaction?.amount || 0,
       currency: transaction?.currency || "EUR",
       type: transaction?.type || "purchase",
-      status: transaction?.status || "pending",
+      status: (transaction?.status as TransactionStatus) || "pending",
       payment_method: transaction?.payment_method || "",
       order_id: transaction?.order_id || undefined,
       notes: transaction?.notes || "",
@@ -98,7 +101,7 @@ const TransactionDrawer = ({
         amount: transaction.amount,
         currency: transaction.currency || "EUR",
         type: transaction.type || "purchase",
-        status: transaction.status || "pending",
+        status: (transaction.status as TransactionStatus) || "pending",
         payment_method: transaction.payment_method || "",
         order_id: transaction.order_id || undefined,
         notes: transaction.notes || "",

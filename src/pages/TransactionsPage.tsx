@@ -183,7 +183,7 @@ const TransactionsPage = () => {
                          transaction.type === 'refund' || 
                          transaction.type === 'payout';
         
-        if (validType) {
+        if (validType && transaction.type) {
           // Now TypeScript knows that transaction.type is one of the valid types
           summary[transaction.type as 'purchase' | 'refund' | 'payout'] += Number(transaction.amount);
         }
