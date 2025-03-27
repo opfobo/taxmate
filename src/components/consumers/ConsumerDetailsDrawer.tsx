@@ -19,10 +19,10 @@ interface ConsumerDetailsDrawerProps {
 // Define a separate interface for order data to avoid deep type instantiation
 interface OrderData {
   id: string;
-  order_number: string | null;
-  order_date: string | null;
+  order_number: string;
+  status: string;
   amount: number;
-  status: string | null;
+  created_at: string;
 }
 
 const ConsumerDetailsDrawer = ({
@@ -38,9 +38,9 @@ const ConsumerDetailsDrawer = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, order_number, order_date, amount, status")
+        .select("id, order_number, status, amount, created_at")
         .eq("consumer_id", consumer.id)
-        .order("order_date", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(5);
 
       if (error) throw error;

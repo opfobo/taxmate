@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,12 +9,11 @@ import Navbar from "@/components/Navbar";
 import TransactionsTable from "@/components/transactions/TransactionsTable";
 import TransactionsFilters from "@/components/transactions/TransactionsFilters";
 import TransactionsSummary from "@/components/transactions/TransactionsSummary";
-import TransactionForm from "@/components/transactions/TransactionForm";
+import TransactionDrawer from "@/components/transactions/TransactionDrawer";
 import { DateRange } from "react-day-picker";
 import { AlertCircle, PlusCircle } from "lucide-react";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 // Interface for transactions from the database
 export interface Transaction {
@@ -27,9 +27,12 @@ export interface Transaction {
   order_id?: string | null;
   payment_method?: string | null;
   updated_at?: string | null;
+  notes?: string | null;
+  linked_order_ids?: string[] | null;
   // For UI display only - not stored in database
   order_number?: string | null;
   order_status?: string | null;
+  matched_orders?: Order[] | null;
 }
 
 export interface Order {
@@ -52,7 +55,7 @@ const TransactionsPage = () => {
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: undefined, to: undefined });
   const [currentPage, setCurrentPage] = useState(1);
-  const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
+  const [isTransactionDrawerOpen, setIsTransactionDrawerOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const pageSize = 10;
 
@@ -64,14 +67,14 @@ const TransactionsPage = () => {
       
       let query = supabase
         .from("transactions")
-        .select("*, orders(id, order_number, status)")
+        .select("*, orders(id, order_number, status, amount, currency)")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .range((currentPage - 1) * pageSize, currentPage * pageSize - 1);
       
       // Apply filters if set
       if (searchQuery) {
-        query = query.or(`id.ilike.%${searchQuery}%,payment_method.ilike.%${searchQuery}%`);
+        query = query.or(`id.ilike.%${searchQuery}%,payment_method.ilike.%${searchQuery}%,notes.ilike.%${searchQuery}%`);
       }
       
       if (statusFilter) {
@@ -107,15 +110,28 @@ const TransactionsPage = () => {
       if (countError) throw countError;
 
       // Format transactions to include order details
-      const formattedTransactions = data.map((transaction: any) => {
+      const formattedTransactions = await Promise.all(data.map(async (transaction: any) => {
         const orderData = transaction.orders || null;
+        
+        // For transactions with linked_order_ids, fetch the matched orders
+        let matchedOrders = null;
+        if (transaction.linked_order_ids && transaction.linked_order_ids.length > 0) {
+          const { data: matchedOrdersData } = await supabase
+            .from("orders")
+            .select("id, order_number, status, amount, currency")
+            .in("id", transaction.linked_order_ids);
+          
+          matchedOrders = matchedOrdersData || null;
+        }
+        
         return {
           ...transaction,
           order_number: orderData ? orderData.order_number : null,
           order_status: orderData ? orderData.status : null,
+          matched_orders: matchedOrders,
           orders: undefined // Remove the nested orders object
         };
-      });
+      }));
       
       return {
         transactions: formattedTransactions as Transaction[],
@@ -162,10 +178,10 @@ const TransactionsPage = () => {
       };
       
       data.forEach((transaction: any) => {
-        // Check if the transaction type is valid before using it
+        // Validate the transaction type before using it
         const validType = transaction.type === 'purchase' || 
-                          transaction.type === 'refund' || 
-                          transaction.type === 'payout';
+                         transaction.type === 'refund' || 
+                         transaction.type === 'payout';
         
         if (validType) {
           // Now TypeScript knows that transaction.type is one of the valid types
@@ -232,6 +248,8 @@ const TransactionsPage = () => {
             status: transactionData.status,
             payment_method: transactionData.payment_method,
             order_id: transactionData.order_id,
+            notes: transactionData.notes,
+            linked_order_ids: transactionData.linked_order_ids,
             updated_at: new Date().toISOString()
           })
           .eq("id", selectedTransaction.id);
@@ -250,9 +268,11 @@ const TransactionsPage = () => {
             amount: transactionData.amount,
             currency: transactionData.currency || "EUR",
             type: transactionData.type,
-            status: transactionData.order_id ? "matched" : "unmatched",
+            status: transactionData.status || "unmatched",
             payment_method: transactionData.payment_method,
             order_id: transactionData.order_id,
+            notes: transactionData.notes,
+            linked_order_ids: transactionData.linked_order_ids,
             user_id: user?.id
           });
         
@@ -265,7 +285,7 @@ const TransactionsPage = () => {
       }
       
       // Close form and refetch data
-      setIsTransactionFormOpen(false);
+      setIsTransactionDrawerOpen(false);
       setSelectedTransaction(null);
       refetch();
     } catch (error) {
@@ -319,33 +339,15 @@ const TransactionsPage = () => {
               </p>
             </div>
             
-            <Dialog open={isTransactionFormOpen} onOpenChange={setIsTransactionFormOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => {
-                  setSelectedTransaction(null);
-                  setIsTransactionFormOpen(true);
-                }}>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  {t("record_transaction")}
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {selectedTransaction ? t("edit_transaction") : t("record_transaction")}
-                  </DialogTitle>
-                </DialogHeader>
-                <TransactionForm
-                  transaction={selectedTransaction}
-                  orders={ordersData || []}
-                  onSubmit={handleTransactionSave}
-                  onCancel={() => {
-                    setIsTransactionFormOpen(false);
-                    setSelectedTransaction(null);
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
+            <Button 
+              onClick={() => {
+                setSelectedTransaction(null);
+                setIsTransactionDrawerOpen(true);
+              }}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              {t("record_transaction")}
+            </Button>
           </div>
 
           {summaryData && (
@@ -398,7 +400,7 @@ const TransactionsPage = () => {
               transactions={data.transactions}
               onEdit={(transaction) => {
                 setSelectedTransaction(transaction);
-                setIsTransactionFormOpen(true);
+                setIsTransactionDrawerOpen(true);
               }}
               onDelete={handleTransactionDelete}
             />
@@ -443,6 +445,15 @@ const TransactionsPage = () => {
           </>
         )}
       </main>
+
+      {/* Transaction drawer for creating/editing transactions */}
+      <TransactionDrawer
+        open={isTransactionDrawerOpen}
+        onOpenChange={setIsTransactionDrawerOpen}
+        transaction={selectedTransaction}
+        orders={ordersData || []}
+        onSubmit={handleTransactionSave}
+      />
     </div>
   );
 };
