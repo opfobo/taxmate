@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -47,6 +48,8 @@ const TransactionsPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
+  const location = useLocation();
+  const isTabMode = location.pathname.startsWith("/dashboard/orders/");
   
   // State for filters and pagination
   const [searchQuery, setSearchQuery] = useState("");
@@ -353,7 +356,7 @@ const TransactionsPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+        {!isTabMode && <Navbar />}
       
       <main className="container py-10">
         <div className="mb-8">
