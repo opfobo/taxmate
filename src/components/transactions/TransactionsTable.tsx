@@ -85,7 +85,7 @@ const TransactionsTable = ({ transactions, onEdit, onDelete }: TransactionsTable
                 {formatCurrency(transaction.amount)}
               </TableCell>
               <TableCell className="capitalize">
-                {t(transaction.type || "unknown")}
+                {t(transaction?.type ?? "unknown")}
               </TableCell>
               <TableCell>
                 {transaction.payment_method || "-"}
