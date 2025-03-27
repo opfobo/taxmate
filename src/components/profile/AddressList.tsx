@@ -149,7 +149,7 @@ const AddressList = ({ userId }: AddressListProps) => {
                   <div key={address.id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start mb-2">
                       <div className="text-sm font-medium">
-                        {address.type.charAt(0).toUpperCase() + address.type.slice(1)} Address
+                        {address.type?.charAt(0).toUpperCase() + address.type?.slice(1) || "Unknown"} Address
                       </div>
                       <div className="flex space-x-2">
                         <Button 
