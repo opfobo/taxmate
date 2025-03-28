@@ -1,14 +1,14 @@
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { 
-  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle 
-} from "@/components/ui/";
+} from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Badge } from "@/components/ui/badge";

@@ -13,6 +13,7 @@ import { Consumer, ConsumerWithOrderStats } from "@/types/consumer";
 import { Loader2, Pencil, Save, Trash2, X } from "lucide-react";
 import ConsumerForm from "./ConsumerForm";
 import { useToast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface OrderData {
@@ -39,21 +40,20 @@ const ConsumerDetailsDrawer: React.FC<ConsumerDetailsDrawerProps> = ({
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
 
-  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery<OrderData[]>({
-  queryKey: ["consumer-orders", consumer.id],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("id, order_number, status, order_date, amount, currency, created_at")
-      .eq("consumer_id", consumer.id)
-      .order("created_at", { ascending: false })
-      .limit(5);
+  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ["consumer-orders", consumer.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, order_number, status, order_date, amount, currency, created_at")
+        .eq("consumer_id", consumer.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
 
-    if (error) throw error;
-    return data || [];
-  },
-});
-
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const handleEditComplete = () => {
     setIsEditing(false);
