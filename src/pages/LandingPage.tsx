@@ -164,7 +164,7 @@ const LandingPage = () => {
       <header className="sticky top-0 z-40 w-full backdrop-blur-sm bg-black/10">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
-            <Zap className={`h-6 w-6 ${theme === "dark-navy" ? "text-blue-500" : "text-red-500"}`} />
+            <Zap className={`h-6 w-6 ${theme === "dark-navy" ? "text-blue-300" : "text-red-300"}`} />
             <span className="text-xl font-bold">TaxMate</span>
           </div>
           <nav className="hidden md:flex gap-6">
