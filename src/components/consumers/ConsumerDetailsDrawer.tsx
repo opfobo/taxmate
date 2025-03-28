@@ -41,19 +41,20 @@ const ConsumerDetailsDrawer: React.FC<ConsumerDetailsDrawerProps> = ({
   const [isEditing, setIsEditing] = useState(false);
 
   const { data: recentOrders = [], isLoading: ordersLoading } = useQuery({
-    queryKey: ["consumer-orders", consumer.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, order_number, status, order_date, amount, currency, created_at")
-        .eq("consumer_id", consumer.id)
-        .order("created_at", { ascending: false })
-        .limit(5);
+  queryKey: ["consumer-orders", consumer.id],
+  queryFn: async (): Promise<OrderData[]> => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("id, order_number, status, order_date, amount, currency, created_at")
+      .eq("consumer_id", consumer.id)
+      .order("created_at", { ascending: false })
+      .limit(5);
 
-      if (error) throw error;
-      return data || [];
-    },
-  });
+    if (error) throw error;
+    return data ?? [];
+  },
+});
+
 
   const handleEditComplete = () => {
     setIsEditing(false);
