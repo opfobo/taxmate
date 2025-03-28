@@ -298,45 +298,33 @@ const LandingPage = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
               {features.map((feature, index) => (
-                <Card 
-  key={index} 
-  className={`border-white/5 ${
-    theme === "dark-navy" 
-      ? "bg-gradient-to-br from-blue-800 to-slate-800"  // ← heller!
-      : "bg-gradient-to-br from-red-800 to-slate-800"
-  } hover:shadow-xl transition-all duration-200 hover:-translate-y-1`}
->
-  <CardHeader>
-    <div className={`p-2 w-14 h-14 rounded-lg mb-2 flex items-center justify-center ${
+  <Card 
+    key={index} 
+    className={`border-white/5 ${
       theme === "dark-navy" 
-        ? "bg-blue-900/20 text-blue-400" 
-        : "bg-red-900/20 text-red-400"
-    }`}>
-      {feature.icon}
-    </div>
-    <CardTitle className={`text-xl font-semibold ${
-      theme === "dark-navy" 
-        ? "text-blue-200 drop-shadow-sm" 
-        : "text-red-200 drop-shadow-sm"
-    }`}>
-      {feature.title}
-    </CardTitle>
-  </CardHeader>
-
-                    <div className={`p-2 w-14 h-14 rounded-lg mb-2 flex items-center justify-center ${
-                      theme === "dark-navy" ? "bg-blue-900/20 text-blue-400" : "bg-red-900/20 text-red-400"
-                    }`}>
-                      {feature.icon}
-                    </div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-gray-400">
-                      {feature.description}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              ))}
+        ? "bg-gradient-to-br from-blue-800 to-slate-800" 
+        : "bg-gradient-to-br from-red-800 to-slate-800"
+    } hover:shadow-xl transition-all duration-200 hover:-translate-y-1`}
+  >
+    <CardHeader>
+      <div className={`p-2 w-14 h-14 rounded-lg mb-2 flex items-center justify-center ${
+        theme === "dark-navy" ? "bg-blue-900/20 text-blue-400" : "bg-red-900/20 text-red-400"
+      }`}>
+        {feature.icon}
+      </div>
+      <CardTitle className={`text-xl font-semibold ${
+        theme === "dark-navy" ? "text-blue-200 drop-shadow-sm" : "text-red-200 drop-shadow-sm"
+      }`}>
+        {feature.title}
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <CardDescription className="text-gray-400">
+        {feature.description}
+      </CardDescription>
+    </CardContent>
+  </Card>
+))}
             </div>
           </div>
         </section>
