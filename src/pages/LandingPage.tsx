@@ -142,26 +142,27 @@ const LandingPage = () => {
   ];
 
   return (
-    <div 
-      className={`min-h-screen flex flex-col ${
-        theme === "dark-navy" 
-          ? "bg-slate-900 text-white" 
-          : "bg-red-950 text-white"
-      } transition-colors duration-300`}
-    >
-      {/* Theme + Language Switcher */}
-<div className="fixed top-4 right-4 z-50 flex items-center gap-3 px-3 py-2 rounded-lg bg-black/30 backdrop-blur-md border border-white/10 shadow-md">
-  <div className="flex items-center gap-2">
-    <Moon className="h-4 w-4 text-blue-300" />
-    <Switch 
-      checked={theme === "dark-cherry"} 
-      onCheckedChange={toggleTheme} 
-      className={`${theme === "dark-cherry" ? "bg-red-700" : "bg-blue-900"}`}
-    />
-    <Sun className="h-4 w-4 text-red-300" />
-  </div>
-  <LanguageSwitcher />
-</div>
+  <div 
+    className={`min-h-screen flex flex-col ${
+      theme === "dark-navy" 
+        ? "bg-slate-900 text-white" 
+        : "bg-red-950 text-white"
+    } transition-colors duration-300`}
+  >
+    {/* Theme + Language Switcher */}
+    <div className="fixed top-4 right-4 z-50 flex items-center gap-3 px-3 py-2 rounded-lg bg-black/30 backdrop-blur-md border border-white/10 shadow-md">
+      <div className="flex items-center gap-2">
+        <Moon className="h-4 w-4 text-blue-300" />
+        <Switch 
+          checked={theme === "dark-cherry"} 
+          onCheckedChange={toggleTheme} 
+          className={`${theme === "dark-cherry" ? "bg-red-700" : "bg-blue-900"}`}
+        />
+        <Sun className="h-4 w-4 text-red-300" />
+      </div>
+      <LanguageSwitcher />
+    </div>
+
 
 </div>
 
