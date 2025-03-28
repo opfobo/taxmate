@@ -1,4 +1,4 @@
-
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -159,6 +159,19 @@ const LandingPage = () => {
         />
         <Sun className="h-4 w-4 text-red-300" />
       </div>
+
+      {/* Theme + Language Switcher */}
+<div className="fixed top-4 right-4 z-50 flex items-center gap-3 p-2 rounded-full bg-black/20 backdrop-blur-sm">
+  <Moon className="h-4 w-4 text-blue-300" />
+  <Switch 
+    checked={theme === "dark-cherry"} 
+    onCheckedChange={toggleTheme} 
+    className={`${theme === "dark-cherry" ? "bg-red-700" : "bg-blue-900"}`}
+  />
+  <Sun className="h-4 w-4 text-red-300" />
+  <LanguageSwitcher />
+</div>
+
 
       {/* Navbar */}
       <header className="sticky top-0 z-40 w-full backdrop-blur-sm bg-black/10">
@@ -601,25 +614,26 @@ const LandingPage = () => {
       </main>
 
       <footer className="border-t border-white/10 py-6 md:py-0">
-        <div className="container flex flex-col-reverse items-center justify-between gap-4 py-6 md:h-24 md:flex-row md:py-0">
-          <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-            <p className="text-center text-sm leading-loose text-gray-400 md:text-left">
-              &copy; {new Date().getFullYear()} TaxMate. {t("all_rights_reserved")}
-            </p>
-          </div>
-          <div className="flex gap-4">
-            <Link to="#" className="text-sm text-gray-400 hover:text-white">
-              {t("privacy_policy")}
-            </Link>
-            <Link to="#" className="text-sm text-gray-400 hover:text-white">
-              {t("terms_of_service")}
-            </Link>
-            <Link to="#" className="text-sm text-gray-400 hover:text-white">
-              {t("contact_us")}
-            </Link>
-          </div>
-        </div>
-      </footer>
+  <div className="container flex flex-col-reverse items-center justify-between gap-4 py-6 md:h-24 md:flex-row md:py-0">
+    <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
+      <p className="text-center text-sm leading-loose text-gray-400 md:text-left">
+        &copy; {new Date().getFullYear()} TaxMate. {t("all_rights_reserved")}
+      </p>
+    </div>
+    <div className="flex gap-4">
+      <Link to="/privacy" className="text-sm text-gray-400 hover:text-white">
+        {t("privacy_policy")}
+      </Link>
+      <Link to="/impressum" className="text-sm text-gray-400 hover:text-white">
+        {t("terms_of_service")}
+      </Link>
+      <Link to="/contact" className="text-sm text-gray-400 hover:text-white">
+        {t("contact_us")}
+      </Link>
+    </div>
+  </div>
+</footer>
+
     </div>
   );
 };
