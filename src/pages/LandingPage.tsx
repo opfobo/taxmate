@@ -149,27 +149,20 @@ const LandingPage = () => {
           : "bg-red-950 text-white"
       } transition-colors duration-300`}
     >
-      {/* Theme Switcher */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-2 p-2 rounded-full bg-black/20 backdrop-blur-sm">
-        <Moon className="h-4 w-4 text-blue-300" />
-        <Switch 
-          checked={theme === "dark-cherry"} 
-          onCheckedChange={toggleTheme} 
-          className={`${theme === "dark-cherry" ? "bg-red-700" : "bg-blue-900"}`}
-        />
-        <Sun className="h-4 w-4 text-red-300" />
-      </div>
-
       {/* Theme + Language Switcher */}
-<div className="fixed top-4 right-4 z-50 flex items-center gap-3 p-2 rounded-full bg-black/20 backdrop-blur-sm">
-  <Moon className="h-4 w-4 text-blue-300" />
-  <Switch 
-    checked={theme === "dark-cherry"} 
-    onCheckedChange={toggleTheme} 
-    className={`${theme === "dark-cherry" ? "bg-red-700" : "bg-blue-900"}`}
-  />
-  <Sun className="h-4 w-4 text-red-300" />
+<div className="fixed top-4 right-4 z-50 flex items-center gap-3 px-3 py-2 rounded-lg bg-black/30 backdrop-blur-md border border-white/10 shadow-md">
+  <div className="flex items-center gap-2">
+    <Moon className="h-4 w-4 text-blue-300" />
+    <Switch 
+      checked={theme === "dark-cherry"} 
+      onCheckedChange={toggleTheme} 
+      className={`${theme === "dark-cherry" ? "bg-red-700" : "bg-blue-900"}`}
+    />
+    <Sun className="h-4 w-4 text-red-300" />
+  </div>
   <LanguageSwitcher />
+</div>
+
 </div>
 
 
@@ -621,13 +614,13 @@ const LandingPage = () => {
       </p>
     </div>
     <div className="flex gap-4">
-      <Link to="/privacy" className="text-sm text-gray-400 hover:text-white">
+      <Link to="/Privacy" className="text-sm text-gray-400 hover:text-white">
         {t("privacy_policy")}
       </Link>
-      <Link to="/impressum" className="text-sm text-gray-400 hover:text-white">
+      <Link to="/Impressum" className="text-sm text-gray-400 hover:text-white">
         {t("terms_of_service")}
       </Link>
-      <Link to="/contact" className="text-sm text-gray-400 hover:text-white">
+      <Link to="/Contact" className="text-sm text-gray-400 hover:text-white">
         {t("contact_us")}
       </Link>
     </div>
