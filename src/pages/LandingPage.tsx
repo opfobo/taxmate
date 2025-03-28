@@ -1,3 +1,4 @@
+
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -222,9 +223,9 @@ const LandingPage = () => {
               
               <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl max-w-3xl">
                 {t("hero_title")}
-                <span className={block mt-2 ${
+                <span className={`block mt-2 ${
                   theme === "dark-navy" ? "text-blue-400" : "text-red-400"
-                }}>
+                }`}>
                   {t("hero_subtitle")}
                 </span>
               </h1>
@@ -236,11 +237,11 @@ const LandingPage = () => {
               <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
                 <Button 
                   size="lg" 
-                  className={${
+                  className={`${
                     theme === "dark-navy" 
                       ? "bg-blue-600 hover:bg-blue-700 text-white" 
                       : "bg-red-600 hover:bg-red-700 text-white"
-                  } transition-colors duration-200}
+                  } transition-colors duration-200`}
                 >
                   <Rocket className="mr-2 h-4 w-4" /> {t("get_started")}
                 </Button>
@@ -254,9 +255,9 @@ const LandingPage = () => {
               </div>
               
               <div className="mt-12 relative w-full max-w-4xl">
-                <div className={absolute inset-0 blur-3xl opacity-30 rounded-xl ${
+                <div className={`absolute inset-0 blur-3xl opacity-30 rounded-xl ${
                   theme === "dark-navy" ? "bg-blue-500" : "bg-red-500"
-                }}></div>
+                }`}></div>
                 
                 <AspectRatio 
                   ratio={16 / 9} 
@@ -264,9 +265,9 @@ const LandingPage = () => {
                 >
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
-                      <CreditCard className={h-16 w-16 mx-auto mb-4 ${
+                      <CreditCard className={`h-16 w-16 mx-auto mb-4 ${
                         theme === "dark-navy" ? "text-blue-400" : "text-red-400"
-                      }} />
+                      }`} />
                       <p className="text-sm text-gray-400">{t("demo_placeholder")}</p>
                     </div>
                   </div>
@@ -280,12 +281,12 @@ const LandingPage = () => {
 <section id="features" className="py-16 md:py-24 bg-black/20">
   <div className="container px-4 md:px-6">
     <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-      <div className={inline-block p-1 rounded-full ${
+      <div className={`inline-block p-1 rounded-full ${
         theme === "dark-navy" ? "bg-blue-900/20" : "bg-red-900/20"
-      }}>
-        <div className={rounded-full px-3 py-1 text-sm ${
+      }`}>
+        <div className={`rounded-full px-3 py-1 text-sm ${
           theme === "dark-navy" ? "bg-blue-900/30 text-blue-300" : "bg-red-900/30 text-red-300"
-        }}>
+        }`}>
           {t("features")}
         </div>
       </div>
@@ -301,21 +302,21 @@ const LandingPage = () => {
       {features.map((feature, index) => (
         <Card
           key={index}
-          className={border-white/5 ${
+          className={`border-white/5 ${
             theme === "dark-navy"
               ? "bg-gradient-to-br from-blue-800 to-slate-800"
               : "bg-gradient-to-br from-red-800 to-slate-800"
-          } hover:shadow-xl transition-all duration-200 hover:-translate-y-1}
+          } hover:shadow-xl transition-all duration-200 hover:-translate-y-1`}
         >
           <CardHeader>
-            <div className={p-2 w-14 h-14 rounded-lg mb-2 flex items-center justify-center ${
+            <div className={`p-2 w-14 h-14 rounded-lg mb-2 flex items-center justify-center ${
               theme === "dark-navy" ? "bg-blue-900/20 text-blue-400" : "bg-red-900/20 text-red-400"
-            }}>
+            }`}>
               {feature.icon}
             </div>
-            <CardTitle className={text-xl font-semibold ${
+            <CardTitle className={`text-xl font-semibold ${
               theme === "dark-navy" ? "text-blue-300 drop-shadow-sm" : "text-red-300 drop-shadow-sm"
-            }}>
+            }`}>
               {feature.title}
             </CardTitle>
           </CardHeader>
@@ -334,12 +335,12 @@ const LandingPage = () => {
         <section id="how-it-works" className="py-16 md:py-24">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-              <div className={inline-block p-1 rounded-full ${
+              <div className={`inline-block p-1 rounded-full ${
                 theme === "dark-navy" ? "bg-blue-900/20" : "bg-red-900/20"
-              }}>
-                <div className={rounded-full px-3 py-1 text-sm ${
+              }`}>
+                <div className={`rounded-full px-3 py-1 text-sm ${
                   theme === "dark-navy" ? "bg-blue-900/30 text-blue-300" : "bg-red-900/30 text-red-300"
-                }}>
+                }`}>
                   {t("how_it_works")}
                 </div>
               </div>
@@ -354,18 +355,18 @@ const LandingPage = () => {
             <div className="relative mt-12">
               {/* Desktop Steps - Horizontal */}
               <div className="hidden md:block">
-                <div className={absolute top-1/2 left-0 right-0 h-1 -translate-y-1/2 ${
+                <div className={`absolute top-1/2 left-0 right-0 h-1 -translate-y-1/2 ${
                   theme === "dark-navy" ? "bg-blue-900/20" : "bg-red-900/20"
-                }}></div>
+                }`}></div>
                 
                 <div className="grid grid-cols-3 gap-8 relative">
                   {steps.map((step, index) => (
                     <div key={index} className="flex flex-col items-center text-center">
-                      <div className={relative z-10 flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
+                      <div className={`relative z-10 flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
                         theme === "dark-navy" 
                           ? "bg-blue-600 text-white" 
                           : "bg-red-600 text-white"
-                      }}>
+                      }`}>
                         {step.icon}
                         <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center text-sm font-bold border-2 border-current">
                           {index + 1}
@@ -382,18 +383,18 @@ const LandingPage = () => {
               <div className="md:hidden space-y-8">
                 {steps.map((step, index) => (
                   <div key={index} className="flex items-start">
-                    <div className={flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-full mr-4 ${
+                    <div className={`flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-full mr-4 ${
                       theme === "dark-navy" 
                         ? "bg-blue-600 text-white" 
                         : "bg-red-600 text-white"
-                    }}>
+                    }`}>
                       <span className="font-bold">{index + 1}</span>
                     </div>
                     <div>
                       <div className="flex items-center mb-2">
-                        <div className={mr-2 p-2 rounded-lg ${
+                        <div className={`mr-2 p-2 rounded-lg ${
                           theme === "dark-navy" ? "bg-blue-900/20 text-blue-400" : "bg-red-900/20 text-red-400"
-                        }}>
+                        }`}>
                           {step.icon}
                         </div>
                         <h3 className="text-xl font-bold">{step.title}</h3>
@@ -411,12 +412,12 @@ const LandingPage = () => {
 <section id="testimonials" className="py-16 md:py-24 bg-black/20">
   <div className="container px-4 md:px-6">
     <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-      <div className={inline-block p-1 rounded-full ${
+      <div className={`inline-block p-1 rounded-full ${
         theme === "dark-navy" ? "bg-blue-900/20" : "bg-red-900/20"
-      }}>
-        <div className={rounded-full px-3 py-1 text-sm ${
+      }`}>
+        <div className={`rounded-full px-3 py-1 text-sm ${
           theme === "dark-navy" ? "bg-blue-900/30 text-blue-300" : "bg-red-900/30 text-red-300"
-        }}>
+        }`}>
           {t("testimonials")}
         </div>
       </div>
@@ -432,25 +433,25 @@ const LandingPage = () => {
       {testimonials.map((testimonial, index) => (
         <Card
           key={index}
-          className={border-white/5 ${
+          className={`border-white/5 ${
             theme === "dark-navy"
               ? "bg-gradient-to-br from-blue-950 to-slate-900"
               : "bg-gradient-to-br from-red-950 to-slate-900"
-          }}
+          }`}
         >
           <CardContent className="p-6">
-            <div className={mb-4 text-3xl ${
+            <div className={`mb-4 text-3xl ${
               theme === "dark-navy" ? "text-blue-400" : "text-red-400"
-            }}>
+            }`}>
               ❝
             </div>
             <p className="text-lg mb-6 italic text-gray-100 drop-shadow">
               {testimonial.quote}
             </p>
             <div className="flex items-center">
-              <div className={w-10 h-10 rounded-full mr-3 flex items-center justify-center text-white font-bold ${
+              <div className={`w-10 h-10 rounded-full mr-3 flex items-center justify-center text-white font-bold ${
                 theme === "dark-navy" ? "bg-blue-800" : "bg-red-800"
-              }}>
+              }`}>
                 <span className="text-lg">
                   {testimonial.author.charAt(0)}
                 </span>
@@ -471,12 +472,12 @@ const LandingPage = () => {
 <section id="pricing" className="py-16 md:py-24">
   <div className="container px-4 md:px-6">
     <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-      <div className={inline-block p-1 rounded-full ${
+      <div className={`inline-block p-1 rounded-full ${
         theme === "dark-navy" ? "bg-blue-900/20" : "bg-red-900/20"
-      }}>
-        <div className={rounded-full px-3 py-1 text-sm ${
+      }`}>
+        <div className={`rounded-full px-3 py-1 text-sm ${
           theme === "dark-navy" ? "bg-blue-900/30 text-blue-300" : "bg-red-900/30 text-red-300"
-        }}>
+        }`}>
           {t("pricing")}
         </div>
       </div>
@@ -492,7 +493,7 @@ const LandingPage = () => {
       {pricingPlans.map((plan, index) => (
         <Card
           key={index}
-          className={border-white/5 relative ${
+          className={`border-white/5 relative ${
             plan.badge
               ? theme === "dark-navy"
                 ? "border-blue-500/50"
@@ -502,12 +503,12 @@ const LandingPage = () => {
             theme === "dark-navy"
               ? "bg-gradient-to-br from-blue-950 to-slate-900"
               : "bg-gradient-to-br from-red-950 to-slate-900"
-          }}
+          }`}
         >
           {plan.badge && (
-            <Badge className={absolute top-0 right-0 translate-x-1/4 -translate-y-1/3 ${
+            <Badge className={`absolute top-0 right-0 translate-x-1/4 -translate-y-1/3 ${
               theme === "dark-navy" ? "bg-blue-600" : "bg-red-600"
-            }}>
+            }`}>
               {plan.badge}
             </Badge>
           )}
@@ -532,9 +533,9 @@ const LandingPage = () => {
               {plan.features.map((feature, i) => (
                 <li key={i} className="flex items-center">
                   <svg
-                    className={h-5 w-5 flex-shrink-0 ${
+                    className={`h-5 w-5 flex-shrink-0 ${
                       theme === "dark-navy" ? "text-blue-400" : "text-red-400"
-                    }}
+                    }`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -549,13 +550,13 @@ const LandingPage = () => {
               ))}
             </ul>
             <Button
-              className={w-full mt-6 ${
+              className={`w-full mt-6 ${
                 plan.buttonVariant === "default"
                   ? theme === "dark-navy"
                     ? "bg-blue-600 hover:bg-blue-700"
                     : "bg-red-600 hover:bg-red-700"
                   : "border-white/20 bg-black/10 hover:bg-white/10"
-              }}
+              }`}
               variant={plan.buttonVariant as "default" | "outline"}
             >
               {t("get_started")}
@@ -580,11 +581,11 @@ const LandingPage = () => {
               <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
                 <Button 
                   size="lg" 
-                  className={${
+                  className={`${
                     theme === "dark-navy" 
                       ? "bg-blue-600 hover:bg-blue-700" 
                       : "bg-red-600 hover:bg-red-700"
-                  }}
+                  }`}
                 >
                   {t("start_free_trial")}
                 </Button>
