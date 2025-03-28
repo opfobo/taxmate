@@ -275,63 +275,59 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {/* Features Section */}
-        <section id="features" className="py-16 md:py-24 bg-black/20">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-              <div className={`inline-block p-1 rounded-full ${
-                theme === "dark-navy" ? "bg-blue-900/20" : "bg-red-900/20"
-              }`}>
-                <div className={`rounded-full px-3 py-1 text-sm ${
-                  theme === "dark-navy" ? "bg-blue-900/30 text-blue-300" : "bg-red-900/30 text-red-300"
-                }`}>
-                  {t("features")}
-                </div>
-              </div>
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                {t("features_title")}
-              </h2>
-              <p className="max-w-[700px] text-gray-400 md:text-lg">
-                {t("features_description")}
-              </p>
-            </div>
+       {/* Features Section */}
+<section id="features" className="py-16 md:py-24 bg-black/20">
+  <div className="container px-4 md:px-6">
+    <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+      <div className={`inline-block p-1 rounded-full ${
+        theme === "dark-navy" ? "bg-blue-900/20" : "bg-red-900/20"
+      }`}>
+        <div className={`rounded-full px-3 py-1 text-sm ${
+          theme === "dark-navy" ? "bg-blue-900/30 text-blue-300" : "bg-red-900/30 text-red-300"
+        }`}>
+          {t("features")}
+        </div>
+      </div>
+      <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+        {t("features_title")}
+      </h2>
+      <p className="max-w-[700px] text-gray-400 md:text-lg">
+        {t("features_description")}
+      </p>
+    </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
-              {features.map((feature, index) => (
-                <Card 
-                  key={index} 
-                  className={`border-white/5 ${
-                    theme === "dark-navy" 
-                      ? "bg-gradient-to-br from-blue-800 to-slate-800" 
-                      : "bg-gradient-to-br from-red-800 to-slate-800"
-                  } hover:shadow-xl transition-all duration-200 hover:-translate-y-1`}
-                >
-                  <CardHeader>
-                    <div className={`p-2 w-14 h-14 rounded-lg mb-2 flex items-center justify-center ${
-                      theme === "dark-navy" 
-                        ? "bg-blue-900/20 text-blue-400" 
-                        : "bg-red-900/20 text-red-400"
-                    }`}>
-                      {feature.icon}
-                    </div>
-                    <CardTitle className={`text-xl font-semibold ${
-                      theme === "dark-navy" 
-                        ? "text-blue-200 drop-shadow-sm" 
-                        : "text-red-200 drop-shadow-sm"
-                    }`}>
-                      {feature.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-gray-400">
-                      {feature.description}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              ))}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+      {features.map((feature, index) => (
+        <Card
+          key={index}
+          className={`border-white/5 ${
+            theme === "dark-navy"
+              ? "bg-gradient-to-br from-blue-800 to-slate-800"
+              : "bg-gradient-to-br from-red-800 to-slate-800"
+          } hover:shadow-xl transition-all duration-200 hover:-translate-y-1`}
+        >
+          <CardHeader>
+            <div className={`p-2 w-14 h-14 rounded-lg mb-2 flex items-center justify-center ${
+              theme === "dark-navy" ? "bg-blue-900/20 text-blue-400" : "bg-red-900/20 text-red-400"
+            }`}>
+              {feature.icon}
             </div>
-          </div>
-        </section>
+            <CardTitle className={`text-xl font-semibold ${
+              theme === "dark-navy" ? "text-blue-300 drop-shadow-sm" : "text-red-300 drop-shadow-sm"
+            }`}>
+              {feature.title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CardDescription className="text-gray-400">
+              {feature.description}
+            </CardDescription>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  </div>
+</section>
 
         {/* How It Works Section */}
         <section id="how-it-works" className="py-16 md:py-24">
@@ -411,161 +407,164 @@ const LandingPage = () => {
         </section>
 
         {/* Testimonials Section */}
-        <section id="testimonials" className="py-16 md:py-24 bg-black/20">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-              <div className={`inline-block p-1 rounded-full ${
-                theme === "dark-navy" ? "bg-blue-900/20" : "bg-red-900/20"
-              }`}>
-                <div className={`rounded-full px-3 py-1 text-sm ${
-                  theme === "dark-navy" ? "bg-blue-900/30 text-blue-300" : "bg-red-900/30 text-red-300"
-                }`}>
-                  {t("testimonials")}
-                </div>
-              </div>
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                {t("testimonials_title")}
-              </h2>
-              <p className="max-w-[700px] text-gray-400 md:text-lg">
-                {t("testimonials_description")}
-              </p>
-            </div>
+<section id="testimonials" className="py-16 md:py-24 bg-black/20">
+  <div className="container px-4 md:px-6">
+    <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+      <div className={`inline-block p-1 rounded-full ${
+        theme === "dark-navy" ? "bg-blue-900/20" : "bg-red-900/20"
+      }`}>
+        <div className={`rounded-full px-3 py-1 text-sm ${
+          theme === "dark-navy" ? "bg-blue-900/30 text-blue-300" : "bg-red-900/30 text-red-300"
+        }`}>
+          {t("testimonials")}
+        </div>
+      </div>
+      <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+        {t("testimonials_title")}
+      </h2>
+      <p className="max-w-[700px] text-gray-400 md:text-lg">
+        {t("testimonials_description")}
+      </p>
+    </div>
 
-            <div className="grid md:grid-cols-2 gap-8 mt-8">
-              {testimonials.map((testimonial, index) => (
-                <Card 
-                  key={index} 
-                  className={`border-white/5 ${
-                    theme === "dark-navy" 
-                      ? "bg-gradient-to-br from-blue-950 to-slate-900" 
-                      : "bg-gradient-to-br from-red-950 to-slate-900"
-                  }`}
-                >
-                  <CardContent className="p-6">
-                    <div className={`mb-4 text-3xl ${
-                      theme === "dark-navy" ? "text-blue-400" : "text-red-400"
-                    }`}>
-                      ❝
-                    </div>
-                    <p className="text-lg mb-6 italic text-gray-300">
-                      {testimonial.quote}
-                    </p>
-                    <div className="flex items-center">
-                      <div className={`w-10 h-10 rounded-full mr-3 flex items-center justify-center ${
-                        theme === "dark-navy" ? "bg-blue-900/30" : "bg-red-900/30"
-                      }`}>
-                        <span className="text-lg font-bold">
-                          {testimonial.author.charAt(0)}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-medium">{testimonial.author}</p>
-                        <p className="text-sm text-gray-400">{testimonial.role}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+    <div className="grid md:grid-cols-2 gap-8 mt-8">
+      {testimonials.map((testimonial, index) => (
+        <Card
+          key={index}
+          className={`border-white/5 ${
+            theme === "dark-navy"
+              ? "bg-gradient-to-br from-blue-950 to-slate-900"
+              : "bg-gradient-to-br from-red-950 to-slate-900"
+          }`}
+        >
+          <CardContent className="p-6">
+            <div className={`mb-4 text-3xl ${
+              theme === "dark-navy" ? "text-blue-400" : "text-red-400"
+            }`}>
+              ❝
             </div>
-          </div>
-        </section>
+            <p className="text-lg mb-6 italic text-gray-100 drop-shadow">
+              {testimonial.quote}
+            </p>
+            <div className="flex items-center">
+              <div className={`w-10 h-10 rounded-full mr-3 flex items-center justify-center text-white font-bold ${
+                theme === "dark-navy" ? "bg-blue-800" : "bg-red-800"
+              }`}>
+                <span className="text-lg">
+                  {testimonial.author.charAt(0)}
+                </span>
+              </div>
+              <div>
+                <p className="font-semibold text-white">{testimonial.author}</p>
+                <p className="text-sm text-gray-300">{testimonial.role}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  </div>
+</section>
 
         {/* Pricing Section */}
-        <section id="pricing" className="py-16 md:py-24">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-              <div className={`inline-block p-1 rounded-full ${
-                theme === "dark-navy" ? "bg-blue-900/20" : "bg-red-900/20"
-              }`}>
-                <div className={`rounded-full px-3 py-1 text-sm ${
-                  theme === "dark-navy" ? "bg-blue-900/30 text-blue-300" : "bg-red-900/30 text-red-300"
-                }`}>
-                  {t("pricing")}
-                </div>
-              </div>
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                {t("pricing_title")}
-              </h2>
-              <p className="max-w-[700px] text-gray-400 md:text-lg">
-                {t("pricing_description")}
-              </p>
-            </div>
+<section id="pricing" className="py-16 md:py-24">
+  <div className="container px-4 md:px-6">
+    <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+      <div className={`inline-block p-1 rounded-full ${
+        theme === "dark-navy" ? "bg-blue-900/20" : "bg-red-900/20"
+      }`}>
+        <div className={`rounded-full px-3 py-1 text-sm ${
+          theme === "dark-navy" ? "bg-blue-900/30 text-blue-300" : "bg-red-900/30 text-red-300"
+        }`}>
+          {t("pricing")}
+        </div>
+      </div>
+      <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+        {t("pricing_title")}
+      </h2>
+      <p className="max-w-[700px] text-gray-400 md:text-lg">
+        {t("pricing_description")}
+      </p>
+    </div>
 
-            <div className="grid md:grid-cols-3 gap-8 mt-8">
-              {pricingPlans.map((plan, index) => (
-                <Card 
-                  key={index} 
-                  className={`border-white/5 relative ${
-                    plan.badge 
-                      ? (theme === "dark-navy" 
-                          ? "border-blue-500/50" 
-                          : "border-red-500/50") 
-                      : ""
-                  } ${
-                    theme === "dark-navy" 
-                      ? "bg-gradient-to-br from-blue-950 to-slate-900" 
-                      : "bg-gradient-to-br from-red-950 to-slate-900"
-                  }`}
-                >
-                  {plan.badge && (
-                    <Badge className={`absolute top-0 right-0 translate-x-1/4 -translate-y-1/3 ${
-                      theme === "dark-navy" ? "bg-blue-600" : "bg-red-600"
-                    }`}>
-                      {plan.badge}
-                    </Badge>
-                  )}
-                  <CardHeader>
-                    <CardTitle className="text-xl">{plan.name}</CardTitle>
-                    <div className="mt-4 flex items-baseline text-gray-100">
-                      <span className="text-4xl font-extrabold tracking-tight">
-                        {plan.price}
-                      </span>
-                      <span className="ml-1 text-sm font-medium text-gray-400">
-                        /{plan.period}
-                      </span>
-                    </div>
-                    <CardDescription className="mt-4 text-gray-400">
-                      {plan.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-3">
-                      {plan.features.map((feature, i) => (
-                        <li key={i} className="flex items-center">
-                          <svg
-                            className={`h-5 w-5 flex-shrink-0 ${
-                              theme === "dark-navy" ? "text-blue-400" : "text-red-400"
-                            }`}
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          <span className="ml-3 text-gray-300">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button 
-                      className={`w-full mt-6 ${
-                        plan.buttonVariant === "default" 
-                          ? (theme === "dark-navy" ? "bg-blue-600 hover:bg-blue-700" : "bg-red-600 hover:bg-red-700") 
-                          : "border-white/20 bg-black/10 hover:bg-white/10"
-                      }`}
-                      variant={plan.buttonVariant as "default" | "outline"}
-                    >
-                      {t("get_started")}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+    <div className="grid md:grid-cols-3 gap-8 mt-8">
+      {pricingPlans.map((plan, index) => (
+        <Card
+          key={index}
+          className={`border-white/5 relative ${
+            plan.badge
+              ? theme === "dark-navy"
+                ? "border-blue-500/50"
+                : "border-red-500/50"
+              : ""
+          } ${
+            theme === "dark-navy"
+              ? "bg-gradient-to-br from-blue-950 to-slate-900"
+              : "bg-gradient-to-br from-red-950 to-slate-900"
+          }`}
+        >
+          {plan.badge && (
+            <Badge className={`absolute top-0 right-0 translate-x-1/4 -translate-y-1/3 ${
+              theme === "dark-navy" ? "bg-blue-600" : "bg-red-600"
+            }`}>
+              {plan.badge}
+            </Badge>
+          )}
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-white drop-shadow-sm">
+              {plan.name}
+            </CardTitle>
+            <div className="mt-4 flex items-baseline text-white">
+              <span className="text-4xl font-extrabold tracking-tight drop-shadow">
+                {plan.price}
+              </span>
+              <span className="ml-1 text-sm font-medium text-gray-300">
+                /{plan.period}
+              </span>
             </div>
-          </div>
-        </section>
+            <CardDescription className="mt-4 text-gray-300">
+              {plan.description}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-3">
+              {plan.features.map((feature, i) => (
+                <li key={i} className="flex items-center">
+                  <svg
+                    className={`h-5 w-5 flex-shrink-0 ${
+                      theme === "dark-navy" ? "text-blue-400" : "text-red-400"
+                    }`}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="ml-3 text-gray-200">{feature}</span>
+                </li>
+              ))}
+            </ul>
+            <Button
+              className={`w-full mt-6 ${
+                plan.buttonVariant === "default"
+                  ? theme === "dark-navy"
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-red-600 hover:bg-red-700"
+                  : "border-white/20 bg-black/10 hover:bg-white/10"
+              }`}
+              variant={plan.buttonVariant as "default" | "outline"}
+            >
+              {t("get_started")}
+            </Button>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  </div>
+</section>
 
         {/* Final CTA Section */}
         <section className="py-16 md:py-24 bg-black/20">
