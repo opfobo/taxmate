@@ -21,9 +21,6 @@ import TaxReportsPage from "./pages/TaxReportsPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import ResourcesPage from "./pages/ResourcesPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
-import Impressum from "./pages/Impressum";
-import Privacy from "./pages/Privacy";
-import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
 // New Order Pages
@@ -53,9 +50,6 @@ const App = () => (
               <Route path="/" element={<LandingPage />} />
               <Route path="/auth/login" element={<LoginPage />} />
               <Route path="/auth/signup" element={<SignupPage />} />
-              <Route path="/Privacy" element={<PrivacyPage />} />
-              <Route path="/Impressum" element={<ImpressumPage />} />
-              <Route path="/Contact" element={<ContactPage />} />
               
               {/* Protected Routes */}
               <Route path="/dashboard" element={
