@@ -297,7 +297,7 @@ const LandingPage = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
-              {features.map((feature, index) => (
+             {features.map((feature, index) => (
   <Card 
     key={index} 
     className={`border-white/5 ${
