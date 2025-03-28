@@ -15,7 +15,7 @@ export function LanguageSwitcher() {
 
   const handleLanguageChange = (newLanguage: string) => {
     changeLanguage(newLanguage);
-    navigate(location.pathname, { replace: true }); // 🔄 Trigger rerender
+    window.location.reload(); // 🔄 sofortige Sprachaktualisierung
   };
 
   return (
