@@ -1,4 +1,3 @@
-
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLocation, useNavigate } from "react-router-dom";
 import { 
@@ -11,9 +10,12 @@ import { Languages } from "lucide-react";
 
 export function LanguageSwitcher() {
   const { language, changeLanguage, availableLanguages } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const handleLanguageChange = (newLanguage: string) => {
     changeLanguage(newLanguage);
+    navigate(location.pathname, { replace: true }); // 🔄 Trigger rerender
   };
 
   return (
