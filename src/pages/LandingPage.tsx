@@ -1,6 +1,6 @@
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -38,6 +38,7 @@ const LandingPage = () => {
     setTheme(theme === "dark-navy" ? "dark-cherry" : "dark-navy");
   };
 
+  // Features array
   const features = [
     {
       icon: <FileText className="h-10 w-10" />,
@@ -61,6 +62,7 @@ const LandingPage = () => {
     }
   ];
 
+  // Steps array
   const steps = [
     {
       icon: <Clock className="h-8 w-8" />,
@@ -79,6 +81,7 @@ const LandingPage = () => {
     }
   ];
 
+  // Pricing plans
   const pricingPlans = [
     {
       name: t("pricing_free"),
@@ -124,6 +127,7 @@ const LandingPage = () => {
     }
   ];
 
+  // Testimonials
   const testimonials = [
     {
       quote: t("testimonial_1_quote"),
@@ -140,9 +144,7 @@ const LandingPage = () => {
   return (
     <div
       className={`min-h-screen flex flex-col ${
-        theme === "dark-navy"
-          ? "bg-slate-900 text-white"
-          : "bg-red-950 text-white"
+        theme === "dark-navy" ? "bg-slate-900 text-white" : "bg-red-950 text-white"
       } transition-colors duration-300`}
     >
       {/* Theme + Language Switcher */}
@@ -152,9 +154,7 @@ const LandingPage = () => {
           <Switch
             checked={theme === "dark-cherry"}
             onCheckedChange={toggleTheme}
-            className={`${
-              theme === "dark-cherry" ? "bg-red-700" : "bg-blue-900"
-            }`}
+            className={`${theme === "dark-cherry" ? "bg-red-700" : "bg-blue-900"}`}
           />
           <Sun className="h-4 w-4 text-red-300" />
         </div>
@@ -218,10 +218,9 @@ const LandingPage = () => {
         </div>
       </header>
 
-      {/* Hier geht dein restlicher Main-Inhalt weiter... */}
-      {/* ... */}
+      {/* RESTLICHER SEITENINHALT */}
+      {/* Du kannst hier direkt deine Hero-, Features-, Pricing-, Testimonials-, Footer-Sektionen usw. unverändert lassen */}
 
-      {/* Footer */}
       <footer className="border-t border-white/10 py-6 md:py-0">
         <div className="container flex flex-col-reverse items-center justify-between gap-4 py-6 md:h-24 md:flex-row md:py-0">
           <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
