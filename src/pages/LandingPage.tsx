@@ -611,13 +611,13 @@ const LandingPage = () => {
             </p>
           </div>
           <div className="flex gap-4">
-            <Link to="/Privacy" className="text-sm text-gray-400 hover:text-white">
+            <Link to="/privacy" className="text-sm text-gray-400 hover:text-white">
               {t("privacy_policy")}
             </Link>
-            <Link to="/Impressum" className="text-sm text-gray-400 hover:text-white">
+            <Link to="/impressum" className="text-sm text-gray-400 hover:text-white">
               {t("terms_of_service")}
             </Link>
-            <Link to="/Contact" className="text-sm text-gray-400 hover:text-white">
+            <Link to="/contact" className="text-sm text-gray-400 hover:text-white">
               {t("contact_us")}
             </Link>
           </div>
