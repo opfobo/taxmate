@@ -2,10 +2,7 @@
 import { useTranslation } from "@/hooks/useTranslation";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Zap, Mail, Phone, MapPin } from "lucide-react";
+import { Zap } from "lucide-react";
 
 const Contact = () => {
   const { t } = useTranslation();
@@ -31,105 +28,30 @@ const Contact = () => {
 
       <main className="flex-1">
         <div className="container px-4 md:px-6 py-20">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-4xl font-bold tracking-tighter mb-8 text-center">
+          <div className="max-w-3xl mx-auto">
+            <h1 className="text-4xl font-bold tracking-tighter mb-8">
               {t("contact_title")}
             </h1>
             
-            <div className="grid md:grid-cols-2 gap-8 mt-12">
+            <div className="prose prose-invert max-w-none space-y-8">
               <div>
-                <h2 className="text-2xl font-semibold mb-6">{t("contact_form_title")}</h2>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium mb-1">
-                      {t("contact_form_name")}
-                    </label>
-                    <Input
-                      id="name"
-                      className={`bg-black/10 border-white/20 ${theme === "dark-navy" ? "focus:border-blue-500" : "focus:border-red-500"}`}
-                      placeholder={t("contact_form_name_placeholder")}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium mb-1">
-                      {t("contact_form_email")}
-                    </label>
-                    <Input
-                      id="email"
-                      type="email"
-                      className="bg-black/10 border-white/20"
-                      placeholder={t("contact_form_email_placeholder")}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="subject" className="block text-sm font-medium mb-1">
-                      {t("contact_form_subject")}
-                    </label>
-                    <Input
-                      id="subject"
-                      className="bg-black/10 border-white/20"
-                      placeholder={t("contact_form_subject_placeholder")}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="message" className="block text-sm font-medium mb-1">
-                      {t("contact_form_message")}
-                    </label>
-                    <Textarea
-                      id="message"
-                      className="bg-black/10 border-white/20 min-h-[120px]"
-                      placeholder={t("contact_form_message_placeholder")}
-                    />
-                  </div>
-                  
-                  <Button 
-                    className={`w-full ${
-                      theme === "dark-navy" 
-                        ? "bg-blue-600 hover:bg-blue-700" 
-                        : "bg-red-600 hover:bg-red-700"
-                    }`}
-                  >
-                    {t("contact_form_submit")}
-                  </Button>
-                </div>
+                <h2 className="text-2xl font-semibold">{t("contact_info_title")}</h2>
+                <p className="mt-4 text-gray-300">{t("contact_info_text")}</p>
               </div>
               
-              <div className="bg-black/20 p-6 rounded-lg">
-                <h2 className="text-2xl font-semibold mb-6">{t("contact_info_title")}</h2>
-                
-                <div className="space-y-6">
-                  <div className="flex items-start">
-                    <Mail className={`w-5 h-5 mt-1 mr-3 ${theme === "dark-navy" ? "text-blue-400" : "text-red-400"}`} />
-                    <div>
-                      <h3 className="font-medium">{t("contact_email")}</h3>
-                      <p className="text-gray-300">info@taxmate.example</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start">
-                    <Phone className={`w-5 h-5 mt-1 mr-3 ${theme === "dark-navy" ? "text-blue-400" : "text-red-400"}`} />
-                    <div>
-                      <h3 className="font-medium">{t("contact_phone")}</h3>
-                      <p className="text-gray-300">+1 (555) 123-4567</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start">
-                    <MapPin className={`w-5 h-5 mt-1 mr-3 ${theme === "dark-navy" ? "text-blue-400" : "text-red-400"}`} />
-                    <div>
-                      <h3 className="font-medium">{t("contact_address")}</h3>
-                      <p className="text-gray-300">
-                        123 Tax Street<br />
-                        Accounting Tower, Floor 45<br />
-                        Finance City, 10001
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              <div>
+                <h2 className="text-2xl font-semibold">{t("contact_address_title")}</h2>
+                <p className="mt-4 text-gray-300">{t("contact_address_text")}</p>
+              </div>
+              
+              <div>
+                <h2 className="text-2xl font-semibold">{t("contact_email_title")}</h2>
+                <p className="mt-4 text-gray-300">{t("contact_email_text")}</p>
+              </div>
+              
+              <div>
+                <h2 className="text-2xl font-semibold">{t("contact_phone_title")}</h2>
+                <p className="mt-4 text-gray-300">{t("contact_phone_text")}</p>
               </div>
             </div>
             

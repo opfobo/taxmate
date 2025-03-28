@@ -22,6 +22,9 @@ import TransactionsPage from "./pages/TransactionsPage";
 import ResourcesPage from "./pages/ResourcesPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import NotFound from "./pages/NotFound";
+import Privacy from "./pages/Privacy";
+import Contact from "./pages/Contact";
+import Impressum from "./pages/Impressum";
 
 // New Order Pages
 import OrdersLayout from "./layouts/OrdersLayout";
@@ -50,6 +53,9 @@ const App = () => (
               <Route path="/" element={<LandingPage />} />
               <Route path="/auth/login" element={<LoginPage />} />
               <Route path="/auth/signup" element={<SignupPage />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/impressum" element={<Impressum />} />
               
               {/* Protected Routes */}
               <Route path="/dashboard" element={

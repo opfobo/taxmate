@@ -33,20 +33,31 @@ const Impressum = () => {
               {t("impressum_title")}
             </h1>
             
-            <div className="prose prose-invert max-w-none">
-              <h2>{t("impressum_company_info")}</h2>
-              <p>{t("impressum_company_name")}</p>
-              <p>{t("impressum_address")}</p>
-              <p>{t("impressum_contact")}</p>
+            <div className="prose prose-invert max-w-none space-y-8">
+              <div>
+                <h2 className="text-2xl font-semibold">{t("impressum_company_title")}</h2>
+                <p className="mt-4 text-gray-300">{t("impressum_company_text")}</p>
+              </div>
               
-              <h2 className="mt-8">{t("impressum_legal_representation")}</h2>
-              <p>{t("impressum_legal_info")}</p>
+              <div>
+                <h2 className="text-2xl font-semibold">{t("impressum_address_title")}</h2>
+                <p className="mt-4 text-gray-300">{t("impressum_address_text")}</p>
+              </div>
               
-              <h2 className="mt-8">{t("impressum_registration")}</h2>
-              <p>{t("impressum_registration_info")}</p>
+              <div>
+                <h2 className="text-2xl font-semibold">{t("impressum_contact_title")}</h2>
+                <p className="mt-4 text-gray-300">{t("impressum_contact_text")}</p>
+              </div>
               
-              <h2 className="mt-8">{t("impressum_vat")}</h2>
-              <p>{t("impressum_vat_info")}</p>
+              <div>
+                <h2 className="text-2xl font-semibold">{t("impressum_register_title")}</h2>
+                <p className="mt-4 text-gray-300">{t("impressum_register_text")}</p>
+              </div>
+              
+              <div>
+                <h2 className="text-2xl font-semibold">{t("impressum_disclaimer_title")}</h2>
+                <p className="mt-4 text-gray-300">{t("impressum_disclaimer_text")}</p>
+              </div>
             </div>
             
             <div className="mt-12 border-t border-white/10 pt-4">
