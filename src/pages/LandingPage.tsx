@@ -140,35 +140,15 @@ const LandingPage = () => {
   return (
     <div
       className={`min-h-screen flex flex-col ${
-        theme === "dark-navy"
-          ? "bg-slate-900 text-white"
-          : "bg-red-950 text-white"
+        theme === "dark-navy" ? "bg-slate-900 text-white" : "bg-red-950 text-white"
       } transition-colors duration-300`}
     >
-      {/* Theme + Language Switcher */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-3 px-3 py-2 rounded-lg bg-black/30 backdrop-blur-md border border-white/10 shadow-md">
-        <div className="flex items-center gap-2">
-          <Moon className="h-4 w-4 text-blue-300" />
-          <Switch
-            checked={theme === "dark-cherry"}
-            onCheckedChange={toggleTheme}
-            className={`${
-              theme === "dark-cherry" ? "bg-red-700" : "bg-blue-900"
-            }`}
-          />
-          <Sun className="h-4 w-4 text-red-300" />
-        </div>
-        <LanguageSwitcher />
-      </div>
-
       {/* Navbar */}
       <header className="sticky top-0 z-40 w-full backdrop-blur-sm bg-black/10">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap
-              className={`h-6 w-6 ${
-                theme === "dark-navy" ? "text-blue-500" : "text-red-500"
-              }`}
+              className={`h-6 w-6 ${theme === "dark-navy" ? "text-blue-500" : "text-red-500"}`}
             />
             <span className="text-xl font-bold">TaxMate</span>
           </div>
@@ -186,7 +166,19 @@ const LandingPage = () => {
               {t("pricing")}
             </a>
           </nav>
-          <div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Moon className="h-4 w-4 text-blue-300" />
+              <Switch
+                checked={theme === "dark-cherry"}
+                onCheckedChange={toggleTheme}
+                className={`${
+                  theme === "dark-cherry" ? "bg-red-700" : "bg-blue-900"
+                }`}
+              />
+              <Sun className="h-4 w-4 text-red-300" />
+              <LanguageSwitcher />
+            </div>
             {user ? (
               <Button size="sm" asChild>
                 <Link to="/dashboard">{t("go_to_dashboard")}</Link>
