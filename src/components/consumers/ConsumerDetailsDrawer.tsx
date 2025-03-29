@@ -34,8 +34,8 @@ const ConsumerDetailsDrawer = ({
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
 
-  // Fixed type annotation to use the explicit OrderData interface
-  interface OrderData {
+  // Define explicit OrderData interface to prevent deep type instantiation
+interface OrderData {
   id: string;
   order_number: string | null;
   order_date: string | null;
@@ -57,6 +57,7 @@ const { data: recentOrders = [], isLoading: ordersLoading } = useQuery<OrderData
     return data || [];
   },
 });
+
 
   const handleEditComplete = () => {
     setIsEditing(false);
