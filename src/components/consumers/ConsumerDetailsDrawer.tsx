@@ -35,7 +35,15 @@ const ConsumerDetailsDrawer = ({
   const [isEditing, setIsEditing] = useState(false);
 
   // Fixed type annotation to use the explicit OrderData interface
-  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery({
+  interface OrderData {
+  id: string;
+  order_number: string | null;
+  order_date: string | null;
+  amount: number | string;
+  status: string | null;
+}
+
+const { data: recentOrders = [], isLoading: ordersLoading } = useQuery<OrderData[]>({
   queryKey: ["consumer-orders", consumer.id],
   queryFn: async (): Promise<OrderData[]> => {
     const { data, error } = await supabase
