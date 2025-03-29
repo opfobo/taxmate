@@ -34,20 +34,21 @@ const ConsumerDetailsDrawer = ({
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
 
-  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery({
-    queryKey: ["consumer-orders", consumer.id],
-    queryFn: async (): Promise<OrderData[]> => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, order_number, order_date, amount, status")
-        .eq("consumer_id", consumer.id)
-        .order("order_date", { ascending: false })
-        .limit(5);
+  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery<OrderData[]>({
+  queryKey: ["consumer-orders", consumer.id],
+  queryFn: async (): Promise<OrderData[]> => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("id, order_number, order_date, amount, status")
+      .eq("consumer_id", consumer.id)
+      .order("order_date", { ascending: false })
+      .limit(5);
 
-      if (error) throw error;
-      return data || [];
-    },
-  });
+    if (error) throw error;
+    return data ?? [];
+  },
+});
+
 
   const handleEditComplete = () => {
     setIsEditing(false);
