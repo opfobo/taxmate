@@ -25,6 +25,8 @@ import NotFound from "./pages/NotFound";
 import Privacy from "./pages/Privacy";
 import Contact from "./pages/Contact";
 import Impressum from "./pages/Impressum";
+import OcrTestPage from "@/pages/test/OcrTestPage";
+
 
 // New Order Pages
 import OrdersLayout from "./layouts/OrdersLayout";
@@ -56,6 +58,8 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/impressum" element={<Impressum />} />
+              <Route path="/test/ocr" element={<OcrTestPage />} />
+
               
               {/* Protected Routes */}
               <Route path="/dashboard" element={
