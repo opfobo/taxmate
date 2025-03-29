@@ -25,6 +25,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { DateRange } from "react-day-picker";
 import EmptyState from "@/components/dashboard/EmptyState";
+import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 
 const SalesOrdersPage = () => {
   const { t } = useTranslation();
@@ -67,6 +68,74 @@ const SalesOrdersPage = () => {
   // Fetch orders with items and images
   const fetchOrders = async () => {
     try {
+      // If search query exists, use the global search
+      if (searchQuery.trim()) {
+        const searchResults = await useGlobalSearch("orders", searchQuery);
+        
+        // Filter results to only include fulfillment orders
+        const fulfillmentOrders = searchResults.filter(order => order.type === "fulfillment");
+        
+        // Apply status filter if specified
+        const statusFiltered = statusFilter 
+          ? fulfillmentOrders.filter(order => order.status === statusFilter) 
+          : fulfillmentOrders;
+        
+        // Apply date range filter if specified
+        let dateFiltered = statusFiltered;
+        
+        if (dateRange.from) {
+          dateFiltered = dateFiltered.filter(order => {
+            const orderDate = new Date(order.order_date);
+            const fromDate = new Date(dateRange.from!);
+            return orderDate >= fromDate;
+          });
+        }
+        
+        if (dateRange.to) {
+          dateFiltered = dateFiltered.filter(order => {
+            const orderDate = new Date(order.order_date);
+            const toDate = new Date(dateRange.to!);
+            toDate.setHours(23, 59, 59, 999);
+            return orderDate <= toDate;
+          });
+        }
+        
+        // For each order, fetch images from storage if available
+        if (dateFiltered && dateFiltered.length > 0) {
+          for (const order of dateFiltered) {
+            try {
+              const { data: imageList, error: imageError } = await supabase.storage
+                .from("order-images")
+                .list(`order-${order.id}`);
+              
+              if (!imageError && imageList && imageList.length > 0) {
+                const imageUrls = await Promise.all(
+                  imageList.map(async (file) => {
+                    const { data: url } = supabase.storage
+                      .from("order-images")
+                      .getPublicUrl(`order-${order.id}/${file.name}`);
+                    return url.publicUrl;
+                  })
+                );
+                
+                if (imageUrls.length > 0) {
+                  order.image_url = imageUrls[0];
+                  order.notes = JSON.stringify({
+                    originalNotes: order.notes,
+                    imageUrls: imageUrls
+                  });
+                }
+              }
+            } catch (imageError) {
+              console.error(`Error fetching images for order ${order.id}:`, imageError);
+            }
+          }
+        }
+        
+        return dateFiltered;
+      }
+      
+      // If no search query, use the original query logic
       let query = supabase
         .from("orders")
         .select(`
@@ -85,10 +154,6 @@ const SalesOrdersPage = () => {
         .eq("type", "fulfillment")
         .order("order_date", { ascending: false })
         .range(0, 50);
-
-      if (searchQuery) {
-        query = query.ilike("order_number", `%${searchQuery}%`);
-      }
 
       if (statusFilter) {
         query = query.eq("status", statusFilter);
@@ -114,10 +179,9 @@ const SalesOrdersPage = () => {
         throw new Error(error.message);
       }
 
-      // For each order, fetch images from storage if available
+      // Process images for each order
       if (data && data.length > 0) {
         for (const order of data) {
-          // Fetch images from storage for this order
           try {
             const { data: imageList, error: imageError } = await supabase.storage
               .from("order-images")

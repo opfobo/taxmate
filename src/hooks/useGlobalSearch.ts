@@ -1,7 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
-export type SearchType = "consumers" | "orders" | "transactions" | "suppliers";
+export type SearchType = "consumers" | "orders" | "transactions" | "suppliers" | "tax_reports";
 
 /**
  * Global search hook that provides a unified search interface across different data types
@@ -27,6 +26,8 @@ export async function useGlobalSearch(type: SearchType, query: string): Promise<
         return await searchTransactions(searchPattern);
       case "suppliers":
         return await searchSuppliers(searchPattern);
+      case "tax_reports":
+        return await searchTaxReports(searchPattern);
       default:
         console.error(`Unsupported search type: ${type}`);
         return [];
@@ -131,6 +132,27 @@ async function searchSuppliers(searchPattern: string): Promise<any[]> {
 
   if (error) {
     console.error("Error searching suppliers:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+/**
+ * Search for tax reports
+ */
+async function searchTaxReports(searchPattern: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from("tax_reports")
+    .select("*")
+    .or(
+      `period.ilike.${searchPattern},` +
+      `id.ilike.${searchPattern}`
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error searching tax reports:", error);
     return [];
   }
 

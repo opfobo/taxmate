@@ -15,8 +15,8 @@ import { AlertCircle, PlusCircle, X, Filter } from "lucide-react";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 
-// Interface for transactions from the database
 export interface Transaction {
   id: string;
   created_at: string;
@@ -30,11 +30,11 @@ export interface Transaction {
   updated_at?: string | null;
   notes?: string | null;
   linked_order_ids?: string[] | null;
-  // For UI display only - not stored in database
   order_number?: string | null;
   order_status?: string | null;
   matched_orders?: Order[] | null;
 }
+
 export interface Order {
   id: string;
   order_number: string;
@@ -43,6 +43,7 @@ export interface Order {
   currency: string | null;
   created_at: string | null;
 }
+
 const TransactionsPage = () => {
   const {
     t
@@ -56,7 +57,6 @@ const TransactionsPage = () => {
   const location = useLocation();
   const isTabMode = location.pathname.startsWith("/dashboard/orders/");
 
-  // State for filters and pagination
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
@@ -69,7 +69,6 @@ const TransactionsPage = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const pageSize = 10;
 
-  // Fetch transactions with filters
   const {
     data,
     isLoading,
@@ -79,55 +78,126 @@ const TransactionsPage = () => {
     queryKey: ["transactions", user?.id, searchQuery, statusFilter, typeFilter, dateRange, currentPage],
     queryFn: async () => {
       if (!user) throw new Error("User not authenticated");
-      let query = supabase.from("transactions").select("*, orders(id, order_number, status, amount, currency)").eq("user_id", user.id).order("created_at", {
-        ascending: false
-      }).range((currentPage - 1) * pageSize, currentPage * pageSize - 1);
-
-      // Apply filters if set
-      if (searchQuery) {
-        query = query.or(`id.ilike.%${searchQuery}%,payment_method.ilike.%${searchQuery}%,notes.ilike.%${searchQuery}%`);
+      
+      if (searchQuery.trim()) {
+        try {
+          const searchResults = await useGlobalSearch("transactions", searchQuery);
+          
+          let filteredResults = searchResults;
+          
+          if (statusFilter) {
+            filteredResults = filteredResults.filter(
+              transaction => transaction.status === statusFilter
+            );
+          }
+          
+          if (typeFilter) {
+            const validType = ["purchase", "refund", "payout"].includes(typeFilter);
+            if (validType) {
+              filteredResults = filteredResults.filter(
+                transaction => transaction.type === typeFilter
+              );
+            }
+          }
+          
+          if (dateRange?.from) {
+            const fromDate = new Date(dateRange.from);
+            fromDate.setHours(0, 0, 0, 0);
+            filteredResults = filteredResults.filter(
+              transaction => new Date(transaction.created_at) >= fromDate
+            );
+          }
+          
+          if (dateRange?.to) {
+            const toDate = new Date(dateRange.to);
+            toDate.setHours(23, 59, 59, 999);
+            filteredResults = filteredResults.filter(
+              transaction => new Date(transaction.created_at) <= toDate
+            );
+          }
+          
+          const paginatedResults = filteredResults.slice(
+            (currentPage - 1) * pageSize, 
+            currentPage * pageSize
+          );
+          
+          const formattedTransactions = await Promise.all(paginatedResults.map(async (transaction: any) => {
+            let matchedOrders = null;
+            if (transaction.linked_order_ids && transaction.linked_order_ids.length > 0) {
+              const { data: matchedOrdersData } = await supabase
+                .from("orders")
+                .select("id, order_number, status, amount, currency")
+                .in("id", transaction.linked_order_ids);
+              matchedOrders = matchedOrdersData || null;
+            }
+            
+            return {
+              ...transaction,
+              matched_orders: matchedOrders
+            };
+          }));
+          
+          return {
+            transactions: formattedTransactions as Transaction[],
+            total: filteredResults.length
+          };
+        } catch (error) {
+          console.error("Error in global search:", error);
+          return { transactions: [], total: 0 };
+        }
       }
+      
+      let query = supabase.from("transactions")
+        .select("*, orders(id, order_number, status, amount, currency)")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .range((currentPage - 1) * pageSize, currentPage * pageSize - 1);
+
       if (statusFilter) {
         query = query.eq("status", statusFilter);
       }
+      
       if (typeFilter) {
         const validType = ["purchase", "refund", "payout"].includes(typeFilter);
         if (validType) {
           query = query.eq("type", typeFilter as "purchase" | "refund" | "payout");
         }
       }
+      
       if (dateRange?.from) {
         const fromDate = new Date(dateRange.from);
         fromDate.setHours(0, 0, 0, 0);
         query = query.gte("created_at", fromDate.toISOString());
       }
+      
       if (dateRange?.to) {
         const toDate = new Date(dateRange.to);
         toDate.setHours(23, 59, 59, 999);
         query = query.lte("created_at", toDate.toISOString());
       }
-      const {
-        data,
-        error
-      } = await query;
+      
+      const { data, error } = await query;
       if (error) throw error;
-      const {
-        count: totalCount,
-        error: countError
-      } = await supabase.from("transactions").select("*", {
-        count: "exact",
-        head: true
-      }).eq("user_id", user.id);
+      
+      const { count: totalCount, error: countError } = await supabase
+        .from("transactions")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      
       if (countError) throw countError;
+      
       const formattedTransactions = await Promise.all(data.map(async (transaction: any) => {
         const orderData = transaction.orders || null;
         let matchedOrders = null;
+        
         if (transaction.linked_order_ids && transaction.linked_order_ids.length > 0) {
-          const {
-            data: matchedOrdersData
-          } = await supabase.from("orders").select("id, order_number, status, amount, currency").in("id", transaction.linked_order_ids);
+          const { data: matchedOrdersData } = await supabase
+            .from("orders")
+            .select("id, order_number, status, amount, currency")
+            .in("id", transaction.linked_order_ids);
           matchedOrders = matchedOrdersData || null;
         }
+        
         return {
           ...transaction,
           order_number: orderData ? orderData.order_number : null,
@@ -136,6 +206,7 @@ const TransactionsPage = () => {
           orders: undefined
         };
       }));
+      
       return {
         transactions: formattedTransactions as Transaction[],
         total: totalCount || 0
@@ -144,7 +215,6 @@ const TransactionsPage = () => {
     enabled: !!user
   });
 
-  // Fetch summary data for transactions
   const {
     data: summaryData
   } = useQuery({
@@ -193,7 +263,6 @@ const TransactionsPage = () => {
     enabled: !!user
   });
 
-  // Fetch available orders for matching
   const {
     data: ordersData
   } = useQuery({
@@ -344,12 +413,10 @@ const TransactionsPage = () => {
             <TransactionsSummary purchases={summaryData.purchase} refunds={summaryData.refund} payouts={summaryData.payout} total={summaryData.total} currency={summaryData.currency} />
           </div>}
 
-        {/* Loading state */}
         {isLoading && <div className="flex justify-center my-12">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
         </div>}
 
-        {/* Error state */}
         {error && <div className="bg-destructive/10 p-4 rounded-lg flex items-start gap-3 my-4">
           <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
           <div>
@@ -360,14 +427,12 @@ const TransactionsPage = () => {
           </div>
         </div>}
 
-        {/* Transactions table */}
         {data && <>
             <TransactionsTable transactions={data.transactions} onEdit={transaction => {
           setSelectedTransaction(transaction);
           setIsTransactionDrawerOpen(true);
         }} onDelete={handleTransactionDelete} />
             
-            {/* Pagination */}
             {totalPages > 1 && <Pagination className="mt-8">
                 <PaginationContent>
                   <PaginationItem>
@@ -392,8 +457,8 @@ const TransactionsPage = () => {
           </>}
       </main>
 
-      {/* Transaction drawer for creating/editing transactions */}
       <TransactionDrawer open={isTransactionDrawerOpen} onOpenChange={setIsTransactionDrawerOpen} transaction={selectedTransaction} orders={ordersData || []} onSubmit={handleTransactionSave} />
     </div>;
 };
+
 export default TransactionsPage;

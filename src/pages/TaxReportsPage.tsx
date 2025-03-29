@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,13 +5,15 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import TaxReportCard from "@/components/tax-reports/TaxReportCard";
-import { FileText, AlertCircle, Calendar, Download, Plus } from "lucide-react";
+import { FileText, AlertCircle, Calendar, Download, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import DateRangePicker from "@/components/orders/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
+import { Input } from "@/components/ui/input";
+import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 
 // Interface for the tax reports as received from the database
 interface TaxReportDB {
@@ -52,13 +53,42 @@ const TaxReportsPage = () => {
   
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Fetch tax reports
   const { data: reports, isLoading, error } = useQuery({
-    queryKey: ["taxReports", user?.id],
+    queryKey: ["taxReports", user?.id, searchQuery],
     queryFn: async () => {
       if (!user) throw new Error("User not authenticated");
       
+      // Use global search if a search query is present
+      if (searchQuery.trim()) {
+        const searchResults = await useGlobalSearch("tax_reports", searchQuery);
+        
+        // Transform the data to match our TaxReport interface
+        return searchResults.map((report: any) => {
+          // Extract date range from period (assuming format like "2023-01-01:2023-03-31")
+          const [startDate, endDate] = report.period.split(":");
+          
+          return {
+            id: report.id,
+            title: `${format(new Date(startDate), 'MMM d, yyyy')} - ${format(new Date(endDate), 'MMM d, yyyy')}`,
+            description: `${t("total_amount")}: ${report.taxable_income} EUR, ${t("total_tax")}: ${report.expected_tax} EUR`,
+            file_url: undefined, // No file URL in the schema
+            file_type: undefined, // No file type in the schema
+            user_id: report.user_id,
+            period_start: startDate,
+            period_end: endDate,
+            total_amount: report.taxable_income,
+            total_tax: report.expected_tax,
+            currency: "EUR", // Default currency
+            created_at: report.created_at,
+            updated_at: report.updated_at
+          };
+        });
+      }
+      
+      // Use original query logic if no search is present
       const { data, error } = await supabase
         .from("tax_reports")
         .select("*")
@@ -67,7 +97,7 @@ const TaxReportsPage = () => {
       if (error) throw error;
       
       // Transform the data to match our TaxReport interface
-      const transformedData = data.map((report: TaxReportDB) => {
+      return data.map((report: any) => {
         // Extract date range from period (assuming format like "2023-01-01:2023-03-31")
         const [startDate, endDate] = report.period.split(":");
         
@@ -86,9 +116,7 @@ const TaxReportsPage = () => {
           created_at: report.created_at,
           updated_at: report.updated_at
         };
-      }) as TaxReport[];
-      
-      return transformedData;
+      });
     },
     enabled: !!user,
   });
@@ -182,13 +210,26 @@ const TaxReportsPage = () => {
             </p>
           </div>
           
-          <Button 
-            onClick={() => setIsGenerateDialogOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            {t("generate_report")}
-          </Button>
+          <div className="flex gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder={t("search_reports")}
+                className="pl-9 w-64"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            <Button 
+              onClick={() => setIsGenerateDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              {t("generate_report")}
+            </Button>
+          </div>
         </div>
 
         {isLoading && (
