@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export type SearchType = "consumers" | "orders" | "transactions" | "suppliers" | "tax_reports";

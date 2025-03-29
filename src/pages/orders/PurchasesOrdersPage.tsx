@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/context/AuthContext";
@@ -26,6 +25,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { DateRange } from "react-day-picker";
 import EmptyState from "@/components/dashboard/EmptyState";
+import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 
 const PurchasesOrdersPage = () => {
   const { t } = useTranslation();
@@ -69,6 +69,72 @@ const PurchasesOrdersPage = () => {
   // Fetch orders with items and images
   const fetchOrders = async () => {
     try {
+      // If search query exists, use the global search
+      if (searchQuery.trim()) {
+        const searchResults = await useGlobalSearch("orders", searchQuery);
+        
+        // Filter to only include supplier orders
+        const supplierOrders = searchResults.filter(order => order.type === "supplier");
+        
+        // Apply status filter if specified
+        const statusFiltered = statusFilter 
+          ? supplierOrders.filter(order => order.status === statusFilter) 
+          : supplierOrders;
+        
+        // Apply date range filter if specified
+        let dateFiltered = statusFiltered;
+        
+        if (dateRange.from) {
+          dateFiltered = dateFiltered.filter(order => {
+            const orderDate = new Date(order.order_date);
+            const fromDate = new Date(dateRange.from!);
+            return orderDate >= fromDate;
+          });
+        }
+        
+        if (dateRange.to) {
+          dateFiltered = dateFiltered.filter(order => {
+            const orderDate = new Date(order.order_date);
+            const toDate = new Date(dateRange.to!);
+            toDate.setHours(23, 59, 59, 999);
+            return orderDate <= toDate;
+          });
+        }
+        
+        // For each order, fetch images from storage if available
+        for (const order of dateFiltered) {
+          try {
+            const { data: imageList, error: imageError } = await supabase.storage
+              .from("order-images")
+              .list(`order-${order.id}`);
+            
+            if (!imageError && imageList && imageList.length > 0) {
+              const imageUrls = await Promise.all(
+                imageList.map(async (file) => {
+                  const { data: url } = supabase.storage
+                    .from("order-images")
+                    .getPublicUrl(`order-${order.id}/${file.name}`);
+                  return url.publicUrl;
+                })
+              );
+              
+              if (imageUrls.length > 0) {
+                order.image_url = imageUrls[0];
+                order.notes = JSON.stringify({
+                  originalNotes: order.notes,
+                  imageUrls: imageUrls
+                });
+              }
+            }
+          } catch (imageError) {
+            console.error(`Error fetching images for order ${order.id}:`, imageError);
+          }
+        }
+        
+        return dateFiltered;
+      }
+      
+      // Use original query logic if no search is present
       let query = supabase
         .from("orders")
         .select(`
