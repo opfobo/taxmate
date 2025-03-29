@@ -23,7 +23,9 @@ const ConsumersPage = () => {
   const isTabMode = location.pathname.startsWith("/dashboard/orders/");
   const activeFilterCount = searchQuery.trim().length > 0 ? 1 : 0;
 
-  const { data: consumers = [], isLoading, refetch } = useQuery<ConsumerWithOrderStats[]>({
+  type LightweightConsumer = Omit<ConsumerWithOrderStats, "orders">;
+
+const { data: consumers = [], isLoading, refetch } = useQuery<LightweightConsumer[]>({
     queryKey: ["consumers", searchQuery],
     queryFn: async () => {
       let query = supabase.from("consumers").select("*").order("created_at", { ascending: false });
