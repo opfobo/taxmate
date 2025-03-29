@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, Loader2, X, Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 
 const ConsumersPage = () => {
   const { t } = useTranslation();
@@ -23,51 +24,93 @@ const ConsumersPage = () => {
   const isTabMode = location.pathname.startsWith("/dashboard/orders/");
   const activeFilterCount = searchQuery.trim().length > 0 ? 1 : 0;
 
-  type LightweightConsumer = Omit<ConsumerWithOrderStats, "orders">;
 
-const { data: consumers = [], isLoading, refetch } = useQuery<LightweightConsumer[]>({
-    queryKey: ["consumers", searchQuery],
-    queryFn: async () => {
-      let query = supabase.from("consumers").select("*").order("created_at", { ascending: false });
-      if (searchQuery) {
-        query = query.or(
-          `full_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%,postal_code.ilike.%${searchQuery}%,city.ilike.%${searchQuery}%`
-        );
-      }
-      const { data: consumersData, error } = await query;
-      if (error) throw error;
+const fetchConsumers = async (searchQuery: string): Promise<ConsumerWithOrderStats[]> => {
+  if (!searchQuery.trim()) {
+    const { data: consumersData, error } = await supabase
+      .from("consumers")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-      const consumersWithStats: ConsumerWithOrderStats[] = [];
-      for (const consumer of consumersData ?? []) {
-        const { count: orderCount } = await supabase
-          .from("orders")
-          .select("id", { count: "exact" })
-          .eq("consumer_id", consumer.id);
+    if (error) throw error;
 
-        const { data: latestOrders } = await supabase
-          .from("orders")
-          .select("order_date, amount")
-          .eq("consumer_id", consumer.id)
-          .order("order_date", { ascending: false })
-          .limit(1);
+    const consumersWithStats: ConsumerWithOrderStats[] = [];
 
-        const { data: ordersData } = await supabase
-          .from("orders")
-          .select("amount")
-          .eq("consumer_id", consumer.id);
+    for (const consumer of consumersData ?? []) {
+      const { count: orderCount } = await supabase
+        .from("orders")
+        .select("id", { count: "exact" })
+        .eq("consumer_id", consumer.id);
 
-        const totalVolume =
-          ordersData?.reduce((sum, order) => sum + (parseFloat(String(order.amount)) || 0), 0) || 0;
+      const { data: latestOrders } = await supabase
+        .from("orders")
+        .select("order_date, amount")
+        .eq("consumer_id", consumer.id)
+        .order("order_date", { ascending: false })
+        .limit(1);
 
-        consumersWithStats.push({
-          ...consumer,
-          total_orders: orderCount || 0,
-          last_order_date: latestOrders?.[0]?.order_date || null,
-          total_order_volume: totalVolume,
-        });
-      }
+      const { data: ordersData } = await supabase
+        .from("orders")
+        .select("amount")
+        .eq("consumer_id", consumer.id);
 
-      return consumersWithStats;
+      const totalVolume =
+        ordersData?.reduce((sum, order) => sum + (parseFloat(String(order.amount)) || 0), 0) || 0;
+
+      consumersWithStats.push({
+        ...consumer,
+        total_orders: orderCount || 0,
+        last_order_date: latestOrders?.[0]?.order_date || null,
+        total_order_volume: totalVolume,
+      });
+    }
+
+    return consumersWithStats;
+  } else {
+    const searchResults = await useGlobalSearch("consumers", searchQuery);
+
+    const consumersWithStats: ConsumerWithOrderStats[] = [];
+
+    for (const consumer of searchResults) {
+      const { count: orderCount } = await supabase
+        .from("orders")
+        .select("id", { count: "exact" })
+        .eq("consumer_id", consumer.id);
+
+      const { data: latestOrders } = await supabase
+        .from("orders")
+        .select("order_date, amount")
+        .eq("consumer_id", consumer.id)
+        .order("order_date", { ascending: false })
+        .limit(1);
+
+      const { data: ordersData } = await supabase
+        .from("orders")
+        .select("amount")
+        .eq("consumer_id", consumer.id);
+
+      const totalVolume =
+        ordersData?.reduce((sum, order) => sum + (parseFloat(String(order.amount)) || 0), 0) || 0;
+
+      consumersWithStats.push({
+        ...consumer,
+        total_orders: orderCount || 0,
+        last_order_date: latestOrders?.[0]?.order_date || null,
+        total_order_volume: totalVolume,
+      });
+    }
+
+    return consumersWithStats;
+  }
+};
+
+
+const { data: consumers = [], isLoading, refetch } = useQuery<ConsumerWithOrderStats[]>({
+  queryKey: ["consumers", searchQuery],
+  queryFn: () => fetchConsumers(searchQuery),
+});
+
+     
     },
   });
 
