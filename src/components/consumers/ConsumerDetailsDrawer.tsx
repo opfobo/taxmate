@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ConsumerWithOrderStats } from "@/types/consumer";
@@ -16,6 +17,7 @@ interface ConsumerDetailsDrawerProps {
   onConsumerUpdated: () => void;
 }
 
+// Define explicit OrderData interface to prevent deep type instantiation
 interface OrderData {
   id: string;
   order_number: string | null;
@@ -32,7 +34,7 @@ const ConsumerDetailsDrawer = ({
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
 
-  // Typisierung direkt hier, um TypeScript zu entlasten
+  // Fixed type annotation to use the explicit OrderData interface
   const { data: recentOrders = [], isLoading: ordersLoading } = useQuery<OrderData[]>({
     queryKey: ["consumer-orders", consumer.id],
     queryFn: async () => {

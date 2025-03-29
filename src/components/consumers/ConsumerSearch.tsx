@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { Consumer } from "@/types/consumer";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 
 interface ConsumerSearchProps {
   onSelect: (consumer: Consumer) => void;
@@ -29,17 +30,18 @@ const ConsumerSearch = ({
         setResults([]);
         return;
       }
+      
       setLoading(true);
-      const query = supabase
-        .from("consumers")
-        .select("*")
-        .or(
-          `full_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%,postal_code.ilike.%${searchQuery}%,city.ilike.%${searchQuery}%`
-        )
-        .order("created_at", { ascending: false });
-      const { data, error } = await query;
-      if (!error) setResults(data ?? []);
-      setLoading(false);
+      
+      try {
+        const searchResults = await useGlobalSearch("consumers", searchQuery);
+        setResults(searchResults as Consumer[]);
+      } catch (error) {
+        console.error("Error searching consumers:", error);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
     const debounce = setTimeout(fetchConsumers, 300);
