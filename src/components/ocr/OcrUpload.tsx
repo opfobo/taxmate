@@ -96,10 +96,13 @@ export const OcrUpload = ({
         .upload(safeFileName, file, {
           cacheControl: "3600",
           upsert: false,
-          onUploadProgress: (progress) => {
-            setUploadProgress(Math.round((progress.loaded / progress.total) * 100));
-          },
-        });
+          await supabase.storage
+  .from("ocr-temp")
+  .upload(safeFileName, file, {
+    cacheControl: "3600",
+    upsert: false,
+  });
+
 
       if (uploadError) {
         throw new Error(`Upload failed: ${uploadError.message}`);
