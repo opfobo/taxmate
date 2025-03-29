@@ -92,20 +92,20 @@ export const OcrUpload = ({
       
       // Upload file to temporary bucket
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("ocr-temp")
-        .upload(safeFileName, file, {
-          cacheControl: "3600",
-          upsert: false,
+  .from("ocr-temp")
+  .upload(safeFileName, file, {
+    cacheControl: "3600",
+    upsert: false,
+  });
 
+if (uploadError) {
+  throw new Error(`Upload failed: ${uploadError.message}`);
+}
 
-      if (uploadError) {
-        throw new Error(`Upload failed: ${uploadError.message}`);
-      }
-
-      // Get the public URL of the uploaded file
-      const { data: urlData } = supabase.storage
-        .from("ocr-temp")
-        .getPublicUrl(safeFileName);
+// Get the public URL of the uploaded file
+const { data: urlData } = supabase.storage
+  .from("ocr-temp")
+  .getPublicUrl(safeFileName);
 
       const fileUrl = urlData.publicUrl;
 
