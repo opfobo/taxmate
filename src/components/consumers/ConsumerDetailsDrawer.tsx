@@ -14,7 +14,7 @@ interface ConsumerDetailsDrawerProps {
   consumer: ConsumerWithOrderStats;
   onClose: () => void;
   onConsumerUpdated: () => void;
-}
+} 
 
 // Define explicit OrderData interface to prevent deep type instantiation
 interface OrderData {
