@@ -96,7 +96,6 @@ export const OcrUpload = ({
         .upload(safeFileName, file, {
           cacheControl: "3600",
           upsert: false,
-          await supabase.storage
   .from("ocr-temp")
   .upload(safeFileName, file, {
     cacheControl: "3600",
