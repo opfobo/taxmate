@@ -1,3 +1,4 @@
+
 import { useState, useRef, ChangeEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -89,13 +90,19 @@ export const OcrUpload = ({
       const uniqueId = uuidv4().substring(0, 8);
       const safeFileName = `ocr_${timestamp}_${uniqueId}.${fileExtension}`;
       
-      // Upload file to temporary bucket - remove onUploadProgress which isn't supported
+      // Upload file to temporary bucket
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("ocr-temp")
         .upload(safeFileName, file, {
           cacheControl: "3600",
           upsert: false,
-        });
+          await supabase.storage
+  .from("ocr-temp")
+  .upload(safeFileName, file, {
+    cacheControl: "3600",
+    upsert: false,
+  });
+
 
       if (uploadError) {
         throw new Error(`Upload failed: ${uploadError.message}`);
