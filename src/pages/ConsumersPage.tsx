@@ -110,10 +110,6 @@ const { data: consumers = [], isLoading, refetch } = useQuery<ConsumerWithOrderS
   queryFn: () => fetchConsumers(searchQuery),
 });
 
-     
-    },
-  });
-
   return (
     <div className="min-h-screen bg-background">
       {!isTabMode && <Navbar />}
