@@ -96,11 +96,6 @@ export const OcrUpload = ({
         .upload(safeFileName, file, {
           cacheControl: "3600",
           upsert: false,
-  .from("ocr-temp")
-  .upload(safeFileName, file, {
-    cacheControl: "3600",
-    upsert: false,
-  });
 
 
       if (uploadError) {
