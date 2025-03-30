@@ -34,9 +34,12 @@ const ConsumerDetailsDrawer = ({
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
 
-  const { data: recentOrders = [], isLoading: ordersLoading } = useQuery<OrderData[]>({
+  const {
+  data: recentOrders = [],
+  isLoading: ordersLoading,
+} = useQuery({
   queryKey: ["consumer-orders", consumer.id],
-  queryFn: async (): Promise<OrderData[]> => {
+  queryFn: async () => {
     const { data, error } = await supabase
       .from("orders")
       .select("id, order_number, order_date, amount, status")
@@ -47,7 +50,9 @@ const ConsumerDetailsDrawer = ({
     if (error) throw error;
     return data ?? [];
   },
+  select: (data): OrderData[] => data, // 👉 Typ klar machen
 });
+
 
 
   const handleEditComplete = () => {
