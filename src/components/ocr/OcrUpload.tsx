@@ -41,12 +41,7 @@ export const OcrUpload = ({
   };
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    resetStates();
-    setPreviewUrl(null);
-   
-    const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
   console.log("📁 File change triggered");
-
   resetStates();
   setPreviewUrl(null);
 
@@ -57,20 +52,22 @@ export const OcrUpload = ({
     console.warn("⚠️ No file selected");
     return;
   }
-      
-    const file = e.target.files?.[0];
-    if (!file) return;
 
-    // Validate file type
-    if (!mimeTypes.includes(file.type)) {
-      setError(`Invalid file type. Allowed types: ${mimeTypes.join(", ")}`);
-      toast({
-        title: "Invalid file",
-        description: `Only ${mimeTypes.join(", ")} files are allowed.`,
-        variant: "destructive",
-      });
-      return;
-    }
+  const normalizedType =
+    file.type === "application/octet-stream" && file.name.endsWith(".pdf")
+      ? "application/pdf"
+      : file.type;
+
+  if (!mimeTypes.includes(normalizedType)) {
+    console.warn("❌ Unsupported MIME type:", file.type);
+    setError(`Invalid file type. Allowed types: ${mimeTypes.join(", ")}`);
+    toast({
+      title: "Invalid file",
+      description: `Only ${mimeTypes.join(", ")} files are allowed.`,
+      variant: "destructive",
+    });
+    return;
+  }
 
     // Validate file size
     const fileSizeInMB = file.size / (1024 * 1024);
