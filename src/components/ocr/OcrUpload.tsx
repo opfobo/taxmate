@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Upload, FileText, Image as ImageIcon, CheckCircle, AlertCircle } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
+import { useAuth } from "@/context/AuthContext";
 
 export interface OcrUploadProps {
   onOcrResult: (result: any) => void;
@@ -27,7 +28,36 @@ export const OcrUpload = ({
   const [success, setSuccess] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [tokens, setTokens] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+
+  // Fetch user's available tokens when component mounts or user changes
+  const fetchTokens = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('ocr_tokens')
+        .select('tokens')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching tokens:", error);
+        return;
+      }
+      
+      setTokens(data?.tokens || 0);
+    } catch (err) {
+      console.error("Failed to fetch tokens:", err);
+    }
+  };
+
+  // Call fetchTokens when user changes
+  useState(() => {
+    fetchTokens();
+  });
 
   const resetStates = () => {
     setIsUploading(false);
@@ -55,7 +85,25 @@ export const OcrUpload = ({
   resetStates();
   setPreviewUrl(null);
 
+  if (!user) {
+    setError("You must be logged in to use OCR functionality");
+    toast({
+      title: "Authentication required",
+      description: "Please log in to upload documents for OCR processing.",
+      variant: "destructive",
+    });
+    return;
+  }
 
+  if (tokens !== null && tokens < 1) {
+    setError("You have no OCR tokens remaining");
+    toast({
+      title: "No tokens remaining",
+      description: "You have used all your OCR tokens. Please contact support for more.",
+      variant: "destructive",
+    });
+    return;
+  }
 
   if (!file) {
     console.warn("⚠️ No file selected");
@@ -110,6 +158,24 @@ export const OcrUpload = ({
       const uniqueId = uuidv4().substring(0, 8);
       const safeFileName = `ocr_${timestamp}_${uniqueId}.${fileExtension}`;
       
+      // Create an OCR request record with 'pending' status
+      const { data: requestData, error: requestError } = await supabase
+        .from('ocr_requests')
+        .insert({
+          user_id: user.id,
+          file_name: safeFileName,
+          status: 'pending'
+        })
+        .select('id')
+        .single();
+        
+      if (requestError) {
+        throw new Error(`Failed to create request record: ${requestError.message}`);
+      }
+      
+      const requestId = requestData.id;
+      console.log("Created OCR request with ID:", requestId);
+      
       // Upload file to temporary bucket
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("ocr-temp")
@@ -119,6 +185,16 @@ export const OcrUpload = ({
         });
 
       if (uploadError) {
+        // Update the request record to error status
+        await supabase
+          .from('ocr_requests')
+          .update({
+            status: 'error',
+            response: { error: uploadError.message },
+            processed_at: new Date().toISOString()
+          })
+          .eq('id', requestId);
+        
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
@@ -157,6 +233,28 @@ export const OcrUpload = ({
           }
         };
         
+        // Decrement the user's token count
+        const { error: tokenError } = await supabase.rpc('decrement_ocr_token', {
+          uid: user.id
+        });
+        
+        if (tokenError) {
+          console.error("Failed to decrement token:", tokenError);
+        } else {
+          // Update local token count
+          setTokens(prevTokens => prevTokens !== null ? prevTokens - 1 : null);
+        }
+        
+        // Update the request record with success status and response
+        await supabase
+          .from('ocr_requests')
+          .update({
+            status: 'success',
+            response: mockResult,
+            processed_at: new Date().toISOString()
+          })
+          .eq('id', requestId);
+        
         // Pass the result to the parent component
         onOcrResult(mockResult);
         
@@ -166,6 +264,16 @@ export const OcrUpload = ({
           description: "Document was successfully processed."
         });
       } catch (ocrError) {
+        // Update the request record with error status
+        await supabase
+          .from('ocr_requests')
+          .update({
+            status: 'error',
+            response: { error: String(ocrError) },
+            processed_at: new Date().toISOString()
+          })
+          .eq('id', requestId);
+          
         throw new Error(`OCR processing failed: ${ocrError}`);
       } finally {
         // Always clean up the file after processing, regardless of success or failure
@@ -203,6 +311,12 @@ export const OcrUpload = ({
     <div className="space-y-3">
       {label && <p className="text-sm font-medium mb-1.5">{label}</p>}
       
+      {tokens !== null && (
+        <div className="text-xs text-muted-foreground mb-2">
+          Available OCR tokens: <span className={tokens < 3 ? "text-amber-500 font-medium" : ""}>{tokens}</span>
+        </div>
+      )}
+      
       <div className="flex flex-col items-center space-y-4">
         {!isUploading && !isProcessing && !success && (
           <div className="w-full">
@@ -212,7 +326,7 @@ export const OcrUpload = ({
               accept={mimeTypes.join(",")}
               onChange={handleFileChange}
               className={`cursor-pointer ${error ? 'border-destructive' : ''}`}
-              disabled={isUploading || isProcessing}
+              disabled={isUploading || isProcessing || (tokens !== null && tokens < 1) || !user}
             />
             <p className="text-xs text-muted-foreground mt-1">
               Accepted formats: {mimeTypes.map(type => type.split('/')[1]).join(', ')} (Max {fileSizeLimitMB}MB)

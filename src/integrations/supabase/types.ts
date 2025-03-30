@@ -189,6 +189,51 @@ export type Database = {
         }
         Relationships: []
       }
+      ocr_requests: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          id: string
+          processed_at: string | null
+          response: Json | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          id?: string
+          processed_at?: string | null
+          response?: Json | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          id?: string
+          processed_at?: string | null
+          response?: Json | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ocr_tokens: {
+        Row: {
+          tokens: number
+          user_id: string
+        }
+        Insert: {
+          tokens?: number
+          user_id: string
+        }
+        Update: {
+          tokens?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -800,7 +845,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      decrement_ocr_token: {
+        Args: {
+          uid: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       order_status:
