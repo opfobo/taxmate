@@ -43,7 +43,21 @@ export const OcrUpload = ({
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     resetStates();
     setPreviewUrl(null);
-    
+   
+    const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+  console.log("📁 File change triggered");
+
+  resetStates();
+  setPreviewUrl(null);
+
+  const file = e.target.files?.[0];
+  console.log("➡️ Selected file:", file);
+
+  if (!file) {
+    console.warn("⚠️ No file selected");
+    return;
+  }
+      
     const file = e.target.files?.[0];
     if (!file) return;
 
