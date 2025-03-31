@@ -286,6 +286,50 @@ export const OcrInvoiceReview = () => {
     }
   }, [lineItems, form]);
 
+  // Create a sales order from the OCR invoice mapping
+  const createSalesOrder = async (mappingId: string, formValues: FormValues) => {
+    try {
+      // Prepare line items for storage in a format compatible with the orders table
+      const orderLineItems = lineItems.map(item => ({
+        id: item.id,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_amount: item.total_amount
+      }));
+
+      // Create a new sales order
+      const { data: order, error } = await supabase
+        .from("orders")
+        .insert({
+          user_id: user?.id,
+          is_sales_order: true, // This marks it as a sales order
+          type: "sale", // Set order type to 'sale'
+          order_date: formValues.invoice_date || new Date().toISOString().split('T')[0],
+          amount: parseFloat(formValues.total_amount) || 0,
+          status: "pending",
+          order_number: formValues.invoice_number || `SO-${Date.now()}`,
+          currency: formValues.currency || "EUR",
+          supplier_name: formValues.supplier_name,
+          ocr_customer_data: {
+            customer_name: formValues.customer_name,
+            customer_address: formValues.customer_address
+          },
+          line_items: orderLineItems,
+          source_order_id: mappingId // Reference to the original OCR mapping
+        })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+      
+      return order;
+    } catch (error) {
+      console.error("Error creating sales order:", error);
+      throw error;
+    }
+  };
+
   // Confirm invoice and create order
   const confirmInvoice = async () => {
     if (!invoiceData?.id || !user) return;
@@ -297,7 +341,7 @@ export const OcrInvoiceReview = () => {
       await onSubmit(form.getValues());
       
       // Update status to confirmed
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from("ocr_invoice_mappings")
         .update({
           status: "confirmed",
@@ -306,20 +350,29 @@ export const OcrInvoiceReview = () => {
         .eq("id", invoiceData.id)
         .eq("user_id", user.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+      
+      // Create a sales order based on the confirmed mapping
+      const formValues = form.getValues();
+      const order = await createSalesOrder(invoiceData.id, formValues);
       
       toast({
         title: "Success",
-        description: "Invoice confirmed successfully. Order will be created."
+        description: "Invoice confirmed and sales order created successfully."
       });
       
-      // Navigate to orders page
-      navigate("/dashboard/orders/purchases");
+      // Navigate to the new order's detail page
+      if (order && order.id) {
+        navigate(`/dashboard/orders/${order.id}`);
+      } else {
+        // Fallback to orders page if we can't get the specific order ID
+        navigate("/dashboard/orders/sales");
+      }
     } catch (error) {
       console.error("Error confirming invoice:", error);
       toast({
         title: "Error",
-        description: "Failed to confirm invoice",
+        description: "Failed to confirm invoice or create sales order",
         variant: "destructive"
       });
     } finally {
