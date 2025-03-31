@@ -15,6 +15,7 @@ import { ArrowLeft, Calendar, Loader2, Mail, MapPin, Phone, Edit } from "lucide-
 import OrdersTable from "@/components/orders/OrdersTable";
 import TransactionsTable from "@/components/transactions/TransactionsTable";
 import ConsumerEditForm from "./ConsumerEditForm";
+import { OrderType } from "@/types/order";
 
 interface ConsumerDetailsDrawerProps {
   consumer: Consumer | null;
@@ -27,12 +28,14 @@ interface ConsumerDetailsDrawerProps {
 interface OrderData {
   id: string;
   user_id: string;
-  order_type: string;
+  order_type: OrderType;
   status: string;
   amount: number;
   order_date: string;
   created_at: string;
   updated_at: string;
+  order_number: string;
+  currency: string;
   [key: string]: any; // For any other fields
 }
 
@@ -64,7 +67,7 @@ const ConsumerDetailsDrawer = ({
       // Ensure the returned data matches OrderData interface
       return (data || []).map(item => ({
         ...item,
-        order_type: item.order_type || 'unknown'
+        order_type: item.order_type || 'fulfillment' as OrderType
       })) as OrderData[];
     },
     enabled: !!consumer?.id && open,
@@ -138,10 +141,10 @@ const ConsumerDetailsDrawer = ({
             {t("back")}
           </Button>
           <DrawerTitle className="text-2xl">
-            {consumer.full_name}
+            {consumer?.full_name}
           </DrawerTitle>
           <DrawerDescription>
-            {t("consumer_since")} {format(new Date(consumer.created_at || new Date()), "PP")}
+            {t("consumer_since")} {format(new Date(consumer?.created_at || new Date()), "PP")}
           </DrawerDescription>
         </DrawerHeader>
 

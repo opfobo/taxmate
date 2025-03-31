@@ -1,91 +1,90 @@
-
-import { useEffect, useState } from "react";
-import { PageLayout } from "@/components/PageLayout";
+import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { FileText, Users, AlertCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import { useQuery } from "@tanstack/react-query";
-import OcrUpload from "@/components/ocr/OcrUpload";
-import OcrAddressInput from "@/components/ocr/OcrAddressInput";
-import OcrSectionCard from "@/components/ocr/OcrSectionCard";
+import { useRouter } from "next/navigation";
+import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { ReloadIcon } from "@radix-ui/react-icons";
+import { ArrowRight } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-// Define explicit type for OCR tokens to avoid deep instantiation
-interface OcrTokenData {
-  user_id: string;
-  tokens: number;
-}
+const formSchema = z.object({
+  ocrToken: z.string().min(1, {
+    message: "OCR Token is required."
+  }),
+});
 
 const OcrPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  
-  // Get remaining OCR tokens
-  const { data: ocrTokens } = useQuery<OcrTokenData | null, Error>({
-    queryKey: ["ocr-tokens", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      
-      const { data, error } = await supabase
-        .from("ocr_tokens")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') throw error;
-      return data;
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [ocrToken, setOcrToken] = useState("");
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      ocrToken: "",
     },
-    enabled: !!user?.id,
   });
 
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    setOcrToken(values.ocrToken);
+
+    // Simulate a delay to show the loading state
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    // Check if the OCR token is valid (replace with your actual validation logic)
+    if (values.ocrToken === "valid_token") {
+      router.push("/ocr/upload");
+    } else {
+      toast({
+        title: t("error"),
+        description: t("ocr_token_check_failed"),
+        variant: "destructive"
+      });
+    }
+
+    setIsLoading(false);
+  }
+
   return (
-    <PageLayout>
-      <div className="container py-8">
-        <h1 className="text-3xl font-bold mb-6">{t("ocr.title")}</h1>
-        
-        <Tabs defaultValue="invoice" className="w-full mb-8">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="invoice" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              {t("ocr.invoice_tab")}
-              {ocrTokens && (
-                <Badge variant="outline" className="ml-2">
-                  {t("ocr.tokens_left_badge", { count: ocrTokens.tokens })}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="consumer" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              {t("ocr.consumer_tab")}
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="invoice" className="mt-6">
-            <OcrSectionCard 
-              title={t("ocr.invoice_title")}
-              description={t("ocr.invoice_description")}
-            >
-              <OcrUpload 
-                onOcrResult={() => {}} 
-                label={t("ocr.upload_document")}
-                mimeTypes={["application/pdf", "image/jpeg", "image/png"]}
-              />
-            </OcrSectionCard>
-          </TabsContent>
-          
-          <TabsContent value="consumer" className="mt-6">
-            <OcrSectionCard 
-              title={t("ocr.consumer_title")}
-              description={t("ocr.consumer_description")}
-            >
-              <OcrAddressInput />
-            </OcrSectionCard>
-          </TabsContent>
-        </Tabs>
+    <div className="container mx-auto py-10">
+      <div className="flex justify-center">
+        <Card className="w-[500px]">
+          <CardHeader>
+            <CardTitle>{t("ocr_integration")}</CardTitle>
+            <CardDescription>
+              {t("ocr_integration_description")}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="ocrToken">{t("ocr_token")}</Label>
+                <Input
+                  id="ocrToken"
+                  type="text"
+                  placeholder={t("enter_ocr_token")}
+                  {...form.register("ocrToken")}
+                />
+              </div>
+              <Button disabled={isLoading}>
+                {isLoading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />}
+                {t("continue")}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
-    </PageLayout>
+    </div>
   );
 };
 

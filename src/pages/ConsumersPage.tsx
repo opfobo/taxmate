@@ -1,4 +1,3 @@
-
 import { useLocation } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useState } from "react";
@@ -16,7 +15,6 @@ import { Search, Plus, Loader2, X, Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 
-// Define explicit type for the result to prevent deep instantiation
 interface ConsumerOrderStats {
   id: string;
   user_id?: string;
@@ -129,7 +127,7 @@ const fetchConsumers = async (searchQuery: string): Promise<ConsumerWithOrderSta
   }
 };
 
-const { data: consumers = [], isLoading, refetch } = useQuery<ConsumerWithOrderStats[]>({
+const { data: consumers = [], isLoading, refetch } = useQuery<ConsumerWithOrderStats[], Error>({
   queryKey: ["consumers", searchQuery],
   queryFn: () => fetchConsumers(searchQuery),
 });

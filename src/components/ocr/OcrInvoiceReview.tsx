@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,7 +35,6 @@ import { LoaderCircle, Save, PlusCircle, Trash2, FileCheck } from "lucide-react"
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
-// Type definitions
 interface LineItem {
   id: string;
   description: string;
@@ -103,7 +101,6 @@ const OcrInvoiceReview = () => {
   const currency = form.watch("currency");
   const totalAmount = form.watch("total_amount");
 
-  // Fetch invoice data
   useEffect(() => {
     if (!requestId || !user) return;
 
@@ -122,7 +119,6 @@ const OcrInvoiceReview = () => {
         }
 
         if (data) {
-          // Convert line_items from JSON to LineItem[] type
           const typedLineItems = Array.isArray(data.line_items) 
             ? data.line_items.map((item: any): LineItem => ({
                 id: item.id || crypto.randomUUID(),
@@ -133,7 +129,6 @@ const OcrInvoiceReview = () => {
               }))
             : [];
           
-          // Create a properly typed invoice mapping
           const typedInvoiceData: InvoiceMapping = {
             id: data.id,
             user_id: data.user_id,
@@ -158,7 +153,6 @@ const OcrInvoiceReview = () => {
           setInvoiceData(typedInvoiceData);
           setLineItems(typedLineItems);
           
-          // Populate form with data
           form.reset({
             invoice_number: data.invoice_number || "",
             invoice_date: data.invoice_date ? new Date(data.invoice_date).toISOString().split('T')[0] : "",
@@ -170,7 +164,9 @@ const OcrInvoiceReview = () => {
             total_amount: data.total_amount?.toString() || "0",
             total_tax: data.total_tax?.toString() || "0",
             total_net: data.total_net?.toString() || "0",
-            currency: data.currency || "EUR"
+            currency: (formValues.currency === "EUR" || formValues.currency === "USD" || formValues.currency === "GBP") 
+              ? formValues.currency 
+              : "EUR"
           });
         }
       } catch (error) {
@@ -188,14 +184,12 @@ const OcrInvoiceReview = () => {
     fetchInvoiceData();
   }, [requestId, user, form]);
 
-  // Handle form submission
   const onSubmit = async (values: InvoiceFormValues) => {
     if (!invoiceData?.id || !user) return;
     
     try {
       setSaving(true);
       
-      // Convert lineItems to a format compatible with Json type
       const lineItemsForStorage = lineItems.map(item => ({
         id: item.id,
         description: item.description,
@@ -241,7 +235,6 @@ const OcrInvoiceReview = () => {
     }
   };
 
-  // Add new line item
   const addLineItem = () => {
     const newItem: LineItem = {
       id: crypto.randomUUID(),
@@ -254,14 +247,12 @@ const OcrInvoiceReview = () => {
     setLineItems([...lineItems, newItem]);
   };
 
-  // Update line item
   const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
     setLineItems(items => 
       items.map(item => {
         if (item.id === id) {
           const updatedItem = { ...item, [field]: value };
           
-          // Recalculate total if quantity or unit price changes
           if (field === "quantity" || field === "unit_price") {
             updatedItem.total_amount = updatedItem.quantity * updatedItem.unit_price;
           }
@@ -273,12 +264,10 @@ const OcrInvoiceReview = () => {
     );
   };
 
-  // Remove line item
   const removeLineItem = (id: string) => {
     setLineItems(items => items.filter(item => item.id !== id));
   };
 
-  // Calculate totals from line items
   useEffect(() => {
     if (lineItems.length > 0) {
       const totalAmount = lineItems.reduce((sum, item) => sum + (item.total_amount || 0), 0);
@@ -286,10 +275,8 @@ const OcrInvoiceReview = () => {
     }
   }, [lineItems, form]);
 
-  // Create a sales order from the OCR invoice mapping
   const createSalesOrder = async (mappingId: string, formValues: InvoiceFormValues) => {
     try {
-      // Prepare line items for storage in a format compatible with the orders table
       const orderLineItems = lineItems.map(item => ({
         id: item.id,
         description: item.description,
@@ -298,13 +285,12 @@ const OcrInvoiceReview = () => {
         total_amount: item.total_amount
       }));
 
-      // Create a new sales order
       const { data: order, error } = await supabase
         .from("orders")
         .insert({
           user_id: user?.id,
-          is_sales_order: true, // This marks it as a sales order
-          type: "sale", // Set order type to 'sale'
+          is_sales_order: true,
+          type: "sale",
           order_date: formValues.invoice_date || new Date().toISOString().split('T')[0],
           amount: parseFloat(formValues.total_amount) || 0,
           status: "pending",
@@ -316,7 +302,7 @@ const OcrInvoiceReview = () => {
             customer_address: formValues.customer_address
           },
           line_items: orderLineItems,
-          source_order_id: mappingId // Reference to the original OCR mapping
+          source_order_id: mappingId
         })
         .select("id")
         .single();
@@ -330,17 +316,14 @@ const OcrInvoiceReview = () => {
     }
   };
 
-  // Confirm invoice and create order
   const confirmInvoice = async () => {
     if (!invoiceData?.id || !user) return;
     
     try {
       setConfirming(true);
       
-      // Save current data first
       await onSubmit(form.getValues());
       
-      // Update status to confirmed
       const { error: updateError } = await supabase
         .from("ocr_invoice_mappings")
         .update({
@@ -352,7 +335,6 @@ const OcrInvoiceReview = () => {
 
       if (updateError) throw updateError;
       
-      // Create a sales order based on the confirmed mapping
       const formValues = form.getValues();
       const order = await createSalesOrder(invoiceData.id, formValues);
       
@@ -361,11 +343,9 @@ const OcrInvoiceReview = () => {
         description: "Invoice confirmed and sales order created successfully."
       });
       
-      // Navigate to the new order's detail page
       if (order && order.id) {
         navigate(`/dashboard/orders/${order.id}`);
       } else {
-        // Fallback to orders page if we can't get the specific order ID
         navigate("/dashboard/orders/sales");
       }
     } catch (error) {

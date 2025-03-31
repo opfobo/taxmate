@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -10,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Check, AlertCircle, CheckCircle } from "lucide-react";
 
-// Define explicit types to avoid deep type instantiation
 interface ParsedAddress {
   full_name: string;
   address_line1: string;
@@ -41,7 +39,6 @@ const OcrAddressInput = () => {
   const [parseStats, setParseStats] = useState<{total: number, found: number}>({ total: 0, found: 0 });
   const [parseError, setParseError] = useState<string | null>(null);
 
-  // Reset errors when address text changes
   useEffect(() => {
     if (addressText) {
       setValidationErrors({});
@@ -91,29 +88,24 @@ const OcrAddressInput = () => {
     setParseError(null);
     
     try {
-      // Enhanced address parsing logic
       const lines = addressText.split('\n').filter(line => line.trim());
       
-      // Extract name (assume first line is name)
       const full_name = lines[0]?.trim() || "";
       
-      // Extract postal code and city using multiple pattern matching
       let postal_code = "";
       let city = "";
       let country = "";
       let region = "";
       
-      // Try to find postal code and city in the same line (several patterns)
       const postalCityRegexes = [
-        /(\d{4,6})[\s,]+(.+)/,  // Basic format: 12345 City
-        /(.+)[\s,]+(\d{4,6})/,  // Reverse format: City 12345
-        /(\d{4,6})[\s\-]+(\d{1,4})[\s,]+(.+)/ // Extended format: 12345-678 City
+        /(\d{4,6})[\s,]+(.+)/,  
+        /(.+)[\s,]+(\d{4,6})/,  
+        /(\d{4,6})[\s\-]+(\d{1,4})[\s,]+(.+)/
       ];
       
       let postalCityLine = null;
       let postalCityMatch = null;
       
-      // Try each regex pattern on each line
       for (const line of lines) {
         for (const regex of postalCityRegexes) {
           const match = line.match(regex);
@@ -137,7 +129,6 @@ const OcrAddressInput = () => {
         if (postalCityMatch) break;
       }
       
-      // Look for known country names in the last lines (expanded list)
       const commonCountries = [
         'Germany', 'Deutschland', 'France', 'Frankreich', 'Italy', 'Italien', 
         'Spain', 'Spanien', 'UK', 'United Kingdom', 'USA', 'United States',
@@ -155,7 +146,6 @@ const OcrAddressInput = () => {
         if (country) break;
       }
       
-      // Address lines (exclude name, postal/city line, and country line)
       const addressLines = lines.slice(1).filter(line => 
         line !== postalCityLine && 
         !commonCountries.some(c => line.toLowerCase().includes(c.toLowerCase()))
@@ -164,7 +154,6 @@ const OcrAddressInput = () => {
       const address_line1 = addressLines[0]?.trim() || "";
       const address_line2 = addressLines.slice(1).join(', ').trim() || undefined;
       
-      // Create the parsed address object
       const parsed: ParsedAddress = {
         full_name,
         address_line1,
@@ -175,8 +164,7 @@ const OcrAddressInput = () => {
         ...(country ? { country } : {})
       };
       
-      // Calculate parsing stats
-      const totalFields = 5; // name, address, postal code, city, country
+      const totalFields = 5;
       let foundFields = 0;
       if (parsed.full_name) foundFields++;
       if (parsed.address_line1) foundFields++;
@@ -191,7 +179,6 @@ const OcrAddressInput = () => {
       
       setParsedAddress(parsed);
       
-      // Validate the parsed address
       const errors = validateAddress(parsed);
       if (Object.keys(errors).length > 0) {
         setValidationErrors(errors);
@@ -219,7 +206,6 @@ const OcrAddressInput = () => {
   const createConsumer = async () => {
     if (!user || !parsedAddress) return;
     
-    // Final validation before saving
     const errors = validateAddress(parsedAddress);
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -234,7 +220,6 @@ const OcrAddressInput = () => {
     setIsCreating(true);
     
     try {
-      // Type-safe insertion with explicitly defined data shape
       const { data: consumer, error } = await supabase
         .from('consumers')
         .insert({
@@ -253,16 +238,16 @@ const OcrAddressInput = () => {
       if (error) throw error;
       
       toast({
-        title: t("ocr.success"),
-        description: t("ocr.consumer_created_successfully"),
+        title: t("success"),
+        description: t("consumer_saved_successfully"),
       });
       
       navigate("/dashboard/orders/consumers");
     } catch (error: any) {
       console.error("Error creating consumer:", error);
       toast({
-        title: t("ocr.error"),
-        description: t("ocr.consumer_creation_error"),
+        title: t("error"),
+        description: t("error_saving_consumer"),
         variant: "destructive",
       });
     } finally {
@@ -309,7 +294,6 @@ const OcrAddressInput = () => {
         )}
       </Button>
       
-      {/* Parsing stats info alert */}
       {parseStats.found > 0 && (
         <Alert className={parseStats.found === parseStats.total ? "bg-muted/30 border-green-200" : "bg-muted/30"}>
           {parseStats.found === parseStats.total ? (

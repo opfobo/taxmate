@@ -14,6 +14,7 @@ import { ArrowLeft, Calendar, Loader2, Mail, MapPin, Phone, Edit } from "lucide-
 import OrdersTable from "@/components/orders/OrdersTable";
 import TransactionsTable from "@/components/transactions/TransactionsTable";
 import ShopperEditForm from "./ShopperEditForm";
+import { OrderType } from "@/types/order";
 
 interface ShopperDetailsDrawerProps {
   shopper: Shopper | null;
@@ -47,7 +48,10 @@ const ShopperDetailsDrawer = ({
       
       if (error) throw error;
       
-      return data;
+      return (data || []).map(item => ({
+        ...item,
+        order_type: item.order_type || 'fulfillment' as OrderType
+      })) as any[];
     },
     enabled: !!shopper?.id && open,
   });

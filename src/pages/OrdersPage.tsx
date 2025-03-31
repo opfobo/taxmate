@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/context/AuthContext";
@@ -31,14 +30,12 @@ import Navbar from "@/components/Navbar";
 import { DateRange } from "react-day-picker";
 import EmptyState from "@/components/dashboard/EmptyState";
 
-// Define the correct order_type enum values to match the database
 type OrderType = "fulfillment" | "supplier";
 
 const OrdersPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<OrderType>(() => {
-    // Cast the stored value to OrderType to ensure type safety
     const storedTab = sessionStorage.getItem("ordersActiveTab");
     return (storedTab === "fulfillment" || storedTab === "supplier") 
       ? storedTab as OrderType 
@@ -52,10 +49,9 @@ const OrdersPage = () => {
     return savedStatus ? savedStatus : null;
   });
   const [orderTypeFilter, setOrderTypeFilter] = useState<string | null>(() => {
-  const savedType = sessionStorage.getItem("ordersOrderTypeFilter");
-  return savedType || null;
-});
-  // Updated to use DateRange type from react-day-picker
+    const savedType = sessionStorage.getItem("ordersOrderTypeFilter");
+    return savedType || null;
+  });
   const [dateRange, setDateRange] = useState<DateRange>(() => {
     const savedRange = sessionStorage.getItem("ordersDateRange");
     return savedRange ? JSON.parse(savedRange) : {
@@ -70,7 +66,6 @@ const OrdersPage = () => {
   const [isSupplierFormOpen, setIsSupplierFormOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any | null>(null);
 
-  // Save filter state to sessionStorage when changed
   useEffect(() => {
     sessionStorage.setItem("ordersActiveTab", activeTab);
     sessionStorage.setItem("ordersSearchQuery", searchQuery);
@@ -79,14 +74,12 @@ const OrdersPage = () => {
     sessionStorage.setItem("ordersOrderTypeFilter", orderTypeFilter || "");
   }, [activeTab, searchQuery, statusFilter, dateRange]);
 
-  // Count active filters
   const activeFilterCount = [
     searchQuery.trim().length > 0,
     statusFilter !== null,
     dateRange.from !== undefined || dateRange.to !== undefined
   ].filter(Boolean).length;
 
-  // Fetch orders with items and images
   const fetchOrders = async () => {
     try {
       let query = supabase
@@ -105,17 +98,18 @@ const OrdersPage = () => {
         `)
         .eq("user_id", user?.id || "")
         .eq("type", activeTab)
-        .eq("order_type", activeTab) // nur wenn !== "all"
+        .eq("order_type", activeTab)
         .order("order_date", { ascending: false })
-        .range(0, 50); // Pagination for better performance
+        .range(0, 50);
 
       if (searchQuery) {
         query = query.ilike("order_number", `%${searchQuery}%`);
       }
 
       if (orderTypeFilter && orderTypeFilter !== "all") {
-  query = query.eq("order_type", orderTypeFilter);
-}
+        query = query.eq("order_type", orderTypeFilter);
+      }
+
       if (statusFilter) {
         query = query.eq("status", statusFilter);
       }
@@ -140,18 +134,14 @@ const OrdersPage = () => {
         throw new Error(error.message);
       }
 
-      // For each order, fetch images from storage if available
       if (data && data.length > 0) {
         for (const order of data) {
-          // Fetch images from storage for this order
           try {
             const { data: imageList, error: imageError } = await supabase.storage
               .from("order-images")
               .list(`order-${order.id}`);
             
             if (!imageError && imageList && imageList.length > 0) {
-              // Instead of setting image_urls directly, we'll store them in the notes field
-              // as JSON, which will be parsed by our getImageUrls helper function
               const imageUrls = await Promise.all(
                 imageList.map(async (file) => {
                   const { data: url } = supabase.storage
@@ -161,12 +151,8 @@ const OrdersPage = () => {
                 })
               );
               
-              // Store image URLs in notes as JSON
               if (imageUrls.length > 0) {
-                // Set the first image as image_url for backward compatibility
                 order.image_url = imageUrls[0];
-                
-                // Store all images in notes as JSON
                 order.notes = JSON.stringify({
                   originalNotes: order.notes,
                   imageUrls: imageUrls
@@ -203,15 +189,13 @@ const OrdersPage = () => {
   };
 
   const handleTabChange = (value: string) => {
-    // Fix: Cast the value to OrderType to ensure type safety
     if (value === "fulfillment" || value === "supplier") {
       setActiveTab(value as OrderType);
     }
-    // Don't reset filters when changing tabs as per requirements
   };
 
   const handleAddOrder = () => {
-    setEditingOrder(null); // Ensure we're not in edit mode
+    setEditingOrder(null);
     setIsOrderFormOpen(true);
   };
 
@@ -277,35 +261,34 @@ const OrdersPage = () => {
             </div>
             
             <StatusFilter
-  value={statusFilter}
-  onChange={setStatusFilter}
-/>
+              value={statusFilter}
+              onChange={setStatusFilter}
+            />
 
-<div className="w-[160px]">
-  <label className="block text-sm font-medium text-muted-foreground mb-1">
-    {t("order_type")}
-  </label>
-  <select
-    value={orderTypeFilter || "all"}
-    onChange={(e) => {
-      const value = e.target.value;
-      setOrderTypeFilter(value === "all" ? null : value);
-    }}
-    className="w-full border border-input bg-background rounded-md px-3 py-2 text-sm shadow-sm"
-  >
-    <option value="all">{t("all_types")}</option>
-    <option value="fulfillment">{t("fulfillment")}</option>
-    <option value="supplier">{t("supplier")}</option>
-    <option value="search-request">{t("search_request")}</option>
-  </select>
-</div>
+            <div className="w-[160px]">
+              <label className="block text-sm font-medium text-muted-foreground mb-1">
+                {t("order_type")}
+              </label>
+              <select
+                value={orderTypeFilter || "all"}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setOrderTypeFilter(value === "all" ? null : value);
+                }}
+                className="w-full border border-input bg-background rounded-md px-3 py-2 text-sm shadow-sm"
+              >
+                <option value="all">{t("all_types")}</option>
+                <option value="fulfillment">{t("fulfillment")}</option>
+                <option value="supplier">{t("supplier")}</option>
+                <option value="search-request">{t("search_request")}</option>
+              </select>
+            </div>
 
-<DateRangePicker
-  value={dateRange}
-  onChange={setDateRange}
-/>
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+            />
 
-            
             {activeFilterCount > 0 && (
               <Button 
                 onClick={handleClearFilters} 
@@ -360,13 +343,13 @@ const OrdersPage = () => {
                 />
               ) : (
                 <OrdersTable
-  orders={orders}
-  isLoading={isLoading}
-  onViewDetails={handleViewDetails}
-  onEditOrder={handleEditOrder}
-  orderType={activeTab} // ← z. B. "fulfillment"
-  filterByType={orderTypeFilter as any} // ← optional, wenn Tabelle nur Teilmengen zeigen soll
-/>
+                  orders={orders}
+                  isLoading={isLoading}
+                  onViewDetails={handleViewOrderDetails}
+                  onEditOrder={handleEditOrder}
+                  orderType={activeTab}
+                  filterByType={orderTypeFilter as any}
+                />
               )}
             </CardContent>
           </Card>

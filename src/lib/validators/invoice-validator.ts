@@ -1,5 +1,4 @@
 
-// src/lib/validators/invoice-validator.ts
 import { z } from "zod";
 
 export const invoiceFormSchema = z.object({
