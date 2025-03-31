@@ -142,11 +142,23 @@ export function useTranslation() {
   };
 
   // The translation function
-  const t = (key: string): string => {
-    // If translations aren't loaded yet, return the key
-    if (isLoading || !translations[key]) {
-      return key;
-    }
+  const t = (key: string, variables?: Record<string, string | number>): string => {
+  if (isLoading || !translations[key]) return key;
+
+  let translation = translations[key][language]
+    || translations[key].de
+    || translations[key].en
+    || key;
+
+  if (variables) {
+    Object.entries(variables).forEach(([varName, varValue]) => {
+      translation = translation.replace(`{${varName}}`, String(varValue));
+    });
+  }
+
+  return translation;
+};
+
 
     // Try to get the translation in the current language
     const translation = translations[key][language];
