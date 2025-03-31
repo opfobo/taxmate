@@ -29,7 +29,8 @@ import {
   FileBarChart,
   BookOpen,
   ChartBar,
-  ShoppingBag
+  ShoppingBag,
+  ScanLine
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -61,6 +62,11 @@ const Navbar = () => {
       to: "/dashboard/orders",
       label: t("orders"),
       icon: <ShoppingBag className="h-5 w-5" />
+    },
+    {
+      to: "/dashboard/ocr",
+      label: t("ocr.title"),
+      icon: <ScanLine className="h-5 w-5" />
     },
     {
       to: "/dashboard/tax-reports",

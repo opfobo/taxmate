@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,7 +26,7 @@ import Contact from "./pages/Contact";
 import Impressum from "./pages/Impressum";
 import OcrTestPage from "@/pages/test/OcrTestPage";
 import OcrInvoiceReviewPage from "@/pages/ocr/OcrInvoiceReviewPage";
-
+import OcrPage from "@/pages/OcrPage";
 
 // New Order Pages
 import OrdersLayout from "./layouts/OrdersLayout";
@@ -82,6 +81,12 @@ const App = () => (
               <Route path="/ocr/review/:requestId" element={
                 <ProtectedRoute>
                   <OcrInvoiceReviewPage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/dashboard/ocr" element={
+                <ProtectedRoute>
+                  <OcrPage />
                 </ProtectedRoute>
               } />
               
