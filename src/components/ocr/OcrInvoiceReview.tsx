@@ -79,7 +79,6 @@ interface FormValues {
 useEffect(() => {
   console.log("OCR Review Params →", { requestId, user });
   console.log("OCR Review Debug", {requestId, currentUserId: user?.id,});
-  if (!requestId || !user) return;
 
 export const OcrInvoiceReview = () => {
   const { requestId } = useParams<{ requestId: string }>();
