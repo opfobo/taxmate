@@ -35,30 +35,30 @@ const ConsumerDetailsDrawer = ({
 
   // Use explicit return type annotation to prevent deep type instantiation
   const {
-    data: recentOrders = [],
-    isLoading: ordersLoading,
-  } = useQuery({
-    queryKey: ["consumer-orders", consumer.id],
-    queryFn: async (): Promise<OrderData[]> => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, order_number, order_date, amount, status")
-        .eq("consumer_id", consumer.id)
-        .order("order_date", { ascending: false })
-        .limit(5);
+  data: recentOrders = [],
+  isLoading: ordersLoading,
+} = useQuery<OrderData[]>({
+  queryKey: ["consumer-orders", consumer.id],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("id, order_number, order_date, amount, status")
+      .eq("consumer_id", consumer.id)
+      .order("order_date", { ascending: false })
+      .limit(5);
 
-      if (error) throw error;
-      
-      // Explicitly convert to OrderData[] to avoid deep type instantiation
-      return (data || []).map((order): OrderData => ({
-        id: order.id,
-        order_number: order.order_number,
-        order_date: order.order_date,
-        amount: order.amount,
-        status: order.status,
-      }));
-    }
-  });
+    if (error) throw error;
+
+    return (data ?? []).map((order) => ({
+      id: order.id,
+      order_number: order.order_number,
+      order_date: order.order_date,
+      amount: order.amount,
+      status: order.status,
+    }));
+  }
+});
+
 
   const handleEditComplete = () => {
     setIsEditing(false);
