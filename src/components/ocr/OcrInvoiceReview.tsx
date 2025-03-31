@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,21 +36,6 @@ import { LoaderCircle, Save, PlusCircle, Trash2, FileCheck } from "lucide-react"
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
-export const invoiceFormSchema = z.object({
-  invoice_number: z.string().min(1, "Invoice number is required"),
-  invoice_date: z.string().min(1, "Date is required"),
-  supplier_name: z.string().min(1, "Supplier name is required"),
-  supplier_address: z.string().min(1, "Address is required"),
-  supplier_vat: z.string().optional(),
-  customer_name: z.string().optional(),
-  customer_address: z.string().optional(),
-  total_amount: z.string().regex(/^\d+(\.\d{1,2})?$/, "Must be a valid number"),
-  total_tax: z.string().regex(/^\d+(\.\d{1,2})?$/, "Must be a valid number"),
-  total_net: z.string().regex(/^\d+(\.\d{1,2})?$/, "Must be a valid number"),
-  currency: z.string().length(3, "Currency must be a 3-letter code")
-});
-
-export type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
 // Type definitions
 interface LineItem {
   id: string;
@@ -80,7 +66,7 @@ interface InvoiceMapping {
   confirmed_at: string | null;
 }
 
-export const OcrInvoiceReview = () => {
+const OcrInvoiceReview = () => {
   const { requestId } = useParams<{ requestId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -90,10 +76,14 @@ export const OcrInvoiceReview = () => {
   const [invoiceData, setInvoiceData] = useState<InvoiceMapping | null>(null);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
 
-  console.log("OCR Review Params →", { requestId, user });
-  console.log("OCR Review Debug", {requestId, currentUserId: user?.id,});
+  console.log("OCR Review Debug", {
+    requestId,
+    currentUserId: user?.id,
+  });
 
-  const form = useForm<InvoiceFormValues >({
+  console.log("OCR Review Params →", { requestId, user });
+
+  const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceFormSchema),
     defaultValues: {
       invoice_number: "",
@@ -109,8 +99,9 @@ export const OcrInvoiceReview = () => {
       currency: "EUR"
     }
   });
-const currency = form.watch("currency");
-const total = form.watch("total_amount");
+  
+  const currency = form.watch("currency");
+  const totalAmount = form.watch("total_amount");
 
   // Fetch invoice data
   useEffect(() => {
@@ -314,15 +305,15 @@ const total = form.watch("total_amount");
           user_id: user?.id,
           is_sales_order: true, // This marks it as a sales order
           type: "sale", // Set order type to 'sale'
-          order_date: InvoiceFormValues.invoice_date || new Date().toISOString().split('T')[0],
-          amount: parseFloat(InvoiceFormValues.total_amount) || 0,
+          order_date: formValues.invoice_date || new Date().toISOString().split('T')[0],
+          amount: parseFloat(formValues.total_amount) || 0,
           status: "pending",
-          order_number: InvoiceFormValues.invoice_number || `SO-${Date.now()}`,
-          currency: InvoiceFormValues.currency || "EUR",
-          supplier_name: InvoiceFormValues.supplier_name,
+          order_number: formValues.invoice_number || `SO-${Date.now()}`,
+          currency: formValues.currency || "EUR",
+          supplier_name: formValues.supplier_name,
           ocr_customer_data: {
-            customer_name: InvoiceFormValues.customer_name,
-            customer_address: InvoiceFormValues.customer_address
+            customer_name: formValues.customer_name,
+            customer_address: formValues.customer_address
           },
           line_items: orderLineItems,
           source_order_id: mappingId // Reference to the original OCR mapping
@@ -362,8 +353,8 @@ const total = form.watch("total_amount");
       if (updateError) throw updateError;
       
       // Create a sales order based on the confirmed mapping
-      const InvoiceFormValues = form.getValues();
-      const order = await createSalesOrder(invoiceData.id, InvoiceFormValues);
+      const formValues = form.getValues();
+      const order = await createSalesOrder(invoiceData.id, formValues);
       
       toast({
         title: "Success",
@@ -413,45 +404,42 @@ const total = form.watch("total_amount");
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
-  <h1 className="text-2xl font-bold tracking-tight">Review Invoice Data</h1>
-
-  <div className="flex space-x-2">
-    <Button 
-      variant="outline" 
-      onClick={() => navigate(-1)}
-      disabled={saving || confirming}
-    >
-      Cancel
-    </Button>
-
-    <Button 
-      type="button"
-      onClick={form.handleSubmit(onSubmit)} 
-      disabled={saving || confirming || !form.formState.isDirty}
-    >
-      {saving ? (
-        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-      ) : (
-        <Save className="mr-2 h-4 w-4" />
-      )}
-      Save Changes
-    </Button>
-
-    <Button 
-      type="button"
-      onClick={confirmInvoice}
-      disabled={saving || confirming || !form.formState.isValid}
-      variant="default"
-    >
-      {confirming ? (
-        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-      ) : (
-        <FileCheck className="mr-2 h-4 w-4" />
-      )}
-      Confirm & Create Order
-    </Button>
-  </div>
-</div>
+        <h1 className="text-2xl font-bold tracking-tight">Review Invoice Data</h1>
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate(-1)}
+            disabled={saving || confirming}
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="button"
+            onClick={form.handleSubmit(onSubmit)} 
+            disabled={saving || confirming || !form.formState.isDirty}
+          >
+            {saving ? (
+              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Save Changes
+          </Button>
+          <Button 
+            type="button"
+            onClick={confirmInvoice}
+            disabled={saving || confirming || !form.formState.isValid}
+            variant="default"
+          >
+            {confirming ? (
+              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FileCheck className="mr-2 h-4 w-4" />
+            )}
+            Confirm & Create Order
+          </Button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Form {...form}>
@@ -573,176 +561,176 @@ const total = form.watch("total_amount");
 
         <div className="space-y-6">
           <Card>
-  <CardHeader>
-    <CardTitle>Totals</CardTitle>
-    <CardDescription>Invoice amounts and currency</CardDescription>
-  </CardHeader>
-  <CardContent className="space-y-4">
-    <div className="grid grid-cols-2 gap-4">
-      <FormField
-        control={form.control}
-        name="currency"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Currency</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="total_amount"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Total Amount</FormLabel>
-            <FormControl>
-              <Input {...field} type="number" step="0.01" />
-            </FormControl>
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="total_net"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Net Amount</FormLabel>
-            <FormControl>
-              <Input {...field} type="number" step="0.01" />
-            </FormControl>
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="total_tax"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Tax Amount</FormLabel>
-            <FormControl>
-              <Input {...field} type="number" step="0.01" />
-            </FormControl>
-          </FormItem>
-        )}
-      />
-    </div>
-  </CardContent>
-</Card>
+            <CardHeader>
+              <CardTitle>Totals</CardTitle>
+              <CardDescription>Invoice amounts and currency</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currency</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="total_amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Total Amount</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" step="0.01" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="total_net"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Net Amount</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" step="0.01" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="total_tax"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tax Amount</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" step="0.01" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
-  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-    <div>
-      <CardTitle>Line Items</CardTitle>
-      <CardDescription>Products or services on this invoice</CardDescription>
-    </div>
-    <Button 
-      variant="outline" 
-      size="sm" 
-      onClick={addLineItem}
-      className="h-8"
-    >
-      <PlusCircle className="h-4 w-4 mr-1" />
-      Add Item
-    </Button>
-  </CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div>
+                <CardTitle>Line Items</CardTitle>
+                <CardDescription>Products or services on this invoice</CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={addLineItem}
+                className="h-8"
+              >
+                <PlusCircle className="h-4 w-4 mr-1" />
+                Add Item
+              </Button>
+            </CardHeader>
 
-  <CardContent>
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[40%]">Description</TableHead>
-            <TableHead className="text-right">Qty</TableHead>
-            <TableHead className="text-right">Unit Price</TableHead>
-            <TableHead className="text-right">Total</TableHead>
-            <TableHead className="w-[50px]"></TableHead>
-          </TableRow>
-        </TableHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[40%]">Description</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead className="text-right">Unit Price</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
 
-        <TableBody>
-          {lineItems.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
-                No items found. Click "Add Item" to add an invoice line.
-              </TableCell>
-            </TableRow>
-          ) : (
-            lineItems.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>
-                  <Input 
-                    value={item.description} 
-                    onChange={(e) =>
-                      updateLineItem(item.id, "description", e.target.value)
-                    }
-                    placeholder="Item description"
-                  />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Input 
-                    value={item.quantity}
-                    onChange={(e) =>
-                      updateLineItem(
-                        item.id,
-                        "quantity",
-                        isNaN(Number(e.target.value)) ? 0 : parseFloat(e.target.value)
-                      )
-                    }
-                    type="number"
-                    min="0"
-                    step="1"
-                    className="w-16 text-right ml-auto"
-                  />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Input 
-                    value={item.unit_price}
-                    onChange={(e) =>
-                      updateLineItem(
-                        item.id,
-                        "unit_price",
-                        isNaN(Number(e.target.value)) ? 0 : parseFloat(e.target.value)
-                      )
-                    }
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className="w-24 text-right ml-auto"
-                  />
-                </TableCell>
-                <TableCell className="text-right font-medium">
-                  {(item.total_amount || 0).toFixed(2)}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeLineItem(item.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
-  </CardContent>
+                  <TableBody>
+                    {lineItems.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
+                          No items found. Click "Add Item" to add an invoice line.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      lineItems.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            <Input 
+                              value={item.description} 
+                              onChange={(e) =>
+                                updateLineItem(item.id, "description", e.target.value)
+                              }
+                              placeholder="Item description"
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input 
+                              value={item.quantity}
+                              onChange={(e) =>
+                                updateLineItem(
+                                  item.id,
+                                  "quantity",
+                                  isNaN(Number(e.target.value)) ? 0 : parseFloat(e.target.value)
+                                )
+                              }
+                              type="number"
+                              min="0"
+                              step="1"
+                              className="w-16 text-right ml-auto"
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input 
+                              value={item.unit_price}
+                              onChange={(e) =>
+                                updateLineItem(
+                                  item.id,
+                                  "unit_price",
+                                  isNaN(Number(e.target.value)) ? 0 : parseFloat(e.target.value)
+                                )
+                              }
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              className="w-24 text-right ml-auto"
+                            />
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {(item.total_amount || 0).toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeLineItem(item.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
 
-  <CardFooter className="flex justify-between">
-    <div className="text-sm text-muted-foreground">
-      {lineItems.length} item{lineItems.length !== 1 ? "s" : ""}
-    </div>
-    <div className="text-right">
-      <p className="text-sm text-muted-foreground">Total:</p>
-      <p className="text-lg font-medium">
-        {currency} {parseFloat(totalAmount || "0").toFixed(2)}
-      </p>
-    </div>
-  </CardFooter>
+            <CardFooter className="flex justify-between">
+              <div className="text-sm text-muted-foreground">
+                {lineItems.length} item{lineItems.length !== 1 ? "s" : ""}
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Total:</p>
+                <p className="text-lg font-medium">
+                  {currency} {parseFloat(totalAmount || "0").toFixed(2)}
+                </p>
+              </div>
+            </CardFooter>
           </Card>
         </div>
       </div>

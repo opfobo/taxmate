@@ -410,6 +410,7 @@ export type Database = {
           ocr_customer_data: Json | null
           order_date: string | null
           order_number: string
+          order_type: Database["public"]["Enums"]["order_type_enum"] | null
           payment_status: string | null
           purchase_origin: string | null
           purchase_type: Database["public"]["Enums"]["purchase_type"] | null
@@ -439,6 +440,7 @@ export type Database = {
           ocr_customer_data?: Json | null
           order_date?: string | null
           order_number: string
+          order_type?: Database["public"]["Enums"]["order_type_enum"] | null
           payment_status?: string | null
           purchase_origin?: string | null
           purchase_type?: Database["public"]["Enums"]["purchase_type"] | null
@@ -468,6 +470,7 @@ export type Database = {
           ocr_customer_data?: Json | null
           order_date?: string | null
           order_number?: string
+          order_type?: Database["public"]["Enums"]["order_type_enum"] | null
           payment_status?: string | null
           purchase_origin?: string | null
           purchase_type?: Database["public"]["Enums"]["purchase_type"] | null
@@ -932,6 +935,7 @@ export type Database = {
         | "shipped"
         | "delivered"
       order_type: "fulfillment" | "supplier"
+      order_type_enum: "fulfillment" | "supplier" | "search-request"
       paid_level: "free" | "starter" | "pro" | "enterprise"
       purchase_type: "domestic" | "eu_b2b" | "foreign_consumer"
       transaction_status: "success" | "pending" | "failed"
