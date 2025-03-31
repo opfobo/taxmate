@@ -1,13 +1,44 @@
 
+import { useEffect, useState } from "react";
 import { PageLayout } from "@/components/PageLayout";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { FileText, Users } from "lucide-react";
+import { FileText, Users, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 import OcrUpload from "@/components/ocr/OcrUpload";
 import OcrAddressInput from "@/components/ocr/OcrAddressInput";
+import OcrSectionCard from "@/components/ocr/OcrSectionCard";
+
+// Define explicit type for OCR tokens to avoid deep instantiation
+interface OcrTokenData {
+  user_id: string;
+  tokens: number;
+}
 
 const OcrPage = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  
+  // Get remaining OCR tokens
+  const { data: ocrTokens } = useQuery<OcrTokenData | null, Error>({
+    queryKey: ["ocr-tokens", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from("ocr_tokens")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   return (
     <PageLayout>
@@ -19,6 +50,11 @@ const OcrPage = () => {
             <TabsTrigger value="invoice" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               {t("ocr.invoice_tab")}
+              {ocrTokens && (
+                <Badge variant="outline" className="ml-2">
+                  {t("ocr.tokens_left_badge", { count: ocrTokens.tokens })}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="consumer" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
@@ -27,23 +63,25 @@ const OcrPage = () => {
           </TabsList>
           
           <TabsContent value="invoice" className="mt-6">
-            <div className="bg-card rounded-lg border p-6">
-              <h2 className="text-xl font-semibold mb-4">{t("ocr.invoice_title")}</h2>
-              <p className="text-muted-foreground mb-6">{t("ocr.invoice_description")}</p>
+            <OcrSectionCard 
+              title={t("ocr.invoice_title")}
+              description={t("ocr.invoice_description")}
+            >
               <OcrUpload 
                 onOcrResult={() => {}} 
                 label={t("ocr.upload_document")}
                 mimeTypes={["application/pdf", "image/jpeg", "image/png"]}
               />
-            </div>
+            </OcrSectionCard>
           </TabsContent>
           
           <TabsContent value="consumer" className="mt-6">
-            <div className="bg-card rounded-lg border p-6">
-              <h2 className="text-xl font-semibold mb-4">{t("ocr.consumer_title")}</h2>
-              <p className="text-muted-foreground mb-6">{t("ocr.consumer_description")}</p>
+            <OcrSectionCard 
+              title={t("ocr.consumer_title")}
+              description={t("ocr.consumer_description")}
+            >
               <OcrAddressInput />
-            </div>
+            </OcrSectionCard>
           </TabsContent>
         </Tabs>
       </div>
