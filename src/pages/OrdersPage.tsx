@@ -51,7 +51,10 @@ const OrdersPage = () => {
     const savedStatus = sessionStorage.getItem("ordersStatusFilter");
     return savedStatus ? savedStatus : null;
   });
-  
+  const [orderTypeFilter, setOrderTypeFilter] = useState<string | null>(() => {
+  const savedType = sessionStorage.getItem("ordersOrderTypeFilter");
+  return savedType || null;
+});
   // Updated to use DateRange type from react-day-picker
   const [dateRange, setDateRange] = useState<DateRange>(() => {
     const savedRange = sessionStorage.getItem("ordersDateRange");
@@ -73,6 +76,7 @@ const OrdersPage = () => {
     sessionStorage.setItem("ordersSearchQuery", searchQuery);
     sessionStorage.setItem("ordersStatusFilter", statusFilter || "");
     sessionStorage.setItem("ordersDateRange", JSON.stringify(dateRange));
+    sessionStorage.setItem("ordersOrderTypeFilter", orderTypeFilter || "");
   }, [activeTab, searchQuery, statusFilter, dateRange]);
 
   // Count active filters
@@ -101,6 +105,7 @@ const OrdersPage = () => {
         `)
         .eq("user_id", user?.id || "")
         .eq("type", activeTab)
+        .eq("order_type", activeTab) // nur wenn !== "all"
         .order("order_date", { ascending: false })
         .range(0, 50); // Pagination for better performance
 
@@ -108,6 +113,9 @@ const OrdersPage = () => {
         query = query.ilike("order_number", `%${searchQuery}%`);
       }
 
+      if (orderTypeFilter && orderTypeFilter !== "all") {
+  query = query.eq("order_type", orderTypeFilter);
+}
       if (statusFilter) {
         query = query.eq("status", statusFilter);
       }
@@ -269,14 +277,34 @@ const OrdersPage = () => {
             </div>
             
             <StatusFilter
-              value={statusFilter}
-              onChange={setStatusFilter}
-            />
-            
-            <DateRangePicker
-              value={dateRange}
-              onChange={setDateRange}
-            />
+  value={statusFilter}
+  onChange={setStatusFilter}
+/>
+
+<div className="w-[160px]">
+  <label className="block text-sm font-medium text-muted-foreground mb-1">
+    {t("order_type")}
+  </label>
+  <select
+    value={orderTypeFilter || "all"}
+    onChange={(e) => {
+      const value = e.target.value;
+      setOrderTypeFilter(value === "all" ? null : value);
+    }}
+    className="w-full border border-input bg-background rounded-md px-3 py-2 text-sm shadow-sm"
+  >
+    <option value="all">{t("all_types")}</option>
+    <option value="fulfillment">{t("fulfillment")}</option>
+    <option value="supplier">{t("supplier")}</option>
+    <option value="search-request">{t("search_request")}</option>
+  </select>
+</div>
+
+<DateRangePicker
+  value={dateRange}
+  onChange={setDateRange}
+/>
+
             
             {activeFilterCount > 0 && (
               <Button 
@@ -332,12 +360,13 @@ const OrdersPage = () => {
                 />
               ) : (
                 <OrdersTable
-                  orders={orders}
-                  isLoading={isLoading}
-                  onViewDetails={handleViewOrderDetails}
-                  onEditOrder={handleEditOrder}
-                  orderType={activeTab}
-                />
+  orders={orders}
+  isLoading={isLoading}
+  onViewDetails={handleViewDetails}
+  onEditOrder={handleEditOrder}
+  orderType={activeTab} // ← z. B. "fulfillment"
+  filterByType={orderTypeFilter as any} // ← optional, wenn Tabelle nur Teilmengen zeigen soll
+/>
               )}
             </CardContent>
           </Card>
