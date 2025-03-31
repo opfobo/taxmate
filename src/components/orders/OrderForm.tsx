@@ -422,6 +422,26 @@ const OrderForm = ({
                         </FormItem>
                       )}
                     />
+                    <FormField
+  control={form.control}
+  name="order_type"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>{t("order_type")}</FormLabel>
+      <Select onValueChange={field.onChange} defaultValue={field.value}>
+        <SelectTrigger>
+          <SelectValue placeholder={t("select_order_type")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="fulfillment">{t("order_type_fulfillment")}</SelectItem>
+          <SelectItem value="supplier">{t("order_type_supplier")}</SelectItem>
+          <SelectItem value="search-request">{t("order_type_search_request")}</SelectItem>
+        </SelectContent>
+      </Select>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
 
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
