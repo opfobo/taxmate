@@ -23,6 +23,7 @@ type Order = {
   status: string;
   amount: number;
   currency: string;
+  order_type: string;
   supplier?: { name: string; id: string; };
   image_url?: string;
   notes?: string;
@@ -34,7 +35,8 @@ interface OrdersTableProps {
   isLoading: boolean;
   onViewDetails: (order: Order) => void;
   onEditOrder?: (order: Order) => void;
-  orderType: "fulfillment" | "supplier";
+  orderType: "fulfillment" | "supplier" | "search-request";
+  filterByType?: "fulfillment" | "supplier" | "search-request"; // ← NEU
 }
 
 const OrdersTable: React.FC<OrdersTableProps> = ({
@@ -42,8 +44,14 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
   isLoading,
   onViewDetails,
   onEditOrder,
-  orderType
+  orderType,
+  filterByType
 }) => {
+
+  const filteredOrders = filterByType 
+  ? orders.filter(order => order.order_type === filterByType)
+  : orders;
+
   const { t } = useTranslation();
 
   // Helper to get all image URLs from various possible sources
@@ -78,7 +86,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
     );
   }
 
-  if (orders.length === 0) {
+  if (filteredOrders.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         <p>{t("no_orders_found")}</p>
@@ -105,6 +113,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
         <TableHeader>
           <TableRow>
             <TableHead>{t("order_number")}</TableHead>
+            <TableHead>{t("order_type")}</TableHead>
             <TableHead>{t("date")}</TableHead>
             <TableHead>{t("status")}</TableHead>
             <TableHead>{t("amount")}</TableHead>
@@ -114,9 +123,10 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.map((order) => (
+          {filteredOrders.map((order) => (
             <TableRow key={order.id}>
               <TableCell className="font-medium">{order.order_number}</TableCell>
+              <TableCell><Badge variant="outline">{t(order.order_type)}</Badge></TableCell>
               <TableCell>
                 {order.order_date && format(new Date(order.order_date), "PP")}
               </TableCell>
