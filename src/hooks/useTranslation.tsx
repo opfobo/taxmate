@@ -193,4 +193,3 @@ export function useTranslation() {
       { code: "ru", name: "Русский" }
     ]
   };
-}
