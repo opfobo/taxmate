@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,6 +76,15 @@ interface FormValues {
   currency: string;
 }
 
+console.log("OCR Review Debug", {
+  requestId,
+  currentUserId: user?.id,
+});
+
+useEffect(() => {
+  console.log("OCR Review Params →", { requestId, user });
+  if (!requestId || !user) return;
+
 export const OcrInvoiceReview = () => {
   const { requestId } = useParams<{ requestId: string }>();
   const { user } = useAuth();
@@ -114,7 +122,7 @@ export const OcrInvoiceReview = () => {
           .from("ocr_invoice_mappings")
           .select("*")
           .eq("ocr_request_id", requestId)
-          .eq("user_id", user.id)
+          //.eq("user_id", user.id)
           .single();
 
         if (error) {
