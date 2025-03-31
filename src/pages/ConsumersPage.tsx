@@ -127,15 +127,11 @@ const ConsumersPage = () => {
     }
   };
 
-  const { data: consumers = [], isLoading, refetch } = useQuery<
-    ConsumerWithOrderStats[],
-    Error,
-    ConsumerWithOrderStats[],
-    [string, string]
-  >({
-    queryKey: ["consumers", searchQuery],
-    queryFn: () => fetchConsumers(searchQuery),
-  });
+  const { data: consumers = [], isLoading, refetch } = useQuery({
+  queryKey: ["consumers", searchQuery],
+  queryFn: () => fetchConsumers(searchQuery),
+});
+
 
   return (
     <div className="min-h-screen bg-background">
