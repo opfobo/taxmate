@@ -76,13 +76,9 @@ interface FormValues {
   currency: string;
 }
 
-console.log("OCR Review Debug", {
-  requestId,
-  currentUserId: user?.id,
-});
-
 useEffect(() => {
   console.log("OCR Review Params →", { requestId, user });
+  console.log("OCR Review Debug", {requestId, currentUserId: user?.id,});
   if (!requestId || !user) return;
 
 export const OcrInvoiceReview = () => {
