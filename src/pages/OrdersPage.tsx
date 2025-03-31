@@ -293,7 +293,11 @@ const OrdersPage = () => {
                 value={orderTypeFilter || "all"}
                 onChange={(e) => {
                   const value = e.target.value;
-                  setOrderTypeFilter(value === "all" ? null : value);
+                  if (value === "all") {
+                    setOrderTypeFilter(null);
+                  } else if (value === "fulfillment" || value === "supplier" || value === "search-request") {
+                    setOrderTypeFilter(value as OrderType);
+                  }
                 }}
                 className="w-full border border-input bg-background rounded-md px-3 py-2 text-sm shadow-sm"
               >

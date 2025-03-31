@@ -34,7 +34,6 @@ import {
 import { LoaderCircle, Save, PlusCircle, Trash2, FileCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
 
-// Define schema and form types
 const invoiceFormSchema = z.object({
   invoice_number: z.string().optional(),
   invoice_date: z.string().optional(),
@@ -218,6 +217,11 @@ const OcrInvoiceReview = () => {
         total_amount: item.total_amount
       }));
       
+      let validatedCurrency: "EUR" | "USD" | "GBP" = "EUR";
+      if (values.currency === "USD" || values.currency === "GBP") {
+        validatedCurrency = values.currency;
+      }
+      
       const { error } = await supabase
         .from("ocr_invoice_mappings")
         .update({
@@ -231,7 +235,7 @@ const OcrInvoiceReview = () => {
           total_amount: parseFloat(values.total_amount) || 0,
           total_tax: parseFloat(values.total_tax) || 0,
           total_net: parseFloat(values.total_net) || 0,
-          currency: values.currency,
+          currency: validatedCurrency,
           line_items: lineItemsForStorage
         })
         .eq("id", invoiceData.id)
@@ -305,6 +309,11 @@ const OcrInvoiceReview = () => {
         total_amount: item.total_amount
       }));
 
+      let validatedCurrency: "EUR" | "USD" | "GBP" = "EUR";
+      if (formValues.currency === "USD" || formValues.currency === "GBP") {
+        validatedCurrency = formValues.currency;
+      }
+
       const { data: order, error } = await supabase
         .from("orders")
         .insert({
@@ -315,7 +324,7 @@ const OcrInvoiceReview = () => {
           amount: parseFloat(formValues.total_amount) || 0,
           status: "pending",
           order_number: formValues.invoice_number || `SO-${Date.now()}`,
-          currency: formValues.currency || "EUR",
+          currency: validatedCurrency,
           supplier_name: formValues.supplier_name,
           ocr_customer_data: {
             customer_name: formValues.customer_name,

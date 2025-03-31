@@ -1,4 +1,3 @@
-
 import { useLocation } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useState } from "react";
@@ -44,96 +43,99 @@ const ConsumersPage = () => {
   const isTabMode = location.pathname.startsWith("/dashboard/orders/");
   const activeFilterCount = searchQuery.trim().length > 0 ? 1 : 0;
 
-const fetchConsumers = async (searchQuery: string): Promise<ConsumerWithOrderStats[]> => {
-  try {
-    if (!searchQuery.trim()) {
-      const { data: consumersData, error } = await supabase
-        .from("consumers")
-        .select("*")
-        .order("created_at", { ascending: false });
+  const fetchConsumers = async (searchQuery: string): Promise<ConsumerWithOrderStats[]> => {
+    try {
+      if (!searchQuery.trim()) {
+        const { data: consumersData, error } = await supabase
+          .from("consumers")
+          .select("*")
+          .order("created_at", { ascending: false });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      const consumersWithStats: ConsumerWithOrderStats[] = [];
+        const consumersWithStats: ConsumerWithOrderStats[] = [];
 
-      for (const consumer of consumersData ?? []) {
-        const { count } = await supabase
-          .from("orders")
-          .select("id", { count: "exact" })
-          .eq("consumer_id", consumer.id);
+        for (const consumer of consumersData ?? []) {
+          const { count } = await supabase
+            .from("orders")
+            .select("id", { count: "exact" })
+            .eq("consumer_id", consumer.id);
 
-        const { data: latestOrders } = await supabase
-          .from("orders")
-          .select("order_date, amount")
-          .eq("consumer_id", consumer.id)
-          .order("order_date", { ascending: false })
-          .limit(1);
+          const { data: latestOrders } = await supabase
+            .from("orders")
+            .select("order_date, amount")
+            .eq("consumer_id", consumer.id)
+            .order("order_date", { ascending: false })
+            .limit(1);
 
-        const { data: ordersData } = await supabase
-          .from("orders")
-          .select("amount")
-          .eq("consumer_id", consumer.id);
+          const { data: ordersData } = await supabase
+            .from("orders")
+            .select("amount")
+            .eq("consumer_id", consumer.id);
 
-        const totalVolume =
-          ordersData?.reduce((sum, order) => sum + (parseFloat(String(order.amount)) || 0), 0) || 0;
+          const totalVolume =
+            ordersData?.reduce((sum, order) => sum + (parseFloat(String(order.amount)) || 0), 0) || 0;
 
-        consumersWithStats.push({
-          ...consumer,
-          total_orders: count || 0,
-          last_order_date: latestOrders?.[0]?.order_date || null,
-          total_order_volume: totalVolume,
-        });
+          consumersWithStats.push({
+            ...consumer,
+            total_orders: count || 0,
+            last_order_date: latestOrders?.[0]?.order_date || null,
+            total_order_volume: totalVolume,
+          });
+        }
+
+        return consumersWithStats;
+      } else {
+        const searchResults = await useGlobalSearch("consumers", searchQuery);
+
+        const consumersWithStats: ConsumerWithOrderStats[] = [];
+
+        for (const consumer of searchResults) {
+          const { count } = await supabase
+            .from("orders")
+            .select("id", { count: "exact" })
+            .eq("consumer_id", consumer.id);
+
+          const { data: latestOrders } = await supabase
+            .from("orders")
+            .select("order_date, amount")
+            .eq("consumer_id", consumer.id)
+            .order("order_date", { ascending: false })
+            .limit(1);
+
+          const { data: ordersData } = await supabase
+            .from("orders")
+            .select("amount")
+            .eq("consumer_id", consumer.id);
+
+          const totalVolume =
+            ordersData?.reduce((sum, order) => sum + (parseFloat(String(order.amount)) || 0), 0) || 0;
+
+          consumersWithStats.push({
+            ...consumer,
+            total_orders: count || 0,
+            last_order_date: latestOrders?.[0]?.order_date || null,
+            total_order_volume: totalVolume,
+          });
+        }
+
+        return consumersWithStats;
       }
-
-      return consumersWithStats;
-    } else {
-      const searchResults = await useGlobalSearch("consumers", searchQuery);
-
-      const consumersWithStats: ConsumerWithOrderStats[] = [];
-
-      for (const consumer of searchResults) {
-        const { count } = await supabase
-          .from("orders")
-          .select("id", { count: "exact" })
-          .eq("consumer_id", consumer.id);
-
-        const { data: latestOrders } = await supabase
-          .from("orders")
-          .select("order_date, amount")
-          .eq("consumer_id", consumer.id)
-          .order("order_date", { ascending: false })
-          .limit(1);
-
-        const { data: ordersData } = await supabase
-          .from("orders")
-          .select("amount")
-          .eq("consumer_id", consumer.id);
-
-        const totalVolume =
-          ordersData?.reduce((sum, order) => sum + (parseFloat(String(order.amount)) || 0), 0) || 0;
-
-        consumersWithStats.push({
-          ...consumer,
-          total_orders: count || 0,
-          last_order_date: latestOrders?.[0]?.order_date || null,
-          total_order_volume: totalVolume,
-        });
-      }
-
-      return consumersWithStats;
+    } catch (error) {
+      console.error("Error fetching consumers:", error);
+      return [];
     }
-  } catch (error) {
-    console.error("Error fetching consumers:", error);
-    return [];
-  }
-};
+  };
 
-type ConsumerQueryKey = ["consumers", string];
-
-const { data: consumers = [], isLoading, refetch } = useQuery<ConsumerWithOrderStats[], Error, ConsumerWithOrderStats[], ConsumerQueryKey>({
-  queryKey: ["consumers", searchQuery],
-  queryFn: () => fetchConsumers(searchQuery),
-});
+  const { data: consumers = [], isLoading, refetch } = useQuery<
+    ConsumerWithOrderStats[],
+    Error,
+    ConsumerWithOrderStats[],
+    [string, string]
+  >({
+    queryKey: ["consumers", searchQuery],
+    queryFn: () => fetchConsumers(searchQuery),
+  });
 
   return (
     <div className="min-h-screen bg-background">

@@ -8,9 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { ReloadIcon } from "@radix-ui/react-icons";
-import { ArrowRight } from "lucide-react";
+import { Loader, ArrowRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -77,7 +75,7 @@ const OcrPage = () => {
                 />
               </div>
               <Button disabled={isLoading}>
-                {isLoading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                 {t("continue")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
