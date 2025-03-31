@@ -29,16 +29,17 @@ import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import { DateRange } from "react-day-picker";
 import EmptyState from "@/components/dashboard/EmptyState";
+import { OrderType } from "@/types/order";
 
-type OrderType = "fulfillment" | "supplier";
+type OrdersPageTabType = "fulfillment" | "supplier";
 
 const OrdersPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<OrderType>(() => {
+  const [activeTab, setActiveTab] = useState<OrdersPageTabType>(() => {
     const storedTab = sessionStorage.getItem("ordersActiveTab");
     return (storedTab === "fulfillment" || storedTab === "supplier") 
-      ? storedTab as OrderType 
+      ? storedTab as OrdersPageTabType 
       : "fulfillment";
   });
   const [searchQuery, setSearchQuery] = useState<string>(() => {
@@ -48,9 +49,9 @@ const OrdersPage = () => {
     const savedStatus = sessionStorage.getItem("ordersStatusFilter");
     return savedStatus ? savedStatus : null;
   });
-  const [orderTypeFilter, setOrderTypeFilter] = useState<string | null>(() => {
-    const savedType = sessionStorage.getItem("ordersOrderTypeFilter");
-    return savedType || null;
+  const [orderTypeFilter, setOrderTypeFilter] = useState<OrderType | null>(() => {
+    const savedType = sessionStorage.getItem("ordersOrderTypeFilter") as OrderType | "";
+    return savedType ? savedType as OrderType : null;
   });
   const [dateRange, setDateRange] = useState<DateRange>(() => {
     const savedRange = sessionStorage.getItem("ordersDateRange");
@@ -80,7 +81,23 @@ const OrdersPage = () => {
     dateRange.from !== undefined || dateRange.to !== undefined
   ].filter(Boolean).length;
 
-  const fetchOrders = async () => {
+  interface OrderData {
+    id: string;
+    order_number: string;
+    status: string;
+    amount: number;
+    currency: string;
+    order_date: string;
+    image_url: string;
+    notes: string;
+    supplier: { id: string; name: string };
+    order_items: { id: string }[];
+    order_type: OrderType;
+  }
+
+  type OrderQueryKey = [string, OrdersPageTabType, string, string | null, DateRange];
+
+  const fetchOrders = async (): Promise<OrderData[]> => {
     try {
       let query = supabase
         .from("orders")
@@ -94,11 +111,11 @@ const OrdersPage = () => {
           image_url,
           notes,
           supplier:suppliers(id, name),
-          order_items(id)
+          order_items(id),
+          order_type
         `)
         .eq("user_id", user?.id || "")
         .eq("type", activeTab)
-        .eq("order_type", activeTab)
         .order("order_date", { ascending: false })
         .range(0, 50);
 
@@ -106,7 +123,7 @@ const OrdersPage = () => {
         query = query.ilike("order_number", `%${searchQuery}%`);
       }
 
-      if (orderTypeFilter && orderTypeFilter !== "all") {
+      if (orderTypeFilter) {
         query = query.eq("order_type", orderTypeFilter);
       }
 
@@ -134,45 +151,48 @@ const OrdersPage = () => {
         throw new Error(error.message);
       }
 
-      if (data && data.length > 0) {
-        for (const order of data) {
-          try {
-            const { data: imageList, error: imageError } = await supabase.storage
-              .from("order-images")
-              .list(`order-${order.id}`);
+      const ordersWithType = data?.map(order => ({
+        ...order,
+        order_type: order.order_type || activeTab as OrderType
+      })) || [];
+
+      for (const order of ordersWithType) {
+        try {
+          const { data: imageList, error: imageError } = await supabase.storage
+            .from("order-images")
+            .list(`order-${order.id}`);
+          
+          if (!imageError && imageList && imageList.length > 0) {
+            const imageUrls = await Promise.all(
+              imageList.map(async (file) => {
+                const { data: url } = supabase.storage
+                  .from("order-images")
+                  .getPublicUrl(`order-${order.id}/${file.name}`);
+                return url.publicUrl;
+              })
+            );
             
-            if (!imageError && imageList && imageList.length > 0) {
-              const imageUrls = await Promise.all(
-                imageList.map(async (file) => {
-                  const { data: url } = supabase.storage
-                    .from("order-images")
-                    .getPublicUrl(`order-${order.id}/${file.name}`);
-                  return url.publicUrl;
-                })
-              );
-              
-              if (imageUrls.length > 0) {
-                order.image_url = imageUrls[0];
-                order.notes = JSON.stringify({
-                  originalNotes: order.notes,
-                  imageUrls: imageUrls
-                });
-              }
+            if (imageUrls.length > 0) {
+              order.image_url = imageUrls[0];
+              order.notes = JSON.stringify({
+                originalNotes: order.notes,
+                imageUrls: imageUrls
+              });
             }
-          } catch (imageError) {
-            console.error(`Error fetching images for order ${order.id}:`, imageError);
           }
+        } catch (imageError) {
+          console.error(`Error fetching images for order ${order.id}:`, imageError);
         }
       }
 
-      return data || [];
+      return ordersWithType;
     } catch (error) {
       console.error("Error in fetchOrders:", error);
       return [];
     }
   };
 
-  const { data: orders = [], isLoading, error, refetch } = useQuery({
+  const { data: orders = [], isLoading, error, refetch } = useQuery<OrderData[], Error, OrderData[], OrderQueryKey>({
     queryKey: ["orders", activeTab, searchQuery, statusFilter, dateRange],
     queryFn: fetchOrders,
     enabled: !!user,
@@ -190,7 +210,7 @@ const OrdersPage = () => {
 
   const handleTabChange = (value: string) => {
     if (value === "fulfillment" || value === "supplier") {
-      setActiveTab(value as OrderType);
+      setActiveTab(value as OrdersPageTabType);
     }
   };
 

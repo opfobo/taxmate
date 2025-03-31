@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { invoiceFormSchema, InvoiceFormValues } from "@/lib/validators/invoice-validator";
+import { z } from "zod";
 import { 
   Card, 
   CardContent, 
@@ -33,7 +33,29 @@ import {
 } from "@/components/ui/form";
 import { LoaderCircle, Save, PlusCircle, Trash2, FileCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
+
+// Define schema and form types
+const invoiceFormSchema = z.object({
+  invoice_number: z.string().optional(),
+  invoice_date: z.string().optional(),
+  supplier_name: z.string().optional(),
+  supplier_address: z.string().optional(),
+  supplier_vat: z.string().optional(),
+  customer_name: z.string().optional(),
+  customer_address: z.string().optional(),
+  total_amount: z.string().min(1, "Required").refine((val) => parseFloat(val) >= 0, {
+    message: "Must be >= 0"
+  }),
+  total_tax: z.string().min(1, "Required").refine((val) => parseFloat(val) >= 0, {
+    message: "Must be >= 0"
+  }),
+  total_net: z.string().min(1, "Required").refine((val) => parseFloat(val) >= 0, {
+    message: "Must be >= 0"
+  }),
+  currency: z.enum(["EUR", "USD", "GBP"]).default("EUR")
+});
+
+type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
 
 interface LineItem {
   id: string;
@@ -164,9 +186,7 @@ const OcrInvoiceReview = () => {
             total_amount: data.total_amount?.toString() || "0",
             total_tax: data.total_tax?.toString() || "0",
             total_net: data.total_net?.toString() || "0",
-            currency: (formValues.currency === "EUR" || formValues.currency === "USD" || formValues.currency === "GBP") 
-              ? formValues.currency 
-              : "EUR"
+            currency: data.currency || "EUR"
           });
         }
       } catch (error) {
@@ -302,7 +322,8 @@ const OcrInvoiceReview = () => {
             customer_address: formValues.customer_address
           },
           line_items: orderLineItems,
-          source_order_id: mappingId
+          source_order_id: mappingId,
+          order_type: "supplier" // Default order type to satisfy the type requirement
         })
         .select("id")
         .single();

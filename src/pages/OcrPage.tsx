@@ -1,7 +1,8 @@
+
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,7 @@ const formSchema = z.object({
 const OcrPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [ocrToken, setOcrToken] = useState("");
   const form = useForm<z.infer<typeof formSchema>>({
@@ -42,7 +43,7 @@ const OcrPage = () => {
 
     // Check if the OCR token is valid (replace with your actual validation logic)
     if (values.ocrToken === "valid_token") {
-      router.push("/ocr/upload");
+      navigate("/ocr/upload");
     } else {
       toast({
         title: t("error"),

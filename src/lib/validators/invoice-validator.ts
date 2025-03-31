@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const invoiceFormSchema = z.object({
   invoice_number: z.string().optional(),
-  invoice_date: z.string().optional(), // Kann später zu .refine(...) gemacht werden für Date-Check
+  invoice_date: z.string().optional(),
   supplier_name: z.string().optional(),
   supplier_address: z.string().optional(),
   supplier_vat: z.string().optional(),

@@ -1,3 +1,4 @@
+
 import { useLocation } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useState } from "react";
@@ -127,7 +128,9 @@ const fetchConsumers = async (searchQuery: string): Promise<ConsumerWithOrderSta
   }
 };
 
-const { data: consumers = [], isLoading, refetch } = useQuery<ConsumerWithOrderStats[], Error>({
+type ConsumerQueryKey = ["consumers", string];
+
+const { data: consumers = [], isLoading, refetch } = useQuery<ConsumerWithOrderStats[], Error, ConsumerWithOrderStats[], ConsumerQueryKey>({
   queryKey: ["consumers", searchQuery],
   queryFn: () => fetchConsumers(searchQuery),
 });
