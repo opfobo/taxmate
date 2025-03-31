@@ -195,6 +195,15 @@ export const OcrInvoiceReview = () => {
     try {
       setSaving(true);
       
+      // Convert lineItems to a format compatible with Json type
+      const lineItemsForStorage = lineItems.map(item => ({
+        id: item.id,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_amount: item.total_amount
+      }));
+      
       const { error } = await supabase
         .from("ocr_invoice_mappings")
         .update({
@@ -209,7 +218,7 @@ export const OcrInvoiceReview = () => {
           total_tax: parseFloat(values.total_tax) || 0,
           total_net: parseFloat(values.total_net) || 0,
           currency: values.currency,
-          line_items: lineItems
+          line_items: lineItemsForStorage
         })
         .eq("id", invoiceData.id)
         .eq("user_id", user.id);

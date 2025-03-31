@@ -50,7 +50,7 @@ const ConsumerDetailsDrawer = ({
     if (error) throw error;
     return data ?? [];
   },
-  select: (data): OrderData[] => data, // 👉 Typ klar machen
+  select: (data): OrderData[] => data, // Using explicit return type
 });
 
 
