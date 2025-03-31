@@ -185,7 +185,7 @@ const OcrInvoiceReview = () => {
             total_amount: data.total_amount?.toString() || "0",
             total_tax: data.total_tax?.toString() || "0",
             total_net: data.total_net?.toString() || "0",
-            currency: data.currency || "EUR"
+            currency: ["EUR", "USD", "GBP"].includes(data.currency) ? data.currency as "EUR" | "USD" | "GBP" : "EUR",
           });
         }
       } catch (error) {
