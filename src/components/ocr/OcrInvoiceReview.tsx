@@ -76,10 +76,6 @@ interface FormValues {
   currency: string;
 }
 
-useEffect(() => {
-  console.log("OCR Review Params →", { requestId, user });
-  console.log("OCR Review Debug", {requestId, currentUserId: user?.id,});
-
 export const OcrInvoiceReview = () => {
   const { requestId } = useParams<{ requestId: string }>();
   const { user } = useAuth();
@@ -89,6 +85,8 @@ export const OcrInvoiceReview = () => {
   const [confirming, setConfirming] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceMapping | null>(null);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  console.log("OCR Review Params →", { requestId, user });
+  console.log("OCR Review Debug", {requestId, currentUserId: user?.id,});
 
   const form = useForm<FormValues>({
     defaultValues: {
