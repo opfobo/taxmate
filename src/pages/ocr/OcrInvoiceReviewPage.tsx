@@ -1,6 +1,6 @@
 
-import { OcrInvoiceReview } from "@/components/ocr/OcrInvoiceReview";
-import PageLayout from "@/components/PageLayout";
+import { PageLayout } from "@/components/PageLayout";
+import OcrInvoiceReview from "@/components/ocr/OcrInvoiceReview";
 
 const OcrInvoiceReviewPage = () => {
   return (

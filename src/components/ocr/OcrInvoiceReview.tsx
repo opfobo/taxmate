@@ -122,8 +122,41 @@ export const OcrInvoiceReview = () => {
         }
 
         if (data) {
-          setInvoiceData(data);
-          setLineItems(data.line_items || []);
+          // Convert line_items from JSON to LineItem[] type
+          const typedLineItems = Array.isArray(data.line_items) 
+            ? data.line_items.map((item: any): LineItem => ({
+                id: item.id || crypto.randomUUID(),
+                description: item.description || "",
+                quantity: Number(item.quantity) || 0,
+                unit_price: Number(item.unit_price) || 0,
+                total_amount: Number(item.total_amount) || 0
+              }))
+            : [];
+          
+          // Create a properly typed invoice mapping
+          const typedInvoiceData: InvoiceMapping = {
+            id: data.id,
+            user_id: data.user_id,
+            ocr_request_id: data.ocr_request_id,
+            invoice_number: data.invoice_number,
+            invoice_date: data.invoice_date,
+            supplier_name: data.supplier_name,
+            supplier_address: data.supplier_address,
+            supplier_vat: data.supplier_vat,
+            customer_name: data.customer_name,
+            customer_address: data.customer_address,
+            total_amount: data.total_amount,
+            total_tax: data.total_tax,
+            total_net: data.total_net,
+            currency: data.currency || "EUR",
+            line_items: typedLineItems,
+            status: data.status,
+            created_at: data.created_at,
+            confirmed_at: data.confirmed_at
+          };
+          
+          setInvoiceData(typedInvoiceData);
+          setLineItems(typedLineItems);
           
           // Populate form with data
           form.reset({
@@ -166,7 +199,7 @@ export const OcrInvoiceReview = () => {
         .from("ocr_invoice_mappings")
         .update({
           invoice_number: values.invoice_number,
-          invoice_date: values.invoice_date ? new Date(values.invoice_date) : null,
+          invoice_date: values.invoice_date,
           supplier_name: values.supplier_name,
           supplier_address: values.supplier_address,
           supplier_vat: values.supplier_vat,
@@ -271,7 +304,7 @@ export const OcrInvoiceReview = () => {
         description: "Invoice confirmed successfully. Order will be created."
       });
       
-      // Navigate to orders page (to be implemented)
+      // Navigate to orders page
       navigate("/dashboard/orders/purchases");
     } catch (error) {
       console.error("Error confirming invoice:", error);
