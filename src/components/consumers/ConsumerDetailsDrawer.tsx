@@ -50,7 +50,15 @@ const ConsumerDetailsDrawer = ({
     if (error) throw error;
     return data ?? [];
   },
-  select: (data): OrderData[] => data, // Using explicit return type
+  select: (data): OrderData[] => {
+  return data.map((order) => ({
+    id: order.id,
+    order_number: order.order_number,
+    order_date: order.order_date,
+    amount: order.amount,
+    status: order.status,
+  }));
+},
 });
 
 
