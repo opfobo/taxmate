@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Shopper } from "@/types/shopper";
+import { Consumer } from "@/types/consumer";
 import { Transaction } from "@/pages/TransactionsPage";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,13 +14,13 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, Dr
 import { ArrowLeft, Calendar, Loader2, Mail, MapPin, Phone, Edit } from "lucide-react";
 import OrdersTable from "@/components/orders/OrdersTable";
 import TransactionsTable from "@/components/transactions/TransactionsTable";
-import ShopperEditForm from "./ShopperEditForm";
+import ConsumerEditForm from "./ConsumerEditForm";
 
-interface ShopperDetailsDrawerProps {
-  shopper: Shopper | null;
+interface ConsumerDetailsDrawerProps {
+  consumer: Consumer | null;
   open: boolean;
   onClose: () => void;
-  onShopperUpdated?: () => void;
+  onConsumerUpdated?: () => void;
 }
 
 // Define explicit types to avoid deep type instantiation
@@ -35,59 +36,63 @@ interface OrderData {
   [key: string]: any; // For any other fields
 }
 
-const ShopperDetailsDrawer = ({ 
-  shopper, 
+const ConsumerDetailsDrawer = ({ 
+  consumer, 
   open, 
   onClose,
-  onShopperUpdated
-}: ShopperDetailsDrawerProps) => {
+  onConsumerUpdated
+}: ConsumerDetailsDrawerProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("info");
   const [showEditForm, setShowEditForm] = useState(false);
 
-  const { data: orders, isLoading: isOrdersLoading } = useQuery<OrderData[], Error>({
-    queryKey: ["user-orders", shopper?.id],
+  const { data: orders = [], isLoading: isOrdersLoading } = useQuery<OrderData[], Error>({
+    queryKey: ["user-orders", consumer?.id],
     queryFn: async () => {
-      if (!shopper?.id) return [];
+      if (!consumer?.id) return [];
       
       const { data, error } = await supabase
         .from("orders")
         .select("*")
-        .eq("user_id", shopper.id)
+        .eq("user_id", consumer.id)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
       
-      return data || [];
+      // Ensure the returned data matches OrderData interface
+      return (data || []).map(item => ({
+        ...item,
+        order_type: item.order_type || 'unknown'
+      })) as OrderData[];
     },
-    enabled: !!shopper?.id && open,
+    enabled: !!consumer?.id && open,
   });
 
-  const { data: transactions, isLoading: isTransactionsLoading } = useQuery({
-    queryKey: ["user-transactions", shopper?.id],
+  const { data: transactions = [], isLoading: isTransactionsLoading } = useQuery<Transaction[], Error>({
+    queryKey: ["user-transactions", consumer?.id],
     queryFn: async () => {
-      if (!shopper?.id) return [];
+      if (!consumer?.id) return [];
       
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
-        .eq("user_id", shopper.id)
+        .eq("user_id", consumer.id)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
       
-      return data as Transaction[];
+      return data as Transaction[] || [];
     },
-    enabled: !!shopper?.id && open,
+    enabled: !!consumer?.id && open,
   });
 
   const handleEditComplete = () => {
     setShowEditForm(false);
-    queryClient.invalidateQueries({ queryKey: ["shoppers", user?.id] });
-    if (onShopperUpdated) {
-      onShopperUpdated();
+    queryClient.invalidateQueries({ queryKey: ["consumers", user?.id] });
+    if (onConsumerUpdated) {
+      onConsumerUpdated();
     }
   };
 
@@ -99,17 +104,17 @@ const ShopperDetailsDrawer = ({
     console.log("Delete transaction:", id);
   };
 
-  if (!shopper) return null;
+  if (!consumer) return null;
 
   const formatAddress = () => {
     const parts = [
-      shopper.address_line1,
-      shopper.address_line2,
-      shopper.city && shopper.postal_code 
-        ? `${shopper.postal_code} ${shopper.city}`
-        : shopper.city || shopper.postal_code,
-      shopper.region,
-      shopper.country
+      consumer.address_line1,
+      consumer.address_line2,
+      consumer.city && consumer.postal_code 
+        ? `${consumer.postal_code} ${consumer.city}`
+        : consumer.city || consumer.postal_code,
+      consumer.region,
+      consumer.country
     ].filter(Boolean);
     
     return parts.join(", ");
@@ -133,11 +138,10 @@ const ShopperDetailsDrawer = ({
             {t("back")}
           </Button>
           <DrawerTitle className="text-2xl">
-            {shopper.salutation && `${shopper.salutation} `}
-            {shopper.first_name} {shopper.last_name}
+            {consumer.full_name}
           </DrawerTitle>
           <DrawerDescription>
-            {t("shopper_since")} {format(new Date(shopper.created_at), "PP")}
+            {t("consumer_since")} {format(new Date(consumer.created_at || new Date()), "PP")}
           </DrawerDescription>
         </DrawerHeader>
 
@@ -152,8 +156,8 @@ const ShopperDetailsDrawer = ({
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {t("back_to_details")}
               </Button>
-              <ShopperEditForm 
-                shopper={shopper} 
+              <ConsumerEditForm 
+                consumer={consumer} 
                 onComplete={handleEditComplete} 
                 onCancel={() => setShowEditForm(false)} 
               />
@@ -183,7 +187,7 @@ const ShopperDetailsDrawer = ({
                         <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
                         <div>
                           <p className="font-medium">{t("email")}</p>
-                          <p className="text-muted-foreground">{shopper.email || t("not_provided")}</p>
+                          <p className="text-muted-foreground">{consumer.email || t("not_provided")}</p>
                         </div>
                       </div>
                       
@@ -191,7 +195,7 @@ const ShopperDetailsDrawer = ({
                         <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
                         <div>
                           <p className="font-medium">{t("phone")}</p>
-                          <p className="text-muted-foreground">{shopper.phone || t("not_provided")}</p>
+                          <p className="text-muted-foreground">{consumer.phone || t("not_provided")}</p>
                         </div>
                       </div>
                       
@@ -208,7 +212,7 @@ const ShopperDetailsDrawer = ({
                         <div>
                           <p className="font-medium">{t("registered_on")}</p>
                           <p className="text-muted-foreground">
-                            {format(new Date(shopper.created_at), "PPP")}
+                            {format(new Date(consumer.created_at || new Date()), "PPP")}
                           </p>
                         </div>
                       </div>
@@ -222,7 +226,7 @@ const ShopperDetailsDrawer = ({
                   <CardHeader>
                     <CardTitle>{t("order_history")}</CardTitle>
                     <CardDescription>
-                      {t("showing_all_orders_for_this_shopper")}
+                      {t("showing_all_orders_for_this_consumer")}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -230,7 +234,7 @@ const ShopperDetailsDrawer = ({
                       <div className="flex justify-center py-8">
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       </div>
-                    ) : orders && orders.length > 0 ? (
+                    ) : orders.length > 0 ? (
                       <OrdersTable 
                         orders={orders} 
                         isLoading={false} 
@@ -251,7 +255,7 @@ const ShopperDetailsDrawer = ({
                   <CardHeader>
                     <CardTitle>{t("transaction_history")}</CardTitle>
                     <CardDescription>
-                      {t("showing_all_transactions_for_this_shopper")}
+                      {t("showing_all_transactions_for_this_consumer")}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -259,7 +263,7 @@ const ShopperDetailsDrawer = ({
                       <div className="flex justify-center py-8">
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       </div>
-                    ) : transactions && transactions.length > 0 ? (
+                    ) : transactions.length > 0 ? (
                       <TransactionsTable 
                         transactions={transactions} 
                         onEdit={handleEditTransaction}
@@ -289,4 +293,4 @@ const ShopperDetailsDrawer = ({
   );
 };
 
-export default ShopperDetailsDrawer;
+export default ConsumerDetailsDrawer;

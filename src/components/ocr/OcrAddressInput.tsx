@@ -82,7 +82,6 @@ const OcrAddressInput = () => {
       toast({
         title: t("ocr.error"),
         description: t("ocr.empty_address_error"),
-        variant: "destructive",
       });
       setParseError(t("ocr.empty_address_error"));
       return;
