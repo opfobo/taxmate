@@ -189,6 +189,77 @@ export type Database = {
         }
         Relationships: []
       }
+      ocr_invoice_mappings: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string | null
+          currency: string | null
+          customer_address: string | null
+          customer_name: string | null
+          id: string
+          invoice_date: string | null
+          invoice_number: string | null
+          line_items: Json | null
+          ocr_request_id: string
+          status: string | null
+          supplier_address: string | null
+          supplier_name: string | null
+          supplier_vat: string | null
+          total_amount: number | null
+          total_net: number | null
+          total_tax: number | null
+          user_id: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          customer_address?: string | null
+          customer_name?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          line_items?: Json | null
+          ocr_request_id: string
+          status?: string | null
+          supplier_address?: string | null
+          supplier_name?: string | null
+          supplier_vat?: string | null
+          total_amount?: number | null
+          total_net?: number | null
+          total_tax?: number | null
+          user_id: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          customer_address?: string | null
+          customer_name?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          line_items?: Json | null
+          ocr_request_id?: string
+          status?: string | null
+          supplier_address?: string | null
+          supplier_name?: string | null
+          supplier_vat?: string | null
+          total_amount?: number | null
+          total_net?: number | null
+          total_tax?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ocr_invoice_mappings_ocr_request_id_fkey"
+            columns: ["ocr_request_id"]
+            isOneToOne: false
+            referencedRelation: "ocr_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ocr_requests: {
         Row: {
           created_at: string | null

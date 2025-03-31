@@ -26,6 +26,7 @@ import Privacy from "./pages/Privacy";
 import Contact from "./pages/Contact";
 import Impressum from "./pages/Impressum";
 import OcrTestPage from "@/pages/test/OcrTestPage";
+import OcrInvoiceReviewPage from "@/pages/ocr/OcrInvoiceReviewPage";
 
 
 // New Order Pages
@@ -59,7 +60,6 @@ const App = () => (
               <Route path="/contact" element={<Contact />} />
               <Route path="/impressum" element={<Impressum />} />
               <Route path="/test/ocr" element={<OcrTestPage />} />
-
               
               {/* Protected Routes */}
               <Route path="/dashboard" element={
@@ -75,6 +75,13 @@ const App = () => (
               <Route path="/settings" element={
                 <ProtectedRoute>
                   <SettingsPage />
+                </ProtectedRoute>
+              } />
+              
+              {/* OCR Routes */}
+              <Route path="/ocr/review/:requestId" element={
+                <ProtectedRoute>
+                  <OcrInvoiceReviewPage />
                 </ProtectedRoute>
               } />
               

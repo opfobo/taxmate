@@ -1,4 +1,6 @@
-import { useState, useRef, ChangeEvent } from "react";
+
+import { useState, useRef, ChangeEvent, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +25,7 @@ export const OcrUpload = ({
   mimeTypes = ["application/pdf", "image/jpeg", "image/png"],
   fileSizeLimitMB = 10,
 }: OcrUploadProps) => {
+  const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -44,9 +47,9 @@ export const OcrUpload = ({
     if (!error) setTokens(data?.tokens || 0);
   };
 
-  useState(() => {
+  useEffect(() => {
     fetchTokens();
-  });
+  }, [user]);
 
   const resetStates = () => {
     setIsUploading(false);
@@ -56,6 +59,70 @@ export const OcrUpload = ({
     setSuccess(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+  
+  // Process OCR data and create invoice mapping
+  const processOcrResult = async (result: any, requestId: string) => {
+    if (!user) return;
+    
+    try {
+      // Extract invoice fields from Mindee result
+      const prediction = result.document.inference.prediction;
+      
+      // Extract basic invoice information
+      const invoiceNumber = prediction.invoice_number?.value || null;
+      const invoiceDate = prediction.date?.value || null;
+      const totalAmount = prediction.total_amount?.value || null;
+      const totalNet = prediction.total_net?.value || null;
+      const totalTax = prediction.total_tax?.value || null;
+      
+      // Extract supplier information
+      const supplierName = prediction.supplier_name?.value || null;
+      const supplierAddress = prediction.supplier_address?.value || null;
+      
+      // Extract customer information
+      const customerName = prediction.customer_name?.value || null;
+      const customerAddress = prediction.customer_address?.value || null;
+      
+      // Extract line items
+      const lineItems = prediction.line_items?.map((item: any, index: number) => ({
+        id: uuidv4(),
+        description: item.description || `Item ${index + 1}`,
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0,
+        total_amount: item.total_amount || 0
+      })) || [];
+
+      // Create invoice mapping
+      const { data: mappingData, error: mappingError } = await supabase
+        .from('ocr_invoice_mappings')
+        .insert({
+          user_id: user.id,
+          ocr_request_id: requestId,
+          invoice_number: invoiceNumber,
+          invoice_date: invoiceDate,
+          supplier_name: supplierName,
+          supplier_address: supplierAddress,
+          supplier_vat: null, // Not provided by Mindee directly
+          customer_name: customerName,
+          customer_address: customerAddress,
+          total_amount: totalAmount,
+          total_tax: totalTax,
+          total_net: totalNet,
+          currency: prediction.locale?.currency || 'EUR',
+          line_items: lineItems,
+          status: 'pending'
+        })
+        .select('id')
+        .single();
+
+      if (mappingError) throw new Error(`Failed to create invoice mapping: ${mappingError.message}`);
+      
+      return mappingData.id;
+    } catch (err: any) {
+      console.error('Error processing OCR result:', err);
+      throw err;
     }
   };
 
@@ -166,9 +233,18 @@ export const OcrUpload = ({
         processed_at: new Date().toISOString()
       }).eq('id', requestId);
 
+      // Process OCR result and create invoice mapping
+      const mappingId = await processOcrResult(result, requestId);
+      
       onOcrResult(result);
       setSuccess(true);
-      toast({ title: "OCR completed", description: "Mindee API returned data." });
+      toast({ 
+        title: "OCR completed", 
+        description: "Document processed successfully. You can now review the extracted data." 
+      });
+      
+      // Navigate to invoice review page
+      navigate(`/ocr/review/${requestId}`);
 
     } catch (err: any) {
       setError(err.message);
