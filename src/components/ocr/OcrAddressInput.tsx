@@ -183,7 +183,7 @@ const OcrAddressInput = () => {
       if (Object.keys(errors).length > 0) {
         setValidationErrors(errors);
         const missingFieldsMsg = Object.keys(errors).join(", ");
-        setParseError(t("ocr.incomplete_parse_error", { fields: missingFieldsMsg }));
+        setParseError(`${t("ocr.incomplete_parse_error")}: ${missingFieldsMsg}`);
       } else {
         toast({
           title: t("ocr.success"),
@@ -307,7 +307,7 @@ const OcrAddressInput = () => {
               : t("ocr.parse_incomplete")}
           </AlertTitle>
           <AlertDescription>
-            {t("ocr.parse_stats", { found: parseStats.found, total: parseStats.total })}
+            {`${t("ocr.parse_stats")}: ${parseStats.found} / ${parseStats.total}`}
           </AlertDescription>
         </Alert>
       )}
