@@ -112,6 +112,7 @@ export const OcrUpload = ({
           total_net: totalNet,
           currency: prediction.locale?.currency || 'EUR',
           line_items: lineItems,
+          file_path: `${user.id}/${safeFileName}`
           status: 'pending'
         })
         .select('id')
