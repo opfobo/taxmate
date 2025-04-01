@@ -188,30 +188,40 @@ export const OcrUpload = ({
       if (requestError) throw new Error(`DB insert failed: ${requestError.message}`);
       const requestId = requestData.id;
 
-      const { error: uploadError } = await supabase.storage
-        .from("ocr-temp")
-        .upload(safeFileName, file, {
-          cacheControl: "3600",
-          upsert: false
-        });
+// 1. Upload in ocr-temp für Mindee
+const { error: tempError } = await supabase.storage
+  .from("ocr-temp")
+  .upload(safeFileName, file, {
+    cacheControl: "3600",
+    upsert: false
+  });
 
-      if (uploadError) {
-        await supabase.from('ocr_requests').update({
-          status: 'error',
-          response: { error: uploadError.message },
-          processed_at: new Date().toISOString()
-        }).eq('id', requestId);
-        throw new Error(`Upload failed: ${uploadError.message}`);
-      }
+if (tempError) {
+  await supabase.from("ocr_requests").update({
+    status: "error",
+    response: { error: tempError.message },
+    processed_at: new Date().toISOString()
+  }).eq("id", requestId);
+  throw new Error(`Upload to ocr-temp failed: ${tempError.message}`);
+}
 
-      // Neuer Bucket mit RLS
-const secureBucket = "ocr-files";
+// 2. Upload in ocr-files für Vorschau & Archivierung
 const securePath = `${user.id}/${safeFileName}`;
+const { error: filesError } = await supabase.storage
+  .from("ocr-files")
+  .upload(securePath, file, {
+    cacheControl: "3600",
+    upsert: false
+  });
 
-// Datei kopieren (ocr-temp ➝ ocr-files/userId/...)
-const { error: copyError } = await supabase.storage
-  .from(secureBucket)
-  .copy(safeFileName, securePath);
+if (filesError) {
+  throw new Error(`Upload to ocr-files failed: ${filesError.message}`);
+}
+
+// ✅ URL für Mindee aus dem temp-Bucket abrufen
+const { data: tempUrlData } = supabase.storage.from("ocr-temp").getPublicUrl(safeFileName);
+const fileUrl = tempUrlData.publicUrl;
+
 
 if (copyError) {
   console.error("❗ Fehler beim Kopieren der Datei:", copyError);
