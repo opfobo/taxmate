@@ -64,7 +64,12 @@ const OcrInvoiceReview = () => {
     }
   });
   
+const hasFetchedOnce = React.useRef(false);
+
 useEffect(() => {
+  if (hasFetchedOnce.current) return;
+  hasFetchedOnce.current = true;
+
   let didCancel = false;
   console.log("🔄 useEffect triggered");
 
