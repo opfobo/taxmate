@@ -64,6 +64,14 @@ const OcrInvoiceReview = () => {
     }
   });
 
+  const form = useForm<InvoiceFormValues>({ ... });
+
+const formRef = React.useRef(form);
+
+useEffect(() => {
+  formRef.current = form;
+}, [form]);
+  
 useEffect(() => {
   let didCancel = false;
   console.log("🔄 useEffect triggered");
