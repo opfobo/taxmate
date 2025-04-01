@@ -92,8 +92,32 @@ useEffect(() => {
         return;
       }
 
-      const { publicUrl } = supabase.storage.from("ocr-temp").getPublicUrl(requestData.file_name);
-      if (!didCancel) setPreviewUrl(publicUrl);
+      const fileName = requestData.file_name;
+const targetPath = `ocr-incoming/${fileName}`;
+
+// Datei von ocr-temp nach order-images kopieren
+const { error: copyError } = await supabase.storage
+  .from("ocr-temp")
+  .copy(fileName, targetPath);
+
+if (copyError) {
+  console.error("❗ Fehler beim Kopieren der Datei:", copyError);
+  toast({
+    title: t("error"),
+    description: t("ocr.error_copying_file"),
+    variant: "destructive",
+  });
+} else {
+  // Public URL aus neuem Bucket holen
+  const { publicUrl: newPublicUrl } = supabase.storage
+    .from("order-images")
+    .getPublicUrl(targetPath);
+
+  if (!didCancel) {
+    setPreviewUrl(newPublicUrl);
+  }
+}
+
 
       const { data: mappingData, error: mappingError } = await supabase
         .from("ocr_invoice_mappings")
