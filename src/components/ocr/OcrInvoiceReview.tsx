@@ -68,16 +68,12 @@ const hasFetchedOnce = React.useRef(false);
 
 useEffect(() => {
   if (hasFetchedOnce.current) return;
-  hasFetchedOnce.current = true;
-
+  
   let didCancel = false;
   console.log("🔄 useEffect triggered");
 
   const fetchOcrResult = async () => {
-    if (!requestId) {
-      console.log("❌ No requestId found – aborting");
-      return;
-    }
+    if (!requestId) return;
 
     console.log("📥 Fetching OCR data for requestId:", requestId);
     setIsLoading(true);
@@ -90,7 +86,6 @@ useEffect(() => {
         .single();
 
       if (requestError || !requestData) {
-        console.error("❗ Request fetch error:", requestError);
         if (!didCancel) {
           setIsLoading(false);
           toast({ title: t("error"), description: t("ocr.error_fetching_results"), variant: "destructive" });
@@ -98,13 +93,8 @@ useEffect(() => {
         return;
       }
 
-      const fileName = requestData.file_name;
-      const { publicUrl } = supabase.storage.from("ocr-temp").getPublicUrl(fileName);
-
-      if (!didCancel && publicUrl !== previewUrl) {
-        console.log("📄 Setting preview URL:", publicUrl);
-        setPreviewUrl(publicUrl);
-      }
+      const { publicUrl } = supabase.storage.from("ocr-temp").getPublicUrl(requestData.file_name);
+      if (!didCancel) setPreviewUrl(publicUrl);
 
       const { data: mappingData, error: mappingError } = await supabase
         .from("ocr_invoice_mappings")
@@ -116,10 +106,7 @@ useEffect(() => {
         console.error("❗ Mapping fetch error:", mappingError);
       }
 
-      if (mappingData && !didCancel) {
-        console.log("✅ Mapping data loaded:", mappingData);
-
-        // Vergleiche vorherigen Zustand, um reset() nicht unnötig zu triggern
+      if (!didCancel && mappingData) {
         const currentValues = form.getValues();
         const newValues = {
           invoice_number: mappingData.invoice_number || "",
@@ -132,25 +119,21 @@ useEffect(() => {
           currency: (mappingData.currency as Currency) || "EUR",
           notes: "",
         };
-
-        const isDifferent = JSON.stringify(currentValues) !== JSON.stringify(newValues);
-        console.log("🧪 Should reset form?", isDifferent);
-
-        if (isDifferent) {
-          form.reset(newValues);;
+        if (JSON.stringify(currentValues) !== JSON.stringify(newValues)) {
+          form.reset(newValues);
         }
-
         setInvoiceMapping(mappingData);
       }
 
       if (!didCancel) {
         setOcrResult(requestData.response);
         setIsLoading(false);
+        hasFetchedOnce.current = true; // ✅ hier!
       }
 
-    } catch (error: any) {
+    } catch (err) {
       if (!didCancel) {
-        console.error("🔥 Fatal error in fetchOcrResult:", error);
+        console.error("🔥 Fatal error in fetchOcrResult:", err);
         toast({ title: t("error"), description: t("ocr.error_fetching_results"), variant: "destructive" });
         setIsLoading(false);
       }
@@ -163,7 +146,7 @@ useEffect(() => {
     console.log("🛑 useEffect cleanup");
     didCancel = true;
   };
-}, [requestId, t]); // ✅ KEIN "form" hier!
+}, [requestId, t]);
   
   const handleSaveInvoice = async (values: InvoiceFormValues) => {
     if (!requestId) return;
