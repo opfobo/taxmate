@@ -63,7 +63,8 @@ export const OcrUpload = ({
   };
   
   // Process OCR data and create invoice mapping
-  const processOcrResult = async (result: any, requestId: string) => {
+  const processOcrResult = async (result: any, requestId: string, safeFileName: string) => {
+
     if (!user) return;
     
     try {
@@ -257,7 +258,7 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
     }).eq('id', requestId);
 
     // Create invoice mapping
-    const mappingId = await processOcrResult(result, requestId);
+    const mappingId = await processOcrResult(result, requestId, safeFileName);
 
     onOcrResult(result);
     setSuccess(true);
