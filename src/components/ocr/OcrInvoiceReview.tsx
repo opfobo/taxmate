@@ -11,6 +11,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import DocumentPreview from "@/components/ocr/DocumentPreview"; // 🆕 Importieren
 import { 
   Select, 
   SelectContent, 
@@ -367,37 +368,7 @@ useEffect(() => {
               <CardTitle>{t("ocr.document_preview")}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center">
-              {previewUrl ? (
-                <div className="border rounded-md overflow-hidden">
-                  {previewUrl.toLowerCase().endsWith('.pdf') ? (
-                    <div className="aspect-[3/4] bg-muted flex items-center justify-center p-4">
-                      <div className="flex flex-col items-center text-muted-foreground">
-                        <FileText className="h-10 w-10 mb-2" />
-                        <p className="text-xs">{t("ocr.pdf_preview")}</p>
-                        <a 
-                          href={previewUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-primary mt-2 hover:underline"
-                        >
-                          {t("ocr.open_pdf")}
-                        </a>
-                      </div>
-                    </div>
-                  ) : (
-                    <img 
-                      src={previewUrl} 
-                      alt="Document Preview"
-                      className="max-w-full object-contain"
-                    />
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center text-muted-foreground p-8">
-                  <AlertTriangle className="h-8 w-8 mb-2" />
-                  <p className="text-sm">{t("ocr.no_preview_available")}</p>
-                </div>
-              )}
+              <DocumentPreview url={previewUrl} />
             </CardContent>
           </Card>
         </div>
