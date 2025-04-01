@@ -63,14 +63,6 @@ const OcrInvoiceReview = () => {
       notes: ""
     }
   });
-
-  const form = useForm<InvoiceFormValues>({ ... });
-
-const formRef = React.useRef(form);
-
-useEffect(() => {
-  formRef.current = form;
-}, [form]);
   
 useEffect(() => {
   let didCancel = false;
@@ -123,7 +115,7 @@ useEffect(() => {
         console.log("✅ Mapping data loaded:", mappingData);
 
         // Vergleiche vorherigen Zustand, um reset() nicht unnötig zu triggern
-        const currentValues = formRef.current.getValues();
+        const currentValues = form.getValues();
         const newValues = {
           invoice_number: mappingData.invoice_number || "",
           invoice_date: mappingData.invoice_date || "",
@@ -140,7 +132,7 @@ useEffect(() => {
         console.log("🧪 Should reset form?", isDifferent);
 
         if (isDifferent) {
-          formRef.current.reset(newValues);
+          form.reset(newValues);;
         }
 
         setInvoiceMapping(mappingData);
