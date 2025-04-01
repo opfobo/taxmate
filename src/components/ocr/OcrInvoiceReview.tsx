@@ -121,13 +121,14 @@ if (!didCancel && mappingData) {
   }
 
   // ✅ Vorschau-URL aus ocr-files laden
-  if (mappingData.file_path) {
-    const { data: previewData } = supabase.storage
-      .from("ocr-files")
-      .getPublicUrl(mappingData.file_path);
-    if (previewData?.publicUrl && !didCancel) {
-      setPreviewUrl(previewData.publicUrl);
-    }
+const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+  .from("ocr-files")
+  .createSignedUrl(mappingData.file_path, 60 * 60); // 1 Stunde gültig
+
+if (!signedUrlError && signedUrlData?.signedUrl && !didCancel) {
+  setPreviewUrl(signedUrlData.signedUrl);
+}
+
   }
 
   setInvoiceMapping(mappingData);
