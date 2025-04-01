@@ -1,5 +1,5 @@
 // components/ocr/DocumentPreview.tsx
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { FileText, AlertTriangle } from "lucide-react";
 
 interface DocumentPreviewProps {
@@ -7,6 +7,43 @@ interface DocumentPreviewProps {
 }
 
 const DocumentPreview: React.FC<DocumentPreviewProps> = ({ url }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const isPDF = url?.toLowerCase().endsWith(".pdf");
+  const isImage = url ? /\.(jpg|jpeg|png|webp)$/i.test(url) : false;
+
+  useEffect(() => {
+    if (!url || !isPDF || !canvasRef.current) return;
+
+    const loadPdf = async () => {
+      // Dynamisch PDF.js laden (über CDN)
+      // @ts-ignore
+      const pdfjsLib = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+
+      const loadingTask = pdfjsLib.getDocument(url);
+      const pdf = await loadingTask.promise;
+      const page = await pdf.getPage(1);
+
+      const viewport = page.getViewport({ scale: 1.5 });
+      const canvas = canvasRef.current;
+      const context = canvas.getContext("2d");
+
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport,
+      };
+
+      await page.render(renderContext).promise;
+    };
+
+    loadPdf().catch((err) => {
+      console.error("PDF render error:", err);
+    });
+  }, [url, isPDF]);
+
   if (!url) {
     return (
       <div className="flex flex-col items-center text-muted-foreground p-8">
@@ -16,24 +53,20 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ url }) => {
     );
   }
 
-  const isPDF = url.toLowerCase().endsWith(".pdf");
-  const isImage = /\.(jpg|jpeg|png|webp)$/i.test(url);
-
   return (
-    <div className="border rounded-md overflow-hidden w-full">
+    <div className="border rounded-md overflow-hidden w-full bg-muted flex flex-col items-center p-4">
       {isPDF ? (
-        <div className="aspect-[3/4] bg-muted flex flex-col items-center justify-center p-4 text-muted-foreground">
-          <FileText className="h-10 w-10 mb-2" />
-          <p className="text-xs">PDF-Datei</p>
+        <>
+          <canvas ref={canvasRef} className="max-w-full max-h-[600px] mb-3" />
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-primary mt-2 hover:underline"
+            className="text-xs text-primary hover:underline"
           >
             PDF im neuen Tab öffnen
           </a>
-        </div>
+        </>
       ) : isImage ? (
         <img
           src={url}
