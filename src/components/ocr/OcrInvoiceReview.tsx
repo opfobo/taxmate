@@ -1,107 +1,54 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+
+// Fixing the currency type error
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "@/hooks/useTranslation";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/context/AuthContext";
-import { toast } from "@/hooks/use-toast";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
+import { Loader2, ArrowLeft, Check, Clock, FileText, AlertTriangle } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel 
-} from "@/components/ui/form";
-import { LoaderCircle, Save, PlusCircle, Trash2, FileCheck } from "lucide-react";
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { z } from "zod";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
+type Currency = "EUR" | "USD" | "GBP";
+
+// Define a schema for the form values
 const invoiceFormSchema = z.object({
   invoice_number: z.string().optional(),
   invoice_date: z.string().optional(),
-  supplier_name: z.string().optional(),
+  supplier_name: z.string().min(1, "Supplier name is required"),
   supplier_address: z.string().optional(),
   supplier_vat: z.string().optional(),
-  customer_name: z.string().optional(),
-  customer_address: z.string().optional(),
-  total_amount: z.string().min(1, "Required").refine((val) => parseFloat(val) >= 0, {
-    message: "Must be >= 0"
-  }),
-  total_tax: z.string().min(1, "Required").refine((val) => parseFloat(val) >= 0, {
-    message: "Must be >= 0"
-  }),
-  total_net: z.string().min(1, "Required").refine((val) => parseFloat(val) >= 0, {
-    message: "Must be >= 0"
-  }),
-  currency: z.enum(["EUR", "USD", "GBP"]).default("EUR")
+  total_amount: z.number().positive("Amount must be positive"),
+  total_tax: z.number().min(0, "Tax cannot be negative").optional(),
+  currency: z.enum(["EUR", "USD", "GBP"] as const),
+  notes: z.string().optional()
 });
 
 type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
 
-interface LineItem {
-  id: string;
-  description: string;
-  quantity: number;
-  unit_price: number;
-  total_amount: number;
-}
-
-interface InvoiceMapping {
-  id: string;
-  user_id: string;
-  ocr_request_id: string;
-  invoice_number: string | null;
-  invoice_date: string | null;
-  supplier_name: string | null;
-  supplier_address: string | null;
-  supplier_vat: string | null;
-  customer_name: string | null;
-  customer_address: string | null;
-  total_amount: number | null;
-  total_tax: number | null;
-  total_net: number | null;
-  currency: string;
-  line_items: LineItem[];
-  status: string;
-  created_at: string;
-  confirmed_at: string | null;
-}
-
 const OcrInvoiceReview = () => {
+  const { t } = useTranslation();
   const { requestId } = useParams<{ requestId: string }>();
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [confirming, setConfirming] = useState(false);
-  const [invoiceData, setInvoiceData] = useState<InvoiceMapping | null>(null);
-  const [lineItems, setLineItems] = useState<LineItem[]>([]);
-
-  console.log("OCR Review Debug", {
-    requestId,
-    currentUserId: user?.id,
-  });
-
-  console.log("OCR Review Params →", { requestId, user });
-
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [ocrResult, setOcrResult] = useState<any>(null);
+  const [invoiceMapping, setInvoiceMapping] = useState<any>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceFormSchema),
     defaultValues: {
@@ -110,637 +57,338 @@ const OcrInvoiceReview = () => {
       supplier_name: "",
       supplier_address: "",
       supplier_vat: "",
-      customer_name: "",
-      customer_address: "",
-      total_amount: "0",
-      total_tax: "0",
-      total_net: "0",
-      currency: "EUR"
+      total_amount: 0,
+      total_tax: 0,
+      currency: "EUR" as Currency,  // Explicitly type as Currency
+      notes: ""
     }
   });
-  
-  const currency = form.watch("currency");
-  const totalAmount = form.watch("total_amount");
 
   useEffect(() => {
-    if (!requestId || !user) return;
-
-    const fetchInvoiceData = async () => {
+    const fetchOcrResult = async () => {
+      if (!requestId) {
+        navigate("/ocr");
+        return;
+      }
+      
+      setIsLoading(true);
+      
       try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from("ocr_invoice_mappings")
-          .select("*")
-          .eq("ocr_request_id", requestId)
-          .eq("user_id", user.id)
+        // Fetch OCR request
+        const { data: requestData, error: requestError } = await supabase
+          .from('ocr_requests')
+          .select('*')
+          .eq('id', requestId)
           .single();
-
-        if (error) {
-          throw error;
+          
+        if (requestError) throw new Error(requestError.message);
+        if (!requestData) throw new Error("OCR request not found");
+        
+        // Fetch file URL
+        const fileName = requestData.file_name;
+        const { data: urlData } = supabase.storage.from("ocr-temp").getPublicUrl(fileName);
+        setPreviewUrl(urlData.publicUrl);
+        
+        // Fetch invoice mapping
+        const { data: mappingData, error: mappingError } = await supabase
+          .from('ocr_invoice_mappings')
+          .select('*')
+          .eq('ocr_request_id', requestId)
+          .single();
+          
+        if (mappingError && mappingError.code !== 'PGRST116') {
+          throw new Error(mappingError.message);
         }
-
-        if (data) {
-          const typedLineItems = Array.isArray(data.line_items) 
-            ? data.line_items.map((item: any): LineItem => ({
-                id: item.id || crypto.randomUUID(),
-                description: item.description || "",
-                quantity: Number(item.quantity) || 0,
-                unit_price: Number(item.unit_price) || 0,
-                total_amount: Number(item.total_amount) || 0
-              }))
-            : [];
+        
+        if (mappingData) {
+          setInvoiceMapping(mappingData);
           
-          const typedInvoiceData: InvoiceMapping = {
-            id: data.id,
-            user_id: data.user_id,
-            ocr_request_id: data.ocr_request_id,
-            invoice_number: data.invoice_number,
-            invoice_date: data.invoice_date,
-            supplier_name: data.supplier_name,
-            supplier_address: data.supplier_address,
-            supplier_vat: data.supplier_vat,
-            customer_name: data.customer_name,
-            customer_address: data.customer_address,
-            total_amount: data.total_amount,
-            total_tax: data.total_tax,
-            total_net: data.total_net,
-            currency: data.currency || "EUR",
-            line_items: typedLineItems,
-            status: data.status,
-            created_at: data.created_at,
-            confirmed_at: data.confirmed_at
-          };
-          
-          setInvoiceData(typedInvoiceData);
-          setLineItems(typedLineItems);
-          
+          // Set form values
           form.reset({
-            invoice_number: data.invoice_number || "",
-            invoice_date: data.invoice_date ? new Date(data.invoice_date).toISOString().split('T')[0] : "",
-            supplier_name: data.supplier_name || "",
-            supplier_address: data.supplier_address || "",
-            supplier_vat: data.supplier_vat || "",
-            customer_name: data.customer_name || "",
-            customer_address: data.customer_address || "",
-            total_amount: data.total_amount?.toString() || "0",
-            total_tax: data.total_tax?.toString() || "0",
-            total_net: data.total_net?.toString() || "0",
-            currency: ["EUR", "USD", "GBP"].includes(data.currency) ? data.currency as "EUR" | "USD" | "GBP" : "EUR",
+            invoice_number: mappingData.invoice_number || "",
+            invoice_date: mappingData.invoice_date || "",
+            supplier_name: mappingData.supplier_name || "",
+            supplier_address: mappingData.supplier_address || "",
+            supplier_vat: mappingData.supplier_vat || "",
+            total_amount: mappingData.total_amount || 0,
+            total_tax: mappingData.total_tax || 0,
+            currency: (mappingData.currency as Currency) || "EUR",
+            notes: ""
           });
         }
-      } catch (error) {
-        console.error("Error fetching invoice data:", error);
+        
+        // Set OCR result
+        setOcrResult(requestData.response);
+        
+      } catch (error: any) {
+        console.error("Error fetching OCR result:", error);
         toast({
-          title: "Error",
-          description: "Failed to load invoice data",
+          title: t("error"),
+          description: error.message || t("ocr.error_fetching_results"),
           variant: "destructive"
         });
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
-
-    fetchInvoiceData();
-  }, [requestId, user, form]);
-
-  const onSubmit = async (values: InvoiceFormValues) => {
-    if (!invoiceData?.id || !user) return;
+    
+    fetchOcrResult();
+  }, [requestId, navigate, t, form]);
+  
+  const handleSaveInvoice = async (values: InvoiceFormValues) => {
+    if (!requestId) return;
+    
+    setIsSaving(true);
     
     try {
-      setSaving(true);
-      
-      const lineItemsForStorage = lineItems.map(item => ({
-        id: item.id,
-        description: item.description,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_amount: item.total_amount
-      }));
-      
-      let validatedCurrency: "EUR" | "USD" | "GBP" = "EUR";
-      if (values.currency === "USD" || values.currency === "GBP") {
-        validatedCurrency = values.currency;
+      // Update invoice mapping
+      if (invoiceMapping?.id) {
+        const { error } = await supabase
+          .from('ocr_invoice_mappings')
+          .update({
+            invoice_number: values.invoice_number,
+            invoice_date: values.invoice_date,
+            supplier_name: values.supplier_name,
+            supplier_address: values.supplier_address,
+            supplier_vat: values.supplier_vat,
+            total_amount: values.total_amount,
+            total_tax: values.total_tax,
+            currency: values.currency,
+            notes: values.notes,
+            status: 'reviewed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', invoiceMapping.id);
+          
+        if (error) throw error;
       }
       
-      const { error } = await supabase
-        .from("ocr_invoice_mappings")
-        .update({
-          invoice_number: values.invoice_number,
-          invoice_date: values.invoice_date,
-          supplier_name: values.supplier_name,
-          supplier_address: values.supplier_address,
-          supplier_vat: values.supplier_vat,
-          customer_name: values.customer_name,
-          customer_address: values.customer_address,
-          total_amount: parseFloat(values.total_amount) || 0,
-          total_tax: parseFloat(values.total_tax) || 0,
-          total_net: parseFloat(values.total_net) || 0,
-          currency: validatedCurrency,
-          line_items: lineItemsForStorage
-        })
-        .eq("id", invoiceData.id)
-        .eq("user_id", user.id);
-
-      if (error) throw error;
+      // Here you would typically create an invoice in your system
+      // or navigate to the invoice creation page with prefilled data
       
       toast({
-        title: "Success",
-        description: "Invoice data saved successfully"
+        title: t("success"),
+        description: t("ocr.invoice_saved")
       });
-    } catch (error) {
-      console.error("Error saving invoice data:", error);
+      
+      // Navigate to appropriate page
+      navigate("/dashboard/orders");
+      
+    } catch (error: any) {
+      console.error("Error saving invoice:", error);
       toast({
-        title: "Error",
-        description: "Failed to save invoice data",
+        title: t("error"),
+        description: error.message || t("ocr.error_saving_invoice"),
         variant: "destructive"
       });
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   };
-
-  const addLineItem = () => {
-    const newItem: LineItem = {
-      id: crypto.randomUUID(),
-      description: "",
-      quantity: 1,
-      unit_price: 0,
-      total_amount: 0
-    };
-    
-    setLineItems([...lineItems, newItem]);
-  };
-
-  const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
-    setLineItems(items => 
-      items.map(item => {
-        if (item.id === id) {
-          const updatedItem = { ...item, [field]: value };
-          
-          if (field === "quantity" || field === "unit_price") {
-            updatedItem.total_amount = updatedItem.quantity * updatedItem.unit_price;
-          }
-          
-          return updatedItem;
-        }
-        return item;
-      })
-    );
-  };
-
-  const removeLineItem = (id: string) => {
-    setLineItems(items => items.filter(item => item.id !== id));
-  };
-
-  useEffect(() => {
-    if (lineItems.length > 0) {
-      const totalAmount = lineItems.reduce((sum, item) => sum + (item.total_amount || 0), 0);
-      form.setValue("total_amount", totalAmount.toString());
-    }
-  }, [lineItems, form]);
-
-  const createSalesOrder = async (mappingId: string, formValues: InvoiceFormValues) => {
-    try {
-      const orderLineItems = lineItems.map(item => ({
-        id: item.id,
-        description: item.description,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_amount: item.total_amount
-      }));
-
-      let validatedCurrency: "EUR" | "USD" | "GBP" = "EUR";
-      if (formValues.currency === "USD" || formValues.currency === "GBP") {
-        validatedCurrency = formValues.currency;
-      }
-
-      const { data: order, error } = await supabase
-        .from("orders")
-        .insert({
-          user_id: user?.id,
-          is_sales_order: true,
-          type: "sale",
-          order_date: formValues.invoice_date || new Date().toISOString().split('T')[0],
-          amount: parseFloat(formValues.total_amount) || 0,
-          status: "pending",
-          order_number: formValues.invoice_number || `SO-${Date.now()}`,
-          currency: validatedCurrency,
-          supplier_name: formValues.supplier_name,
-          ocr_customer_data: {
-            customer_name: formValues.customer_name,
-            customer_address: formValues.customer_address
-          },
-          line_items: orderLineItems,
-          source_order_id: mappingId,
-          order_type: "supplier" // Default order type to satisfy the type requirement
-        })
-        .select("id")
-        .single();
-
-      if (error) throw error;
-      
-      return order;
-    } catch (error) {
-      console.error("Error creating sales order:", error);
-      throw error;
-    }
-  };
-
-  const confirmInvoice = async () => {
-    if (!invoiceData?.id || !user) return;
-    
-    try {
-      setConfirming(true);
-      
-      await onSubmit(form.getValues());
-      
-      const { error: updateError } = await supabase
-        .from("ocr_invoice_mappings")
-        .update({
-          status: "confirmed",
-          confirmed_at: new Date().toISOString()
-        })
-        .eq("id", invoiceData.id)
-        .eq("user_id", user.id);
-
-      if (updateError) throw updateError;
-      
-      const formValues = form.getValues();
-      const order = await createSalesOrder(invoiceData.id, formValues);
-      
-      toast({
-        title: "Success",
-        description: "Invoice confirmed and sales order created successfully."
-      });
-      
-      if (order && order.id) {
-        navigate(`/dashboard/orders/${order.id}`);
-      } else {
-        navigate("/dashboard/orders/sales");
-      }
-    } catch (error) {
-      console.error("Error confirming invoice:", error);
-      toast({
-        title: "Error",
-        description: "Failed to confirm invoice or create sales order",
-        variant: "destructive"
-      });
-    } finally {
-      setConfirming(false);
-    }
-  };
-
-  if (loading) {
+  
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-12">
-        <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading invoice data...</span>
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p>{t("ocr.loading_results")}</p>
       </div>
     );
   }
-
-  if (!invoiceData) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12">
-        <h2 className="text-xl font-semibold mb-2">Invoice Not Found</h2>
-        <p className="text-muted-foreground mb-4">
-          The requested invoice could not be found or you don't have permission to view it.
-        </p>
-        <Button onClick={() => navigate(-1)}>Go Back</Button>
-      </div>
-    );
-  }
-
+  
   return (
-    <div className="container max-w-7xl mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Review Invoice Data</h1>
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate(-1)}
-            disabled={saving || confirming}
-          >
-            Cancel
-          </Button>
-          <Button 
-            type="button"
-            onClick={form.handleSubmit(onSubmit)} 
-            disabled={saving || confirming || !form.formState.isDirty}
-          >
-            {saving ? (
-              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-2 h-4 w-4" />
-            )}
-            Save Changes
-          </Button>
-          <Button 
-            type="button"
-            onClick={confirmInvoice}
-            disabled={saving || confirming || !form.formState.isValid}
-            variant="default"
-          >
-            {confirming ? (
-              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <FileCheck className="mr-2 h-4 w-4" />
-            )}
-            Confirm & Create Order
-          </Button>
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <Button variant="outline" onClick={() => navigate("/ocr")}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          {t("back")}
+        </Button>
+        
+        <div className="flex items-center space-x-2">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">
+            {t("ocr.processed_at")} {new Date().toLocaleString()}
+          </span>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Invoice Information</CardTitle>
-                <CardDescription>Review and edit the invoice details</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="invoice_number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Invoice Number</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="invoice_date"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Invoice Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Supplier Details</CardTitle>
-                <CardDescription>Information about the supplier</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="supplier_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Supplier Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="supplier_vat"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>VAT ID</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="supplier_address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Address</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Customer Details</CardTitle>
-                <CardDescription>Information about the customer (you)</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="customer_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Customer Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="customer_address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Address</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-          </form>
-        </Form>
-
-        <div className="space-y-6">
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Totals</CardTitle>
-              <CardDescription>Invoice amounts and currency</CardDescription>
+              <CardTitle>{t("ocr.review_extracted_data")}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="currency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Currency</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="total_amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Total Amount</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="number" step="0.01" />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="total_net"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Net Amount</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="number" step="0.01" />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="total_tax"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tax Amount</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="number" step="0.01" />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <div>
-                <CardTitle>Line Items</CardTitle>
-                <CardDescription>Products or services on this invoice</CardDescription>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={addLineItem}
-                className="h-8"
-              >
-                <PlusCircle className="h-4 w-4 mr-1" />
-                Add Item
-              </Button>
-            </CardHeader>
-
             <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[40%]">Description</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Unit Price</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-
-                  <TableBody>
-                    {lineItems.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
-                          No items found. Click "Add Item" to add an invoice line.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      lineItems.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>
-                            <Input 
-                              value={item.description} 
-                              onChange={(e) =>
-                                updateLineItem(item.id, "description", e.target.value)
-                              }
-                              placeholder="Item description"
-                            />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Input 
-                              value={item.quantity}
-                              onChange={(e) =>
-                                updateLineItem(
-                                  item.id,
-                                  "quantity",
-                                  isNaN(Number(e.target.value)) ? 0 : parseFloat(e.target.value)
-                                )
-                              }
-                              type="number"
-                              min="0"
-                              step="1"
-                              className="w-16 text-right ml-auto"
-                            />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Input 
-                              value={item.unit_price}
-                              onChange={(e) =>
-                                updateLineItem(
-                                  item.id,
-                                  "unit_price",
-                                  isNaN(Number(e.target.value)) ? 0 : parseFloat(e.target.value)
-                                )
-                              }
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              className="w-24 text-right ml-auto"
-                            />
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {(item.total_amount || 0).toFixed(2)}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeLineItem(item.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
+              <form id="invoice-form" onSubmit={form.handleSubmit(handleSaveInvoice)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="invoice_number">{t("ocr.invoice_number")}</Label>
+                    <Input 
+                      id="invoice_number"
+                      {...form.register("invoice_number")}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="invoice_date">{t("ocr.invoice_date")}</Label>
+                    <Input 
+                      id="invoice_date"
+                      type="date"
+                      {...form.register("invoice_date")}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="supplier_name">{t("ocr.supplier_name")}</Label>
+                  <Input 
+                    id="supplier_name"
+                    {...form.register("supplier_name")}
+                  />
+                  {form.formState.errors.supplier_name && (
+                    <p className="text-xs text-destructive">{form.formState.errors.supplier_name.message}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="supplier_address">{t("ocr.supplier_address")}</Label>
+                  <Textarea 
+                    id="supplier_address"
+                    {...form.register("supplier_address")}
+                    rows={3}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="supplier_vat">{t("ocr.supplier_vat")}</Label>
+                  <Input 
+                    id="supplier_vat"
+                    {...form.register("supplier_vat")}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="total_amount">{t("ocr.total_amount")}</Label>
+                    <Input 
+                      id="total_amount"
+                      type="number"
+                      step="0.01"
+                      {...form.register("total_amount", {
+                        valueAsNumber: true
+                      })}
+                    />
+                    {form.formState.errors.total_amount && (
+                      <p className="text-xs text-destructive">{form.formState.errors.total_amount.message}</p>
                     )}
-                  </TableBody>
-                </Table>
-              </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="total_tax">{t("ocr.total_tax")}</Label>
+                    <Input 
+                      id="total_tax"
+                      type="number"
+                      step="0.01"
+                      {...form.register("total_tax", {
+                        valueAsNumber: true
+                      })}
+                    />
+                    {form.formState.errors.total_tax && (
+                      <p className="text-xs text-destructive">{form.formState.errors.total_tax.message}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">{t("ocr.currency")}</Label>
+                    <Select
+                      onValueChange={(value: Currency) => form.setValue("currency", value)}
+                      defaultValue={form.getValues("currency")}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("ocr.select_currency")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                        <SelectItem value="GBP">GBP (£)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="notes">{t("ocr.notes")}</Label>
+                  <Textarea 
+                    id="notes"
+                    {...form.register("notes")}
+                    rows={2}
+                    placeholder={t("ocr.notes_placeholder")}
+                  />
+                </div>
+              </form>
             </CardContent>
-
             <CardFooter className="flex justify-between">
-              <div className="text-sm text-muted-foreground">
-                {lineItems.length} item{lineItems.length !== 1 ? "s" : ""}
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Total:</p>
-                <p className="text-lg font-medium">
-                  {currency} {parseFloat(totalAmount || "0").toFixed(2)}
-                </p>
-              </div>
+              <Button variant="outline" onClick={() => navigate("/ocr")}>
+                {t("cancel")}
+              </Button>
+              <Button 
+                type="submit"
+                form="invoice-form"
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t("ocr.saving")}
+                  </>
+                ) : (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    {t("ocr.save_invoice")}
+                  </>
+                )}
+              </Button>
             </CardFooter>
+          </Card>
+        </div>
+        
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("ocr.document_preview")}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center">
+              {previewUrl ? (
+                <div className="border rounded-md overflow-hidden">
+                  {previewUrl.toLowerCase().endsWith('.pdf') ? (
+                    <div className="aspect-[3/4] bg-muted flex items-center justify-center p-4">
+                      <div className="flex flex-col items-center text-muted-foreground">
+                        <FileText className="h-10 w-10 mb-2" />
+                        <p className="text-xs">{t("ocr.pdf_preview")}</p>
+                        <a 
+                          href={previewUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary mt-2 hover:underline"
+                        >
+                          {t("ocr.open_pdf")}
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <img 
+                      src={previewUrl} 
+                      alt="Document Preview"
+                      className="max-w-full object-contain"
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center text-muted-foreground p-8">
+                  <AlertTriangle className="h-8 w-8 mb-2" />
+                  <p className="text-sm">{t("ocr.no_preview_available")}</p>
+                </div>
+              )}
+            </CardContent>
           </Card>
         </div>
       </div>

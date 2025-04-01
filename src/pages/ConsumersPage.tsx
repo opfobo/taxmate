@@ -15,7 +15,7 @@ import { Search, Plus, Loader2, X, Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 
-interface ConsumerOrderStats {
+type ConsumerOrderStats = {
   id: string;
   user_id?: string;
   full_name: string;
@@ -32,7 +32,7 @@ interface ConsumerOrderStats {
   total_orders: number;
   last_order_date: string | null;
   total_order_volume: number;
-}
+};
 
 const ConsumersPage = () => {
   const { t } = useTranslation();
@@ -43,9 +43,9 @@ const ConsumersPage = () => {
   const isTabMode = location.pathname.startsWith("/dashboard/orders/");
   const activeFilterCount = searchQuery.trim().length > 0 ? 1 : 0;
 
-  const fetchConsumers = async (searchQuery: string): Promise<ConsumerWithOrderStats[]> => {
+  const fetchConsumers = async (query: string): Promise<ConsumerWithOrderStats[]> => {
     try {
-      if (!searchQuery.trim()) {
+      if (!query.trim()) {
         const { data: consumersData, error } = await supabase
           .from("consumers")
           .select("*")
@@ -86,7 +86,7 @@ const ConsumersPage = () => {
 
         return consumersWithStats;
       } else {
-        const searchResults = await useGlobalSearch("consumers", searchQuery);
+        const searchResults = await useGlobalSearch("consumers", query);
 
         const consumersWithStats: ConsumerWithOrderStats[] = [];
 
@@ -128,10 +128,9 @@ const ConsumersPage = () => {
   };
 
   const { data: consumers = [], isLoading, refetch } = useQuery({
-  queryKey: ["consumers", searchQuery],
-  queryFn: () => fetchConsumers(searchQuery),
-});
-
+    queryKey: ["consumers", searchQuery],
+    queryFn: () => fetchConsumers(searchQuery),
+  });
 
   return (
     <div className="min-h-screen bg-background">
