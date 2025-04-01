@@ -233,7 +233,7 @@ if (copyError) {
 const { data: secureUrlData } = supabase.storage
   .from(secureBucket)
   .getPublicUrl(securePath);
-const fileUrl = secureUrlData.publicUrl;
+const secureFileUrl  = secureUrlData.publicUrl;
 
       setIsUploading(false);
       setIsProcessing(true);
@@ -244,7 +244,7 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
     "Authorization": `Token ${MINDEE_API_KEY}`,
     "Content-Type": "application/json"
   },
-  body: JSON.stringify({ document: fileUrl }) // ✅ jetzt aus sicherem Bucket
+  body: JSON.stringify({ document: secureFileUrl }) // ✅ jetzt aus sicherem Bucket
 });
 
       const result = await mindeeResponse.json();
