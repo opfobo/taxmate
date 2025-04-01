@@ -65,51 +65,52 @@ const OcrInvoiceReview = () => {
   });
 
   useEffect(() => {
-    const fetchOcrResult = async () => {
-      if (!requestId) {
-        navigate("/ocr");
-        return;
-      }
-      
-      setIsLoading(true);
-      
-      try {
-        // Fetch OCR request
-        const { data: requestData, error: requestError } = await supabase
-          .from('ocr_requests')
-          .select('*')
-          .eq('id', requestId)
-          .single();
-          
-        if (requestError) throw new Error(requestError.message);
-        if (!requestData) throw new Error("OCR request not found");
-        
-        // Fetch file URL
-        const fileName = requestData.file_name;
-        const { data: urlData } = supabase.storage.from("ocr-temp").getPublicUrl(fileName);
-        setPreviewUrl(urlData.publicUrl);
-        
-        // Fetch invoice mapping
-        const { data: mappingData, error: mappingError } = await supabase
-          .from('ocr_invoice_mappings')
-          .select('*')
-          .eq('ocr_request_id', requestId)
-          .single();
-          
-        if (mappingError) {
-  if (mappingError.code !== 'PGRST116') {
-    console.error("Mapping fetch error:", mappingError);
-    throw new Error(mappingError.message);
-  }
-  // Kein Mapping vorhanden – abbrechen
-  return;
-}
+    let didCancel = false;
 
-        
-        if (mappingData) {
+    const fetchOcrResult = async () => {
+      if (!requestId) return;
+
+      setIsLoading(true);
+
+      try {
+        const { data: requestData, error: requestError } = await supabase
+          .from("ocr_requests")
+          .select("*")
+          .eq("id", requestId)
+          .single();
+
+        if (requestError || !requestData) {
+          console.error("Request fetch error:", requestError);
+          if (!didCancel) {
+            setIsLoading(false);
+            toast({
+              title: t("error"),
+              description: t("ocr.error_fetching_results"),
+              variant: "destructive",
+            });
+          }
+          return;
+        }
+
+        const fileName = requestData.file_name;
+        const { data: urlData } = supabase.storage
+          .from("ocr-temp")
+          .getPublicUrl(fileName);
+        if (!didCancel) setPreviewUrl(urlData.publicUrl);
+
+        const { data: mappingData, error: mappingError } = await supabase
+          .from("ocr_invoice_mappings")
+          .select("*")
+          .eq("ocr_request_id", requestId)
+          .single();
+
+        if (mappingError && mappingError.code !== "PGRST116") {
+          console.error("Mapping fetch error:", mappingError);
+        }
+
+        if (mappingData && !didCancel) {
           setInvoiceMapping(mappingData);
-          
-          // Set form values
+
           form.reset({
             invoice_number: mappingData.invoice_number || "",
             invoice_date: mappingData.invoice_date || "",
@@ -119,27 +120,34 @@ const OcrInvoiceReview = () => {
             total_amount: mappingData.total_amount || 0,
             total_tax: mappingData.total_tax || 0,
             currency: (mappingData.currency as Currency) || "EUR",
-            notes: ""
+            notes: "",
           });
         }
-        
-        // Set OCR result
-        setOcrResult(requestData.response);
-        
+
+        if (!didCancel) {
+          setOcrResult(requestData.response);
+          setIsLoading(false);
+        }
       } catch (error: any) {
-        console.error("Error fetching OCR result:", error);
-        toast({
-          title: t("error"),
-          description: error.message || t("ocr.error_fetching_results"),
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
+        if (!didCancel) {
+          console.error("Fatal OCR load error:", error);
+          toast({
+            title: t("error"),
+            description: t("ocr.error_fetching_results"),
+            variant: "destructive",
+          });
+          setIsLoading(false);
+        }
       }
     };
-    
+
     fetchOcrResult();
-  }, [requestId, navigate, t, form]);
+
+    return () => {
+      didCancel = true;
+    };
+  }, [requestId, t, form]);
+
   
   const handleSaveInvoice = async (values: InvoiceFormValues) => {
     if (!requestId) return;
