@@ -204,19 +204,37 @@ export const OcrUpload = ({
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
-      const { data: urlData } = supabase.storage.from("ocr-temp").getPublicUrl(safeFileName);
-      const fileUrl = urlData.publicUrl;
+      // Neuer Bucket mit RLS
+const secureBucket = "ocr-files";
+const securePath = `${user.id}/${safeFileName}`;
+
+// Datei kopieren (ocr-temp ➝ ocr-files/userId/...)
+const { error: copyError } = await supabase.storage
+  .from(secureBucket)
+  .copy(safeFileName, securePath);
+
+if (copyError) {
+  console.error("❗ Fehler beim Kopieren der Datei:", copyError);
+  throw new Error(`Fehler beim Kopieren der Datei: ${copyError.message}`);
+}
+
+// URL im sicheren Bucket abrufen
+const { data: secureUrlData } = supabase.storage
+  .from(secureBucket)
+  .getPublicUrl(securePath);
+const fileUrl = secureUrlData.publicUrl;
+
       setIsUploading(false);
       setIsProcessing(true);
 
-      const mindeeResponse = await fetch(MINDEE_API_URL, {
-        method: "POST",
-        headers: {
-          "Authorization": `Token ${MINDEE_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ document: fileUrl })
-      });
+const mindeeResponse = await fetch(MINDEE_API_URL, {
+  method: "POST",
+  headers: {
+    "Authorization": `Token ${MINDEE_API_KEY}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ document: fileUrl }) // ✅ jetzt aus sicherem Bucket
+});
 
       const result = await mindeeResponse.json();
 
