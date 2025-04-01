@@ -111,20 +111,22 @@ useEffect(() => {
         console.error("Mapping fetch error:", mappingError);
       }
 
-      if (mappingData && !didCancel) {
-        setInvoiceMapping(mappingData);
-        form.reset({
-          invoice_number: mappingData.invoice_number || "",
-          invoice_date: mappingData.invoice_date || "",
-          supplier_name: mappingData.supplier_name || "",
-          supplier_address: mappingData.supplier_address || "",
-          supplier_vat: mappingData.supplier_vat || "",
-          total_amount: mappingData.total_amount || 0,
-          total_tax: mappingData.total_tax || 0,
-          currency: (mappingData.currency as Currency) || "EUR",
-          notes: "",
-        });
-      }
+if (mappingData && !didCancel) {
+  setInvoiceMapping(mappingData);
+  setTimeout(() => {
+    form.reset({
+      invoice_number: mappingData.invoice_number || "",
+      invoice_date: mappingData.invoice_date || "",
+      supplier_name: mappingData.supplier_name || "",
+      supplier_address: mappingData.supplier_address || "",
+      supplier_vat: mappingData.supplier_vat || "",
+      total_amount: mappingData.total_amount || 0,
+      total_tax: mappingData.total_tax || 0,
+      currency: (mappingData.currency as Currency) || "EUR",
+      notes: "",
+    });
+  }, 0);
+}
 
       if (!didCancel) {
         setOcrResult(requestData.response);
@@ -149,7 +151,7 @@ useEffect(() => {
   return () => {
     didCancel = true;
   };
-}, [requestId, t, form]);
+}, [requestId, t]);
 
 
 
