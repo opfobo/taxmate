@@ -127,10 +127,18 @@ useEffect(() => {
         const { data: signedUrlData, error: signedUrlError } = await supabase.storage
           .from("ocr-files")
           .createSignedUrl(mappingData.file_path, 60 * 60); // 1 Stunde gültig
+// Suche nach Preview-Version der Datei
+const previewPath = mappingData.file_path.replace(/\.pdf$/, "_preview.jpg");
 
-        if (!signedUrlError && signedUrlData?.signedUrl) {
-          setPreviewUrl(signedUrlData.signedUrl);
-        }
+const { data: previewData, error: previewError } = await supabase.storage
+  .from("ocr-files")
+  .createSignedUrl(previewPath, 60 * 60); // 1 Stunde gültig
+
+if (!previewError && previewData?.signedUrl && !didCancel) {
+  setPreviewUrl(previewData.signedUrl);
+} else if (!signedUrlError && signedUrlData?.signedUrl && !didCancel) {
+  setPreviewUrl(signedUrlData.signedUrl); // Nur falls JPG fehlt
+}
 
         setInvoiceMapping(mappingData);
       }
