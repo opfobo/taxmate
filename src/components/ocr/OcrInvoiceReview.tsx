@@ -69,6 +69,7 @@ useEffect(() => {
 
   const fetchOcrResult = async () => {
     if (!requestId) return;
+
     setIsLoading(true);
 
     try {
@@ -81,24 +82,23 @@ useEffect(() => {
       if (requestError || !requestData) {
         console.error("Request fetch error:", requestError);
         if (!didCancel) {
+          setIsLoading(false);
           toast({
             title: t("error"),
             description: t("ocr.error_fetching_results"),
             variant: "destructive",
           });
-          setIsLoading(false);
         }
         return;
       }
 
       const fileName = requestData.file_name;
-      console.log("📄 fileName:", fileName);
-
       const { data: urlData } = supabase.storage
         .from("ocr-temp")
         .getPublicUrl(fileName);
-      if (!didCancel && urlData?.publicUrl) {
+      if (!didCancel) {
         setPreviewUrl(urlData.publicUrl);
+        console.log("📄 fileName:", fileName);
       }
 
       const { data: mappingData, error: mappingError } = await supabase
@@ -111,26 +111,26 @@ useEffect(() => {
         console.error("Mapping fetch error:", mappingError);
       }
 
+      if (mappingData && !didCancel) {
+        setInvoiceMapping(mappingData);
+        form.reset({
+          invoice_number: mappingData.invoice_number || "",
+          invoice_date: mappingData.invoice_date || "",
+          supplier_name: mappingData.supplier_name || "",
+          supplier_address: mappingData.supplier_address || "",
+          supplier_vat: mappingData.supplier_vat || "",
+          total_amount: mappingData.total_amount || 0,
+          total_tax: mappingData.total_tax || 0,
+          currency: (mappingData.currency as Currency) || "EUR",
+          notes: "",
+        });
+      }
+
       if (!didCancel) {
-        setInvoiceMapping(mappingData || {}); // nicht null setzen!
-
-        if (mappingData) {
-          form.reset({
-            invoice_number: mappingData.invoice_number || "",
-            invoice_date: mappingData.invoice_date || "",
-            supplier_name: mappingData.supplier_name || "",
-            supplier_address: mappingData.supplier_address || "",
-            supplier_vat: mappingData.supplier_vat || "",
-            total_amount: mappingData.total_amount || 0,
-            total_tax: mappingData.total_tax || 0,
-            currency: (mappingData.currency as Currency) || "EUR",
-            notes: "",
-          });
-        }
-
         setOcrResult(requestData.response);
         setIsLoading(false);
       }
+
     } catch (error: any) {
       if (!didCancel) {
         console.error("Fatal OCR load error:", error);
@@ -150,6 +150,7 @@ useEffect(() => {
     didCancel = true;
   };
 }, [requestId, t, form]);
+
 
 
   
