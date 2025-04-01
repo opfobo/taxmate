@@ -115,7 +115,7 @@ useEffect(() => {
         console.log("✅ Mapping data loaded:", mappingData);
 
         // Vergleiche vorherigen Zustand, um reset() nicht unnötig zu triggern
-        const currentValues = form.getValues();
+        const currentValues = formRef.current.getValues();
         const newValues = {
           invoice_number: mappingData.invoice_number || "",
           invoice_date: mappingData.invoice_date || "",
@@ -132,7 +132,7 @@ useEffect(() => {
         console.log("🧪 Should reset form?", isDifferent);
 
         if (isDifferent) {
-          form.reset(newValues);
+          formRef.current.reset(newValues);
         }
 
         setInvoiceMapping(mappingData);
@@ -146,11 +146,7 @@ useEffect(() => {
     } catch (error: any) {
       if (!didCancel) {
         console.error("🔥 Fatal error in fetchOcrResult:", error);
-        toast({
-          title: t("error"),
-          description: t("ocr.error_fetching_results"),
-          variant: "destructive",
-        });
+        toast({ title: t("error"), description: t("ocr.error_fetching_results"), variant: "destructive" });
         setIsLoading(false);
       }
     }
@@ -162,11 +158,7 @@ useEffect(() => {
     console.log("🛑 useEffect cleanup");
     didCancel = true;
   };
-}, [requestId, t]);
-
-
-
-
+}, [requestId, t]); // ✅ KEIN "form" hier!
   
   const handleSaveInvoice = async (values: InvoiceFormValues) => {
     if (!requestId) return;
