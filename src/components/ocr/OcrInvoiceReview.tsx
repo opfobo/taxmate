@@ -69,12 +69,12 @@ const hasFetchedOnce = React.useRef(false);
 
 useEffect(() => {
   if (hasFetchedOnce.current) return;
-  
+
   let didCancel = false;
 
   const fetchOcrResult = async () => {
     if (!requestId) return;
-    
+
     setIsLoading(true);
 
     try {
@@ -87,63 +87,68 @@ useEffect(() => {
       if (requestError || !requestData) {
         if (!didCancel) {
           setIsLoading(false);
-          toast({ title: t("error"), description: t("ocr.error_fetching_results"), variant: "destructive" });
+          toast({
+            title: t("error"),
+            description: t("ocr.error_fetching_results"),
+            variant: "destructive"
+          });
         }
         return;
       }
 
-      // Hole Mapping + Preview-URL aus dauerhaftem Bucket (ocr-files)
-const { data: mappingData, error: mappingError } = await supabase
-  .from("ocr_invoice_mappings")
-  .select("*")
-  .eq("ocr_request_id", requestId)
-  .single();
+      const { data: mappingData, error: mappingError } = await supabase
+        .from("ocr_invoice_mappings")
+        .select("*")
+        .eq("ocr_request_id", requestId)
+        .single();
 
-if (mappingError && mappingError.code !== "PGRST116") {
-  console.error("❗ Mapping fetch error:", mappingError);
-}
+      if (mappingError && mappingError.code !== "PGRST116") {
+        console.error("❗ Mapping fetch error:", mappingError);
+      }
 
-if (!didCancel && mappingData) {
-  const currentValues = form.getValues();
-  const newValues = {
-    invoice_number: mappingData.invoice_number || "",
-    invoice_date: mappingData.invoice_date || "",
-    supplier_name: mappingData.supplier_name || "",
-    supplier_address: mappingData.supplier_address || "",
-    supplier_vat: mappingData.supplier_vat || "",
-    total_amount: mappingData.total_amount || 0,
-    total_tax: mappingData.total_tax || 0,
-    currency: (mappingData.currency as Currency) || "EUR",
-    notes: "",
-  };
-  if (JSON.stringify(currentValues) !== JSON.stringify(newValues)) {
-    form.reset(newValues);
-  }
+      if (!didCancel && mappingData) {
+        const currentValues = form.getValues();
+        const newValues = {
+          invoice_number: mappingData.invoice_number || "",
+          invoice_date: mappingData.invoice_date || "",
+          supplier_name: mappingData.supplier_name || "",
+          supplier_address: mappingData.supplier_address || "",
+          supplier_vat: mappingData.supplier_vat || "",
+          total_amount: mappingData.total_amount || 0,
+          total_tax: mappingData.total_tax || 0,
+          currency: (mappingData.currency as Currency) || "EUR",
+          notes: "",
+        };
 
-  // ✅ Vorschau-URL aus ocr-files laden
-const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-  .from("ocr-files")
-  .createSignedUrl(mappingData.file_path, 60 * 60); // 1 Stunde gültig
+        if (JSON.stringify(currentValues) !== JSON.stringify(newValues)) {
+          form.reset(newValues);
+        }
 
-if (!signedUrlError && signedUrlData?.signedUrl && !didCancel) {
-  setPreviewUrl(signedUrlData.signedUrl);
-}
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          .from("ocr-files")
+          .createSignedUrl(mappingData.file_path, 60 * 60); // 1 Stunde gültig
 
-  }
+        if (!signedUrlError && signedUrlData?.signedUrl) {
+          setPreviewUrl(signedUrlData.signedUrl);
+        }
 
-  setInvoiceMapping(mappingData);
-}
+        setInvoiceMapping(mappingData);
+      }
 
       if (!didCancel) {
         setOcrResult(requestData.response);
         setIsLoading(false);
-        hasFetchedOnce.current = true; // ✅ hier!
+        hasFetchedOnce.current = true;
       }
 
     } catch (err) {
       if (!didCancel) {
         console.error("🔥 Fatal error in fetchOcrResult:", err);
-        toast({ title: t("error"), description: t("ocr.error_fetching_results"), variant: "destructive" });
+        toast({
+          title: t("error"),
+          description: t("ocr.error_fetching_results"),
+          variant: "destructive"
+        });
         setIsLoading(false);
       }
     }
@@ -155,6 +160,7 @@ if (!signedUrlError && signedUrlData?.signedUrl && !didCancel) {
     didCancel = true;
   };
 }, [requestId, t]);
+
   
   const handleSaveInvoice = async (values: InvoiceFormValues) => {
     if (!requestId) return;
