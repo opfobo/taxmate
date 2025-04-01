@@ -96,9 +96,15 @@ const OcrInvoiceReview = () => {
           .eq('ocr_request_id', requestId)
           .single();
           
-        if (mappingError && mappingError.code !== 'PGRST116') {
-          throw new Error(mappingError.message);
-        }
+        if (mappingError) {
+  if (mappingError.code !== 'PGRST116') {
+    console.error("Mapping fetch error:", mappingError);
+    throw new Error(mappingError.message);
+  }
+  // Kein Mapping vorhanden – abbrechen
+  return;
+}
+
         
         if (mappingData) {
           setInvoiceMapping(mappingData);
