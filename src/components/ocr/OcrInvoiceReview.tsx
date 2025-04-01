@@ -93,13 +93,19 @@ useEffect(() => {
       }
 
       const fileName = requestData.file_name;
-      const { data: urlData } = supabase.storage
-        .from("ocr-temp")
-        .getPublicUrl(fileName);
-      if (!didCancel) {
-        setPreviewUrl(urlData.publicUrl);
-        console.log("📄 fileName:", fileName);
-      }
+      
+if (!didCancel) {
+  const { publicUrl } = supabase.storage
+    .from("ocr-temp")
+    .getPublicUrl(requestData.file_name);
+
+  if (publicUrl && publicUrl !== previewUrl) {
+    setPreviewUrl(publicUrl);
+    console.log("📄 fileName:", fileName);
+  }
+}
+
+
 
       const { data: mappingData, error: mappingError } = await supabase
         .from("ocr_invoice_mappings")
