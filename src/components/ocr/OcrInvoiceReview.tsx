@@ -92,31 +92,47 @@ useEffect(() => {
         return;
       }
 
-      const fileName = requestData.file_name;
-const targetPath = `ocr-incoming/${fileName}`;
+      // Hole Mapping + Preview-URL aus dauerhaftem Bucket (ocr-files)
+const { data: mappingData, error: mappingError } = await supabase
+  .from("ocr_invoice_mappings")
+  .select("*")
+  .eq("ocr_request_id", requestId)
+  .single();
 
-// Datei von ocr-temp nach order-images kopieren
-const { error: copyError } = await supabase.storage
-  .from("ocr-temp")
-  .copy(fileName, targetPath);
-
-if (copyError) {
-  console.error("❗ Fehler beim Kopieren der Datei:", copyError);
-  toast({
-    title: t("error"),
-    description: t("ocr.error_copying_file"),
-    variant: "destructive",
-  });
-} else {
-  // Public URL aus neuem Bucket holen
-  const { publicUrl: newPublicUrl } = supabase.storage
-    .from("order-images")
-    .getPublicUrl(targetPath);
-
-  if (!didCancel) {
-    setPreviewUrl(newPublicUrl);
-  }
+if (mappingError && mappingError.code !== "PGRST116") {
+  console.error("❗ Mapping fetch error:", mappingError);
 }
+
+if (!didCancel && mappingData) {
+  const currentValues = form.getValues();
+  const newValues = {
+    invoice_number: mappingData.invoice_number || "",
+    invoice_date: mappingData.invoice_date || "",
+    supplier_name: mappingData.supplier_name || "",
+    supplier_address: mappingData.supplier_address || "",
+    supplier_vat: mappingData.supplier_vat || "",
+    total_amount: mappingData.total_amount || 0,
+    total_tax: mappingData.total_tax || 0,
+    currency: (mappingData.currency as Currency) || "EUR",
+    notes: "",
+  };
+  if (JSON.stringify(currentValues) !== JSON.stringify(newValues)) {
+    form.reset(newValues);
+  }
+
+  // ✅ Vorschau-URL aus ocr-files laden
+  if (mappingData.file_path) {
+    const { data: previewData } = supabase.storage
+      .from("ocr-files")
+      .getPublicUrl(mappingData.file_path);
+    if (previewData?.publicUrl && !didCancel) {
+      setPreviewUrl(previewData.publicUrl);
+    }
+  }
+
+  setInvoiceMapping(mappingData);
+}
+
 
 
       const { data: mappingData, error: mappingError } = await supabase
