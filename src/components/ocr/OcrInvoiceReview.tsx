@@ -69,7 +69,7 @@ const OcrInvoiceReview = () => {
 
     const fetchOcrResult = async () => {
       if (!requestId) return;
-
+      
       setIsLoading(true);
 
       try {
@@ -97,6 +97,7 @@ const OcrInvoiceReview = () => {
           .from("ocr-temp")
           .getPublicUrl(fileName);
         if (!didCancel) setPreviewUrl(urlData.publicUrl);
+        console.log("📄 fileName:", fileName);
 
         const { data: mappingData, error: mappingError } = await supabase
           .from("ocr_invoice_mappings")
@@ -109,7 +110,8 @@ const OcrInvoiceReview = () => {
         }
 
         if (mappingData && !didCancel) {
-          setInvoiceMapping(mappingData);
+          setInvoiceMapping(mappingData); // <- Zustand bewusst setzen
+          setIsLoading(false);     // <- wichtig, um Loading zu beenden
 
           form.reset({
             invoice_number: mappingData.invoice_number || "",
@@ -137,6 +139,7 @@ const OcrInvoiceReview = () => {
             variant: "destructive",
           });
           setIsLoading(false);
+          console.log("✅ fetch complete, loading false");
         }
       }
     };
@@ -146,7 +149,7 @@ const OcrInvoiceReview = () => {
     return () => {
       didCancel = true;
     };
-  }, [requestId, t, form]);
+  }, [requestId, t]);
 
   
   const handleSaveInvoice = async (values: InvoiceFormValues) => {
