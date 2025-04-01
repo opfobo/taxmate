@@ -192,52 +192,54 @@ export const OcrUpload = ({
     const requestId = requestData.id;
 
     // Upload to temp (for Mindee)
-    const { error: tempError } = await supabase.storage
-      .from("ocr-temp")
-      .upload(safeFileName, file, {
-        cacheControl: "3600",
-        upsert: false
-      });
+// 1. Upload in ocr-temp für Mindee
+const { error: tempError } = await supabase.storage
+  .from("ocr-temp")
+  .upload(safeFileName, file, {
+    cacheControl: "3600",
+    upsert: false
+  });
 
-    if (tempError) {
-      await supabase.from("ocr_requests").update({
-        status: "error",
-        response: { error: tempError.message },
-        processed_at: new Date().toISOString()
-      }).eq("id", requestId);
-      throw new Error(`Upload to ocr-temp failed: ${tempError.message}`);
-    }
+if (tempError) {
+  await supabase.from("ocr_requests").update({
+    status: "error",
+    response: { error: tempError.message },
+    processed_at: new Date().toISOString()
+  }).eq("id", requestId);
+  throw new Error(`Upload to ocr-temp failed: ${tempError.message}`);
+}
 
-    // Upload to secure bucket
-    const { error: filesError } = await supabase.storage
-      .from("ocr-files")
-      .upload(securePath, file, {
-        cacheControl: "3600",
-        upsert: false
-      });
+// 2. Upload in ocr-files für Archivierung + spätere Vorschau
+const securePath = `${user.id}/${safeFileName}`;
+const { error: filesError } = await supabase.storage
+  .from("ocr-files")
+  .upload(securePath, file, {
+    cacheControl: "3600",
+    upsert: false
+  });
 
-    if (filesError) {
-      throw new Error(`Upload to ocr-files failed: ${filesError.message}`);
-    }
+if (filesError) {
+  throw new Error(`Upload to ocr-files failed: ${filesError.message}`);
+}
 
-    // Get public URL from ocr-files
-    const { data: secureUrlData } = supabase.storage
-      .from("ocr-files")
-      .getPublicUrl(securePath);
-    const secureFileUrl = secureUrlData.publicUrl;
+// 3. Nutze OCR-URL (nur aus ocr-temp, da öffentlich)
+const { data: tempUrlData } = supabase.storage
+  .from("ocr-temp")
+  .getPublicUrl(safeFileName);
+const fileUrl = tempUrlData.publicUrl; // ✅ sichere URL für Mindee
 
-    setIsUploading(false);
-    setIsProcessing(true);
+setIsUploading(false);
+setIsProcessing(true);
 
-    // Mindee OCR call
-    const mindeeResponse = await fetch(MINDEE_API_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Token ${MINDEE_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ document: secureFileUrl })
-    });
+// 4. OCR-Request mit Mindee starten
+const mindeeResponse = await fetch(MINDEE_API_URL, {
+  method: "POST",
+  headers: {
+    Authorization: `Token ${MINDEE_API_KEY}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ document: fileUrl }) // ✅ funktional
+});
 
     const result = await mindeeResponse.json();
 
