@@ -133,37 +133,6 @@ if (!didCancel && mappingData) {
   setInvoiceMapping(mappingData);
 }
 
-
-
-      const { data: mappingData, error: mappingError } = await supabase
-        .from("ocr_invoice_mappings")
-        .select("*")
-        .eq("ocr_request_id", requestId)
-        .single();
-
-      if (mappingError && mappingError.code !== "PGRST116") {
-        console.error("❗ Mapping fetch error:", mappingError);
-      }
-
-      if (!didCancel && mappingData) {
-        const currentValues = form.getValues();
-        const newValues = {
-          invoice_number: mappingData.invoice_number || "",
-          invoice_date: mappingData.invoice_date || "",
-          supplier_name: mappingData.supplier_name || "",
-          supplier_address: mappingData.supplier_address || "",
-          supplier_vat: mappingData.supplier_vat || "",
-          total_amount: mappingData.total_amount || 0,
-          total_tax: mappingData.total_tax || 0,
-          currency: (mappingData.currency as Currency) || "EUR",
-          notes: "",
-        };
-        if (JSON.stringify(currentValues) !== JSON.stringify(newValues)) {
-          form.reset(newValues);
-        }
-        setInvoiceMapping(mappingData);
-      }
-
       if (!didCancel) {
         setOcrResult(requestData.response);
         setIsLoading(false);
