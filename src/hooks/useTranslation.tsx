@@ -13,22 +13,15 @@ export function useTranslation() {
   const [isLoading, setIsLoading] = useState(true);
   const [translations, setTranslations] = useState<Record<string, TranslationType>>({});
   const [language, setLanguage] = useState<string>(() => {
-    // First try to get from localStorage
     const savedLanguage = localStorage.getItem("app-language");
-    if (savedLanguage) return savedLanguage;
-    
-    // Default to 'en'
-    return "en";
+    return savedLanguage || "en";
   });
 
-  // Fetch all translations on component mount
   useEffect(() => {
     const fetchTranslations = async () => {
       try {
         setIsLoading(true);
-        const { data, error } = await supabase
-          .from("translations")
-          .select("*");
+        const { data, error } = await supabase.from("translations").select("*");
 
         if (error) {
           console.error("Error fetching translations:", error);
@@ -41,18 +34,15 @@ export function useTranslation() {
         }
 
         if (data) {
-          // Transform the data into a more usable format
-          const formattedTranslations: Record<string, TranslationType> = {};
-          
+          const formatted: Record<string, TranslationType> = {};
           data.forEach((item: any) => {
-            formattedTranslations[item.key] = {
+            formatted[item.key] = {
               en: item.en,
               de: item.de,
               ru: item.ru,
             };
           });
-          
-          setTranslations(formattedTranslations);
+          setTranslations(formatted);
         }
       } catch (error) {
         console.error("Unexpected error fetching translations:", error);
@@ -64,7 +54,6 @@ export function useTranslation() {
     fetchTranslations();
   }, [toast]);
 
-  // Sync with user profile when user changes
   useEffect(() => {
     const syncWithUserProfile = async () => {
       if (user) {
@@ -80,7 +69,7 @@ export function useTranslation() {
             return;
           }
 
-          if (data && data.language) {
+          if (data?.language) {
             setLanguage(data.language);
             localStorage.setItem("app-language", data.language);
           }
@@ -93,22 +82,18 @@ export function useTranslation() {
     syncWithUserProfile();
   }, [user]);
 
-  // Function to change the language
   const changeLanguage = async (newLanguage: string) => {
     if (newLanguage === language) return;
-
-    // Update the local state and localStorage
     setLanguage(newLanguage);
     localStorage.setItem("app-language", newLanguage);
 
-    // Update user profile in Supabase if logged in
     if (user) {
       try {
         const { error } = await supabase
           .from("users")
-          .update({ 
+          .update({
             language: newLanguage,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq("id", user.id);
 
@@ -131,7 +116,6 @@ export function useTranslation() {
     }
   };
 
-  // Helper function to get language name
   const getLanguageName = (langCode: string): string => {
     switch (langCode) {
       case "en": return "English";
@@ -141,45 +125,10 @@ export function useTranslation() {
     }
   };
 
-  // The translation function
-  const t = (key: string, variables?: Record<string, string | number>): string => {
-  if (isLoading || !translations[key]) return key;
-
-  let translation = translations[key][language]
-    || translations[key].de
-    || translations[key].en
-    || key;
-
-  if (variables) {
-    Object.entries(variables).forEach(([varName, varValue]) => {
-      translation = translation.replace(`{${varName}}`, String(varValue));
-    });
-  }
-
-  return translation;
-};
-
-
-    // Try to get the translation in the current language
+  const t = (key: string): string => {
+    if (isLoading || !translations[key]) return key;
     const translation = translations[key][language];
-
-    // If translation exists in current language, return it
-    if (translation) {
-      return translation;
-    }
-
-    // Fallback to German if no translation in current language
-    if (translations[key].de) {
-      return translations[key].de;
-    }
-
-    // Fallback to English if no German translation
-    if (translations[key].en) {
-      return translations[key].en;
-    }
-
-    // If all else fails, return the key
-    return key;
+    return translation || translations[key].de || translations[key].en || key;
   };
 
   return {
@@ -190,6 +139,7 @@ export function useTranslation() {
     availableLanguages: [
       { code: "en", name: "English" },
       { code: "de", name: "Deutsch" },
-      { code: "ru", name: "Русский" }
-    ]
+      { code: "ru", name: "Русский" },
+    ],
   };
+}
