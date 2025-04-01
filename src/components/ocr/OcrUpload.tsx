@@ -210,7 +210,6 @@ if (tempError) {
 }
 
 // 2. Upload in ocr-files für Archivierung + spätere Vorschau
-const securePath = `${user.id}/${safeFileName}`;
 const { error: filesError } = await supabase.storage
   .from("ocr-files")
   .upload(securePath, file, {
