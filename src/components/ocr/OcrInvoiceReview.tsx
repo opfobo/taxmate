@@ -70,12 +70,10 @@ useEffect(() => {
   if (hasFetchedOnce.current) return;
   
   let didCancel = false;
-  console.log("🔄 useEffect triggered");
 
   const fetchOcrResult = async () => {
     if (!requestId) return;
-
-    console.log("📥 Fetching OCR data for requestId:", requestId);
+    
     setIsLoading(true);
 
     try {
@@ -143,7 +141,6 @@ useEffect(() => {
   fetchOcrResult();
 
   return () => {
-    console.log("🛑 useEffect cleanup");
     didCancel = true;
   };
 }, [requestId, t]);
