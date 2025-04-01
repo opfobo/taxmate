@@ -66,10 +66,15 @@ const OcrInvoiceReview = () => {
 
 useEffect(() => {
   let didCancel = false;
+  console.log("🔄 useEffect triggered");
 
   const fetchOcrResult = async () => {
-    if (!requestId) return;
+    if (!requestId) {
+      console.log("❌ No requestId found – aborting");
+      return;
+    }
 
+    console.log("📥 Fetching OCR data for requestId:", requestId);
     setIsLoading(true);
 
     try {
@@ -80,32 +85,21 @@ useEffect(() => {
         .single();
 
       if (requestError || !requestData) {
-        console.error("Request fetch error:", requestError);
+        console.error("❗ Request fetch error:", requestError);
         if (!didCancel) {
           setIsLoading(false);
-          toast({
-            title: t("error"),
-            description: t("ocr.error_fetching_results"),
-            variant: "destructive",
-          });
+          toast({ title: t("error"), description: t("ocr.error_fetching_results"), variant: "destructive" });
         }
         return;
       }
 
       const fileName = requestData.file_name;
-      
-if (!didCancel) {
-  const { publicUrl } = supabase.storage
-    .from("ocr-temp")
-    .getPublicUrl(requestData.file_name);
+      const { publicUrl } = supabase.storage.from("ocr-temp").getPublicUrl(fileName);
 
-  if (publicUrl && publicUrl !== previewUrl) {
-    setPreviewUrl(publicUrl);
-    console.log("📄 fileName:", fileName);
-  }
-}
-
-
+      if (!didCancel && publicUrl !== previewUrl) {
+        console.log("📄 Setting preview URL:", publicUrl);
+        setPreviewUrl(publicUrl);
+      }
 
       const { data: mappingData, error: mappingError } = await supabase
         .from("ocr_invoice_mappings")
@@ -114,25 +108,35 @@ if (!didCancel) {
         .single();
 
       if (mappingError && mappingError.code !== "PGRST116") {
-        console.error("Mapping fetch error:", mappingError);
+        console.error("❗ Mapping fetch error:", mappingError);
       }
 
-if (mappingData && !didCancel) {
-  setInvoiceMapping(mappingData);
-  setTimeout(() => {
-    form.reset({
-      invoice_number: mappingData.invoice_number || "",
-      invoice_date: mappingData.invoice_date || "",
-      supplier_name: mappingData.supplier_name || "",
-      supplier_address: mappingData.supplier_address || "",
-      supplier_vat: mappingData.supplier_vat || "",
-      total_amount: mappingData.total_amount || 0,
-      total_tax: mappingData.total_tax || 0,
-      currency: (mappingData.currency as Currency) || "EUR",
-      notes: "",
-    });
-  }, 0);
-}
+      if (mappingData && !didCancel) {
+        console.log("✅ Mapping data loaded:", mappingData);
+
+        // Vergleiche vorherigen Zustand, um reset() nicht unnötig zu triggern
+        const currentValues = form.getValues();
+        const newValues = {
+          invoice_number: mappingData.invoice_number || "",
+          invoice_date: mappingData.invoice_date || "",
+          supplier_name: mappingData.supplier_name || "",
+          supplier_address: mappingData.supplier_address || "",
+          supplier_vat: mappingData.supplier_vat || "",
+          total_amount: mappingData.total_amount || 0,
+          total_tax: mappingData.total_tax || 0,
+          currency: (mappingData.currency as Currency) || "EUR",
+          notes: "",
+        };
+
+        const isDifferent = JSON.stringify(currentValues) !== JSON.stringify(newValues);
+        console.log("🧪 Should reset form?", isDifferent);
+
+        if (isDifferent) {
+          form.reset(newValues);
+        }
+
+        setInvoiceMapping(mappingData);
+      }
 
       if (!didCancel) {
         setOcrResult(requestData.response);
@@ -141,7 +145,7 @@ if (mappingData && !didCancel) {
 
     } catch (error: any) {
       if (!didCancel) {
-        console.error("Fatal OCR load error:", error);
+        console.error("🔥 Fatal error in fetchOcrResult:", error);
         toast({
           title: t("error"),
           description: t("ocr.error_fetching_results"),
@@ -155,9 +159,11 @@ if (mappingData && !didCancel) {
   fetchOcrResult();
 
   return () => {
+    console.log("🛑 useEffect cleanup");
     didCancel = true;
   };
 }, [requestId, t]);
+
 
 
 
