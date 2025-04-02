@@ -220,13 +220,15 @@ const { data: tempUrlData } = supabase.storage
 const fileUrl = tempUrlData.publicUrl;
 
     // 4. OCR-Request mit Mindee starten
+const formData = new FormData();
+formData.append("document", file);
+
 const mindeeResponse = await fetch(MINDEE_API_URL, {
   method: "POST",
   headers: {
-    Authorization: `Token ${MINDEE_API_KEY}`,
-    "Content-Type": "application/json"
+    Authorization: `Token ${MINDEE_API_KEY}`
   },
-  body: JSON.stringify({ document: fileUrl }) // ✅ funktional
+  body: formData
 });
 
     const result = await mindeeResponse.json(); // <- wieder nötig!
