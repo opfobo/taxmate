@@ -1,5 +1,6 @@
 
 // Fixing the currency type error
+import OcrDocumentPreview from "@/components/ocr/OcrDocumentPreview";
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -11,7 +12,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import DocumentPreview from "@/components/ocr/DocumentPreview"; // 🆕 Importieren
 import { 
   Select, 
   SelectContent, 
@@ -48,7 +48,7 @@ const OcrInvoiceReview = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [ocrResult, setOcrResult] = useState<any>(null);
   const [invoiceMapping, setInvoiceMapping] = useState<any>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceFormSchema),
@@ -392,7 +392,11 @@ if (!previewError && previewData?.signedUrl && !didCancel) {
               <CardTitle>{t("ocr.document_preview")}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center">
-              <DocumentPreview url={previewUrl} />
+              {invoiceMapping?.file_path ? (
+    <OcrDocumentPreview filePath={invoiceMapping.file_path} />
+  ) : (
+    <p className="text-sm text-muted-foreground">Keine Datei gefunden.</p>
+  )}
             </CardContent>
           </Card>
         </div>
