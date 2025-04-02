@@ -48,7 +48,6 @@ const OcrInvoiceReview = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [ocrResult, setOcrResult] = useState<any>(null);
   const [invoiceMapping, setInvoiceMapping] = useState<any>(null);
-  // const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceFormSchema),
@@ -123,22 +122,6 @@ useEffect(() => {
         if (JSON.stringify(currentValues) !== JSON.stringify(newValues)) {
           form.reset(newValues);
         }
-
-        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-          .from("ocr-files")
-          .createSignedUrl(mappingData.file_path, 60 * 60); // 1 Stunde gültig
-// Suche nach Preview-Version der Datei
-const previewPath = mappingData.file_path.replace(/\.pdf$/, "_preview.jpg");
-
-const { data: previewData, error: previewError } = await supabase.storage
-  .from("ocr-files")
-  .createSignedUrl(previewPath, 60 * 60); // 1 Stunde gültig
-
-if (!previewError && previewData?.signedUrl && !didCancel) {
-  setPreviewUrl(previewData.signedUrl);
-} else if (!signedUrlError && signedUrlData?.signedUrl && !didCancel) {
-  setPreviewUrl(signedUrlData.signedUrl); // Nur falls JPG fehlt
-}
 
         setInvoiceMapping(mappingData);
       }
