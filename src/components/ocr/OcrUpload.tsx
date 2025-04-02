@@ -128,6 +128,22 @@ export const OcrUpload = ({
     }
   };
 
+  const sendToPdfPreviewServer = async (file: File) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  try {
+    const res = await fetch("https://pcgs.ru/pdfserver/convert", {
+      method: "POST",
+      body: formData,
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || "Preview conversion failed");
+    console.log("📷 Preview conversion result:", json);
+  } catch (err) {
+    console.warn("❌ PDF Preview server error:", err);
+  }
+};
+
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
   const inputElement = e.target as HTMLInputElement;
   if (!inputElement.files || inputElement.files.length === 0) return;
@@ -191,47 +207,19 @@ export const OcrUpload = ({
 
     if (requestError) throw new Error(`DB insert failed: ${requestError.message}`);
     const requestId = requestData.id;
+  
 
     // Upload to temp (for Mindee)
-// 1. Upload in ocr-temp für Mindee
-const { error: tempError } = await supabase.storage
-  .from("ocr-temp")
-  .upload(safeFileName, file, {
-    cacheControl: "3600",
-    upsert: false
-  });
-
-if (tempError) {
-  await supabase.from("ocr_requests").update({
-    status: "error",
-    response: { error: tempError.message },
-    processed_at: new Date().toISOString()
-  }).eq("id", requestId);
-  throw new Error(`Upload to ocr-temp failed: ${tempError.message}`);
-}
-
-// 2. Upload in ocr-files für Archivierung + spätere Vorschau
-const { error: filesError } = await supabase.storage
-  .from("ocr-files")
-  .upload(securePath, file, {
-    cacheControl: "3600",
-    upsert: false
-  });
-
-if (filesError) {
-  throw new Error(`Upload to ocr-files failed: ${filesError.message}`);
-}
-
-// 3. Nutze OCR-URL (nur aus ocr-temp, da öffentlich)
-const { data: tempUrlData } = supabase.storage
-  .from("ocr-temp")
-  .getPublicUrl(safeFileName);
-const fileUrl = tempUrlData.publicUrl; // ✅ sichere URL für Mindee
 
 setIsUploading(false);
 setIsProcessing(true);
 
-// 4. OCR-Request mit Mindee starten
+const { data: tempUrlData } = supabase.storage
+  .from("ocr-temp")
+  .getPublicUrl(safeFileName);
+const fileUrl = tempUrlData.publicUrl;
+
+    // 4. OCR-Request mit Mindee starten
 const mindeeResponse = await fetch(MINDEE_API_URL, {
   method: "POST",
   headers: {
@@ -241,11 +229,11 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
   body: JSON.stringify({ document: fileUrl }) // ✅ funktional
 });
 
-    const result = await mindeeResponse.json();
+    const result = await mindeeResponse.json(); // <- wieder nötig!
 
-    if (!mindeeResponse.ok) {
-      throw new Error(result.api_request?.error?.message || "Mindee OCR failed");
-    }
+if (!mindeeResponse.ok) {
+  throw new Error(result.api_request?.error?.message || "Mindee OCR failed");
+}
 
     // Token usage
     await supabase.rpc('decrement_ocr_token', { uid: user.id });
