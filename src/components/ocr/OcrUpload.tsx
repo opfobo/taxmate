@@ -1,4 +1,3 @@
-
 import { useState, useRef, ChangeEvent, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,32 +60,24 @@ export const OcrUpload = ({
       fileInputRef.current.value = "";
     }
   };
-  
-  // Process OCR data and create invoice mapping
-  const processOcrResult = async (result: any, requestId: string, safeFileName: string) => {
 
+  const processOcrResult = async (result: any, requestId: string, safeFileName: string) => {
     if (!user) return;
-    
     try {
-      // Extract invoice fields from Mindee result
       const prediction = result.document.inference.prediction;
-      
-      // Extract basic invoice information
+
       const invoiceNumber = prediction.invoice_number?.value || null;
       const invoiceDate = prediction.date?.value || null;
       const totalAmount = prediction.total_amount?.value || null;
       const totalNet = prediction.total_net?.value || null;
       const totalTax = prediction.total_tax?.value || null;
-      
-      // Extract supplier information
+
       const supplierName = prediction.supplier_name?.value || null;
       const supplierAddress = prediction.supplier_address?.value || null;
-      
-      // Extract customer information
+
       const customerName = prediction.customer_name?.value || null;
       const customerAddress = prediction.customer_address?.value || null;
-      
-      // Extract line items
+
       const lineItems = prediction.line_items?.map((item: any, index: number) => ({
         id: uuidv4(),
         description: item.description || `Item ${index + 1}`,
@@ -95,7 +86,6 @@ export const OcrUpload = ({
         total_amount: item.total_amount || 0
       })) || [];
 
-      // Create invoice mapping
       const { data: mappingData, error: mappingError } = await supabase
         .from('ocr_invoice_mappings')
         .insert({
@@ -105,7 +95,7 @@ export const OcrUpload = ({
           invoice_date: invoiceDate,
           supplier_name: supplierName,
           supplier_address: supplierAddress,
-          supplier_vat: null, // Not provided by Mindee directly
+          supplier_vat: null,
           customer_name: customerName,
           customer_address: customerAddress,
           total_amount: totalAmount,
@@ -120,7 +110,7 @@ export const OcrUpload = ({
         .single();
 
       if (mappingError) throw new Error(`Failed to create invoice mapping: ${mappingError.message}`);
-      
+
       return mappingData.id;
     } catch (err: any) {
       console.error('Error processing OCR result:', err);
@@ -129,142 +119,134 @@ export const OcrUpload = ({
   };
 
   const sendToPdfPreviewServer = async (file: File) => {
-  const formData = new FormData();
-  formData.append("file", file);
-  try {
-    const res = await fetch("https://pcgs.ru/pdfserver/convert", {
-      method: "POST",
-      body: formData,
-    });
-    const json = await res.json();
-    if (!json.success) throw new Error(json.error || "Preview conversion failed");
-    console.log("📷 Preview conversion result:", json);
-  } catch (err) {
-    console.warn("❌ PDF Preview server error:", err);
-  }
-};
+    if (!file || !file.name.endsWith(".pdf")) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch("https://pcgs.ru/pdfserver/convert", {
+        method: "POST",
+        body: formData,
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Preview conversion failed");
+      console.log("📷 Preview conversion result:", json);
+    } catch (err) {
+      console.warn("❌ PDF Preview server error:", err);
+    }
+  };
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-  const inputElement = e.target as HTMLInputElement;
-  if (!inputElement.files || inputElement.files.length === 0) return;
-  const file = inputElement.files[0];
+    const inputElement = e.target as HTMLInputElement;
+    if (!inputElement.files || inputElement.files.length === 0) return;
+    const file = inputElement.files[0];
 
-  resetStates();
-  setPreviewUrl(null);
+    resetStates();
+    setPreviewUrl(null);
 
-  if (!user) {
-    setError("You must be logged in.");
-    toast({ title: "Login required", variant: "destructive" });
-    return;
-  }
+    if (!user) {
+      setError("You must be logged in.");
+      toast({ title: "Login required", variant: "destructive" });
+      return;
+    }
 
-  if (tokens !== null && tokens < 1) {
-    setError("No tokens left.");
-    toast({ title: "OCR quota exceeded", variant: "destructive" });
-    return;
-  }
+    if (tokens !== null && tokens < 1) {
+      setError("No tokens left.");
+      toast({ title: "OCR quota exceeded", variant: "destructive" });
+      return;
+    }
 
-  const normalizedType =
-    file.type === "application/octet-stream" && file.name.endsWith(".pdf")
-      ? "application/pdf"
-      : file.type;
+    const normalizedType =
+      file.type === "application/octet-stream" && file.name.endsWith(".pdf")
+        ? "application/pdf"
+        : file.type;
 
-  if (!mimeTypes.includes(normalizedType)) {
-    setError("Invalid file type");
-    return;
-  }
+    if (!mimeTypes.includes(normalizedType)) {
+      setError("Invalid file type");
+      return;
+    }
 
-  if (file.size / (1024 * 1024) > fileSizeLimitMB) {
-    setError("File too large");
-    return;
-  }
+    if (file.size / (1024 * 1024) > fileSizeLimitMB) {
+      setError("File too large");
+      return;
+    }
 
-  setFileName(file.name);
-  if (file.type.startsWith("image/")) {
-    const reader = new FileReader();
-    reader.onload = (e) => setPreviewUrl(e.target?.result as string);
-    reader.readAsDataURL(file);
-  }
+    setFileName(file.name);
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (e) => setPreviewUrl(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
 
-  try {
-    setIsUploading(true);
-    const fileExtension = file.name.split(".").pop();
-    const timestamp = Date.now();
-    const uniqueId = uuidv4().substring(0, 8);
-    const safeFileName = `ocr_${timestamp}_${uniqueId}.${fileExtension}`;
-    const securePath = `${user.id}/${safeFileName}`;
+    try {
+      setIsUploading(true);
+      const fileExtension = file.name.split(".").pop();
+      const timestamp = Date.now();
+      const uniqueId = uuidv4().substring(0, 8);
+      const safeFileName = `ocr_${timestamp}_${uniqueId}.${fileExtension}`;
+      const securePath = `${user.id}/${safeFileName}`;
 
-    // DB request entry
-    const { data: requestData, error: requestError } = await supabase
-      .from('ocr_requests')
-      .insert({
-        user_id: user.id,
-        file_name: safeFileName,
-        status: 'pending'
-      })
-      .select('id')
-      .single();
+      const { data: requestData, error: requestError } = await supabase
+        .from('ocr_requests')
+        .insert({
+          user_id: user.id,
+          file_name: safeFileName,
+          status: 'pending'
+        })
+        .select('id')
+        .single();
 
-    if (requestError) throw new Error(`DB insert failed: ${requestError.message}`);
-    const requestId = requestData.id;
-  
+      if (requestError) throw new Error(`DB insert failed: ${requestError.message}`);
+      const requestId = requestData.id;
 
-    // Upload to temp (for Mindee)
+      // Vorschau-Server antriggern (nur bei PDFs)
+      await sendToPdfPreviewServer(file);
 
-setIsUploading(false);
-setIsProcessing(true);
+      setIsUploading(false);
+      setIsProcessing(true);
 
-const { data: tempUrlData } = supabase.storage
-  .from("ocr-temp")
-  .getPublicUrl(safeFileName);
-const fileUrl = tempUrlData.publicUrl;
+      const formData = new FormData();
+      formData.append("document", file);
 
-    // 4. OCR-Request mit Mindee starten
-const formData = new FormData();
-formData.append("document", file);
+      const mindeeResponse = await fetch(MINDEE_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Token ${MINDEE_API_KEY}`
+        },
+        body: formData
+      });
 
-const mindeeResponse = await fetch(MINDEE_API_URL, {
-  method: "POST",
-  headers: {
-    Authorization: `Token ${MINDEE_API_KEY}`
-  },
-  body: formData
-});
+      const result = await mindeeResponse.json();
 
-    const result = await mindeeResponse.json(); // <- wieder nötig!
+      if (!mindeeResponse.ok) {
+        throw new Error(result.api_request?.error?.message || "Mindee OCR failed");
+      }
 
-if (!mindeeResponse.ok) {
-  throw new Error(result.api_request?.error?.message || "Mindee OCR failed");
-}
+      await supabase.rpc('decrement_ocr_token', { uid: user.id });
+      setTokens(prev => prev !== null ? prev - 1 : null);
 
-    // Token usage
-    await supabase.rpc('decrement_ocr_token', { uid: user.id });
-    setTokens(prev => prev !== null ? prev - 1 : null);
+      await supabase.from('ocr_requests').update({
+        status: 'success',
+        response: result,
+        processed_at: new Date().toISOString()
+      }).eq('id', requestId);
 
-    await supabase.from('ocr_requests').update({
-      status: 'success',
-      response: result,
-      processed_at: new Date().toISOString()
-    }).eq('id', requestId);
+      const mappingId = await processOcrResult(result, requestId, safeFileName);
 
-    // Create invoice mapping
-    const mappingId = await processOcrResult(result, requestId, safeFileName);
+      onOcrResult(result);
+      setSuccess(true);
+      toast({ 
+        title: "OCR completed", 
+        description: "Document processed successfully. You can now review the extracted data." 
+      });
 
-    onOcrResult(result);
-    setSuccess(true);
-    toast({ 
-      title: "OCR completed", 
-      description: "Document processed successfully. You can now review the extracted data." 
-    });
-
-    navigate(`/ocr/review/${requestId}`);
-  } catch (err: any) {
-    setError(err.message);
-    toast({ title: "OCR failed", description: err.message, variant: "destructive" });
-  } finally {
-    setIsProcessing(false);
-  }
-};
+      navigate(`/ocr/review/${requestId}`);
+    } catch (err: any) {
+      setError(err.message);
+      toast({ title: "OCR failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div className="space-y-3">
