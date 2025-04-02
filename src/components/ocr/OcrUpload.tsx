@@ -201,6 +201,16 @@ export const OcrUpload = ({
       // Vorschau-Server antriggern (nur bei PDFs)
       await sendToPdfPreviewServer(file);
 
+      // Save file to Supabase storage (ocr-files)
+const { error: uploadError } = await supabase.storage
+  .from("ocr-files")
+  .upload(securePath, file);
+
+if (uploadError) {
+  throw new Error(`Failed to save file to ocr-files: ${uploadError.message}`);
+}
+
+
       setIsUploading(false);
       setIsProcessing(true);
 
