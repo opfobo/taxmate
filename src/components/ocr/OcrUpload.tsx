@@ -249,17 +249,6 @@ if (selectedFile.type.startsWith("image/")) {
       }
     }
 
-    // 🔧 Füge diese Zeilen hinzu – Upload zusätzlich in ocr-files
-    const { error: ocrFilesUploadError } = await supabase.storage
-      .from("ocr-files")
-      .upload(imagePath, selectedFile, {
-        contentType: selectedFile.type,
-        upsert: true,
-      });
-
-    if (ocrFilesUploadError) {
-      console.warn("❌ Upload in ocr-files fehlgeschlagen:", ocrFilesUploadError.message);
-    }
     setIsUploading(false);
   };
   reader.readAsDataURL(selectedFile);
@@ -377,7 +366,7 @@ if (selectedFile.type.startsWith("image/")) {
         {isProcessing && (
           <div className="flex flex-col items-center space-y-2">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span className="text-sm">Processing with Mindee...</span>
+            <span className="text-sm">Processing...</span>
           </div>
         )}
 
