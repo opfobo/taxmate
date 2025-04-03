@@ -150,6 +150,30 @@ export const OcrUpload = ({
     resetStates();
     setFile(selectedFile);
 
+    // Direktvorschau bei Bilddateien (Base64)
+if (selectedFile.type.startsWith("image/")) {
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target?.result as string;
+    setPreviewUrl(base64);
+
+    // Optional: Bild in ocr-temp hochladen (für spätere Vorschau-Nutzung)
+    const previewPath = `${user.id}/${generatedSafeFileName.replace(/\.[^/.]+$/, "_preview.jpg")}`;
+    const { error: imagePreviewUploadError } = await supabase.storage
+      .from("ocr-temp")
+      .upload(previewPath, selectedFile, {
+        contentType: selectedFile.type,
+        upsert: true,
+      });
+
+    if (imagePreviewUploadError) {
+      console.warn("❌ Vorschau-Bild Upload fehlgeschlagen:", imagePreviewUploadError.message);
+    }
+  };
+  reader.readAsDataURL(selectedFile);
+}
+
+
     if (!user) {
       setError("You must be logged in.");
       toast({ title: "Login required", variant: "destructive" });
@@ -216,14 +240,14 @@ export const OcrUpload = ({
 
         const previewPath = `${user.id}/${generatedSafeFileName.replace(/\.[^/.]+$/, "_preview.jpg")}`;
         const { error: previewUploadError } = await supabase.storage
-          .from("ocr-files")
+          .from("ocr-temp")
           .upload(previewPath, jpegBlob, {
             contentType: "image/jpeg",
             upsert: true,
           });
 
         if (!previewUploadError) {
-          const publicUrl = supabase.storage.from("ocr-files").getPublicUrl(previewPath).data.publicUrl;
+          const publicUrl = supabase.storage.from("ocr-temp").getPublicUrl(previewPath).data.publicUrl;
           setPreviewUrl(publicUrl);
         }
       } catch (err) {
