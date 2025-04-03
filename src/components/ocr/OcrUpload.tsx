@@ -208,7 +208,7 @@ export const OcrUpload = ({
 
 if (previewResponse?.success && previewResponse.images?.length > 0) {
   const jpegFilename = previewResponse.images[0]; // z. B. upload_123_preview.1.jpeg
-  const jpegUrl = `${PDF_PREVIEW_BASE_URL}${jpegFilename}`;
+  const jpegUrl = `${PDF_PREVIEW_BASE_URL}${jpegFilename}`; //
 
   try {
     const jpegRes = await fetch(jpegUrl);
