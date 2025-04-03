@@ -46,9 +46,14 @@ const OcrDocumentPreview = ({ filePath }: OcrDocumentPreviewProps) => {
     <div className="space-y-2">
       <h3 className="text-sm font-medium">ocr.document_preview</h3>
       {previewUrl ? (
-        <div className="border rounded-md overflow-hidden">
-          <img src={previewUrl} alt="Preview" className="w-full object-contain" />
-        </div>
+        <div className="border rounded-md overflow-hidden group">
+  <img
+    src={previewUrl}
+    alt="Preview"
+    className="w-full object-contain transition-transform duration-300 ease-in-out group-hover:scale-125"
+  />
+</div>
+
       ) : (
         <div className="text-sm text-muted-foreground flex items-center space-x-2">
           <AlertCircle className="w-4 h-4" />
