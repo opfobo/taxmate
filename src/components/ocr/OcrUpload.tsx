@@ -216,14 +216,14 @@ export const OcrUpload = ({
 
         const previewPath = `${user.id}/${generatedSafeFileName.replace(/\.[^/.]+$/, "_preview.jpg")}`;
         const { error: previewUploadError } = await supabase.storage
-          .from("ocr-temp")
+          .from("ocr-files")
           .upload(previewPath, jpegBlob, {
             contentType: "image/jpeg",
             upsert: true,
           });
 
         if (!previewUploadError) {
-          const publicUrl = supabase.storage.from("ocr-temp").getPublicUrl(previewPath).data.publicUrl;
+          const publicUrl = supabase.storage.from("ocr-files").getPublicUrl(previewPath).data.publicUrl;
           setPreviewUrl(publicUrl);
         }
       } catch (err) {
