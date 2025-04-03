@@ -247,8 +247,16 @@ if (selectedFile.type.startsWith("image/")) {
           });
 
         if (!previewUploadError) {
-          const publicUrl = supabase.storage.from("ocr-temp").getPublicUrl(previewPath).data.publicUrl;
-          setPreviewUrl(publicUrl);
+          const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+  .from("ocr-temp")
+  .createSignedUrl(previewPath, 600);
+
+if (signedUrlError) {
+  console.warn("❌ Vorschau-Link Fehler:", signedUrlError.message);
+} else {
+  setPreviewUrl(signedUrlData?.signedUrl || null);
+}
+
         }
       } catch (err) {
         console.warn("⚠️ JPEG fetch/upload error:", err);
