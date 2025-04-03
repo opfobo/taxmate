@@ -336,10 +336,13 @@ if (uploadError) {
         )}
 
         {previewUrl && (
-          <div className="border rounded-md p-2 max-w-xs mx-auto mt-2">
-            <div className="aspect-video relative bg-muted flex items-center justify-center rounded">
-              <img src={previewUrl} alt="Preview" className="max-h-full max-w-full object-contain rounded" />
-            </div>
+          <div className="aspect-video relative bg-muted flex items-center justify-center rounded overflow-hidden group">
+  <img
+    src={previewUrl}
+    alt="Preview"
+    className="transition-transform duration-300 ease-in-out max-h-full max-w-full object-contain rounded group-hover:scale-125"
+  />
+</div>
             <p className="text-xs text-center mt-1 truncate">{fileName}</p>
           </div>
         )}
