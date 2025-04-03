@@ -186,28 +186,67 @@ export const OcrUpload = ({
 
     setSafeFileName(generatedSafeFileName);
 
-        // Direktvorschau bei Bilddateien (Base64)
+// PDF-Konvertierung und Upload in ocr-files
+if (selectedFile.type === "application/pdf") {
+  const previewResponse = await sendToPdfPreviewServer(selectedFile);
+  if (previewResponse?.success && previewResponse.images?.length > 0) {
+    const rawFilename = previewResponse.images[0];
+    const jpegFilename = rawFilename.split("/").pop();
+    const jpegUrl = `${PDF_PREVIEW_BASE_URL}${jpegFilename}`;
+    try {
+      const jpegRes = await fetch(jpegUrl);
+      if (!jpegRes.ok) throw new Error("Failed to fetch preview image from server");
+      const jpegBlob = await jpegRes.blob();
+
+      const previewPath = `${user.id}/${generatedSafeFileName.replace(/\.[^/.]+$/, "_preview.jpg")}`;
+      const { error: uploadError } = await supabase.storage
+        .from("ocr-files")
+        .upload(previewPath, jpegBlob, {
+          contentType: "image/jpeg",
+          upsert: true,
+        });
+
+      if (!uploadError) {
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          .from("ocr-files")
+          .createSignedUrl(previewPath, 600);
+        if (!signedUrlError && signedUrlData?.signedUrl) {
+          setPreviewUrl(signedUrlData.signedUrl);
+        }
+      }
+    } catch (err) {
+      console.warn("⚠️ JPEG fetch/upload error:", err);
+    }
+  }
+}
+
+// Bilder: Base64-Vorschau + Upload in ocr-images + signed URL holen
 if (selectedFile.type.startsWith("image/")) {
   const reader = new FileReader();
   reader.onload = async (e) => {
     const base64 = e.target?.result as string;
     setPreviewUrl(base64);
 
-    // Optional: Bild in ocr-temp hochladen (für spätere Vorschau-Nutzung)
-    const previewPath = `${user.id}/${generatedSafeFileName.replace(/\.[^/.]+$/, "_preview.jpg")}`;
-    const { error: imagePreviewUploadError } = await supabase.storage
-      .from("ocr-temp")
-      .upload(previewPath, selectedFile, {
+    const imagePath = `${user.id}/${generatedSafeFileName}`;
+    const { error: imageUploadError } = await supabase.storage
+      .from("ocr-images")
+      .upload(imagePath, selectedFile, {
         contentType: selectedFile.type,
         upsert: true,
       });
 
-    if (imagePreviewUploadError) {
-      console.warn("❌ Vorschau-Bild Upload fehlgeschlagen:", imagePreviewUploadError.message);
+    if (!imageUploadError) {
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from("ocr-images")
+        .createSignedUrl(imagePath, 600);
+      if (!signedUrlError && signedUrlData?.signedUrl) {
+        setPreviewUrl(signedUrlData.signedUrl);
+      }
     }
   };
   reader.readAsDataURL(selectedFile);
 }
+
 
     
     const { data: requestData, error: requestError } = await supabase
