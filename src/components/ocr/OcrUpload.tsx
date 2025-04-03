@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, Upload, FileText, Image as ImageIcon, CheckCircle, AlertCircle } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/context/AuthContext";
+import { PDF_PREVIEW_BASE_URL } from "@/constants/config";
 
 const MINDEE_API_KEY = "4173d96a82bd5fc4423bfc3c0bda37ed";
 const MINDEE_API_URL = "https://api.mindee.net/v1/products/mindee/invoices/v4/predict";
@@ -207,7 +208,7 @@ export const OcrUpload = ({
 
 if (previewResponse?.success && previewResponse.images?.length > 0) {
   const jpegFilename = previewResponse.images[0]; // z. B. upload_123_preview.1.jpeg
-  const jpegUrl = `https://taxmate.lovable.app/pdfserver/uploads/${jpegFilename}`;
+  const jpegUrl = `${PDF_PREVIEW_BASE_URL}${jpegFilename}`;
 
   try {
     const jpegRes = await fetch(jpegUrl);
