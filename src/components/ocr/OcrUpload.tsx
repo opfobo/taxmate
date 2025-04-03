@@ -138,6 +138,7 @@ export const OcrUpload = ({
 };
 
 
+
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const inputElement = e.target as HTMLInputElement;
     if (!inputElement.files || inputElement.files.length === 0) return;
@@ -202,8 +203,38 @@ export const OcrUpload = ({
       const requestId = requestData.id;
 
       // Vorschau-Server antriggern (nur bei PDFs)
-      await sendToPdfPreviewServer(file);
+      const previewResponse = await sendToPdfPreviewServer(file);
 
+if (previewResponse?.success && previewResponse.images?.length > 0) {
+  const jpegFilename = previewResponse.images[0]; // z. B. upload_123_preview.1.jpeg
+  const jpegUrl = `https://taxmate.lovable.app/pdfserver/uploads/${jpegFilename}`;
+
+  try {
+    const jpegRes = await fetch(jpegUrl);
+    if (!jpegRes.ok) throw new Error("Failed to fetch preview image from server");
+    const jpegBlob = await jpegRes.blob();
+
+    const previewPath = `${user.id}/${safeFileName.replace(/\.[^/.]+$/, "_preview.jpg")}`;
+    const { error: previewUploadError } = await supabase.storage
+      .from("ocr-files")
+      .upload(previewPath, jpegBlob, {
+        contentType: "image/jpeg",
+        upsert: true,
+      });
+
+    if (previewUploadError) {
+      console.warn("❌ Preview upload failed:", previewUploadError.message);
+    } else {
+      const publicUrl = supabase.storage.from("ocr-files").getPublicUrl(previewPath).data.publicUrl;
+      console.log("✅ Preview JPEG uploaded:", publicUrl);
+      setPreviewUrl(publicUrl); // Vorschau wird angezeigt
+    }
+  } catch (err) {
+    console.warn("⚠️ JPEG fetch/upload error:", err);
+  }
+}
+
+      
       // Save file to Supabase storage (ocr-files)
 const { error: uploadError } = await supabase.storage
   .from("ocr-files")
