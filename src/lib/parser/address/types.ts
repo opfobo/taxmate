@@ -1,12 +1,13 @@
 export interface ParsedAddress {
-  name: string | null;
-  phone: string | null;
-  zip: string | null;
-  city: string | null;
+  postalCode: string | null;
   region: string | null;
+  city: string | null;
   street: string | null;
-  kv: string | null;
+  house: string | null;
+  building: string | null;
+  apartment: string | null;
+  fullName: string | null;
+  phone: string | null;
   email: string | null;
-  birthdate: string | null;
-  raw: string;
+  birthday: string | null;
 }
