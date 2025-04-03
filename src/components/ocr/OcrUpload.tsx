@@ -34,6 +34,9 @@ export const OcrUpload = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [tokens, setTokens] = useState<number | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const [safeFileName, setSafeFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
 
@@ -57,6 +60,11 @@ export const OcrUpload = ({
     setUploadProgress(0);
     setError(null);
     setSuccess(false);
+    setFile(null);
+    setFileName(null);
+    setSafeFileName(null);
+    setRequestId(null);
+    setPreviewUrl(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -66,19 +74,15 @@ export const OcrUpload = ({
     if (!user) return;
     try {
       const prediction = result.document.inference.prediction;
-
       const invoiceNumber = prediction.invoice_number?.value || null;
       const invoiceDate = prediction.date?.value || null;
       const totalAmount = prediction.total_amount?.value || null;
       const totalNet = prediction.total_net?.value || null;
       const totalTax = prediction.total_tax?.value || null;
-
       const supplierName = prediction.supplier_name?.value || null;
       const supplierAddress = prediction.supplier_address?.value || null;
-
       const customerName = prediction.customer_name?.value || null;
       const customerAddress = prediction.customer_address?.value || null;
-
       const lineItems = prediction.line_items?.map((item: any, index: number) => ({
         id: uuidv4(),
         description: item.description || `Item ${index + 1}`,
@@ -120,33 +124,31 @@ export const OcrUpload = ({
   };
 
   const sendToPdfPreviewServer = async (file: File) => {
-  if (!file || !file.name.endsWith(".pdf")) return null;
-  const formData = new FormData();
-  formData.append("file", file);
-  try {
-    const res = await fetch("https://pcgs.ru/pdfserver/convert", {
-      method: "POST",
-      body: formData,
-    });
-    const json = await res.json();
-    if (!json.success) throw new Error(json.error || "Preview conversion failed");
-    console.log("📷 Preview conversion result:", json);
-    return json;
-  } catch (err) {
-    console.warn("❌ PDF Preview server error:", err);
-    return null;
-  }
-};
-
-
+    if (!file || !file.name.endsWith(".pdf")) return null;
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch("https://pcgs.ru/pdfserver/convert", {
+        method: "POST",
+        body: formData,
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Preview conversion failed");
+      console.log("📷 Preview conversion result:", json);
+      return json;
+    } catch (err) {
+      console.warn("❌ PDF Preview server error:", err);
+      return null;
+    }
+  };
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const inputElement = e.target as HTMLInputElement;
     if (!inputElement.files || inputElement.files.length === 0) return;
-    const file = inputElement.files[0];
+    const selectedFile = inputElement.files[0];
 
     resetStates();
-    setPreviewUrl(null);
+    setFile(selectedFile);
 
     if (!user) {
       setError("You must be logged in.");
@@ -161,96 +163,89 @@ export const OcrUpload = ({
     }
 
     const normalizedType =
-      file.type === "application/octet-stream" && file.name.endsWith(".pdf")
+      selectedFile.type === "application/octet-stream" && selectedFile.name.endsWith(".pdf")
         ? "application/pdf"
-        : file.type;
+        : selectedFile.type;
 
     if (!mimeTypes.includes(normalizedType)) {
       setError("Invalid file type");
       return;
     }
 
-    if (file.size / (1024 * 1024) > fileSizeLimitMB) {
+    if (selectedFile.size / (1024 * 1024) > fileSizeLimitMB) {
       setError("File too large");
       return;
     }
 
-    setFileName(file.name);
-    if (file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (e) => setPreviewUrl(e.target?.result as string);
-      reader.readAsDataURL(file);
+    setFileName(selectedFile.name);
+    const fileExtension = selectedFile.name.split(".").pop();
+    const timestamp = Date.now();
+    const uniqueId = uuidv4().substring(0, 8);
+    const generatedSafeFileName = `ocr_${timestamp}_${uniqueId}.${fileExtension}`;
+    const securePath = `${user.id}/${generatedSafeFileName}`;
+
+    setSafeFileName(generatedSafeFileName);
+
+    const { data: requestData, error: requestError } = await supabase
+      .from('ocr_requests')
+      .insert({
+        user_id: user.id,
+        file_name: generatedSafeFileName,
+        status: 'pending'
+      })
+      .select('id')
+      .single();
+
+    if (requestError) {
+      setError("Failed to create OCR request");
+      return;
     }
+
+    setRequestId(requestData.id);
+
+    // Vorschau vorbereiten (PDF → JPEG)
+    const previewResponse = await sendToPdfPreviewServer(selectedFile);
+    if (previewResponse?.success && previewResponse.images?.length > 0) {
+      const rawFilename = previewResponse.images[0];
+      const jpegFilename = rawFilename.split("/").pop();
+      const jpegUrl = `${PDF_PREVIEW_BASE_URL}${jpegFilename}`;
+      try {
+        const jpegRes = await fetch(jpegUrl);
+        if (!jpegRes.ok) throw new Error("Failed to fetch preview image from server");
+        const jpegBlob = await jpegRes.blob();
+
+        const previewPath = `${user.id}/${generatedSafeFileName.replace(/\.[^/.]+$/, "_preview.jpg")}`;
+        const { error: previewUploadError } = await supabase.storage
+          .from("ocr-files")
+          .upload(previewPath, jpegBlob, {
+            contentType: "image/jpeg",
+            upsert: true,
+          });
+
+        if (!previewUploadError) {
+          const publicUrl = supabase.storage.from("ocr-files").getPublicUrl(previewPath).data.publicUrl;
+          setPreviewUrl(publicUrl);
+        }
+      } catch (err) {
+        console.warn("⚠️ JPEG fetch/upload error:", err);
+      }
+    }
+
+    // Datei hochladen (aber noch kein OCR!)
+    const { error: uploadError } = await supabase.storage
+      .from("ocr-files")
+      .upload(securePath, selectedFile, { upsert: true });
+
+    if (uploadError) {
+      setError("File upload failed");
+    }
+  };
+
+  const handleOcrStart = async () => {
+    if (!file || !safeFileName || !requestId || !user) return;
 
     try {
-      setIsUploading(true);
-      const fileExtension = file.name.split(".").pop();
-      const timestamp = Date.now();
-      const uniqueId = uuidv4().substring(0, 8);
-      const safeFileName = `ocr_${timestamp}_${uniqueId}.${fileExtension}`;
-      const securePath = `${user.id}/${safeFileName}`;
-
-      const { data: requestData, error: requestError } = await supabase
-        .from('ocr_requests')
-        .insert({
-          user_id: user.id,
-          file_name: safeFileName,
-          status: 'pending'
-        })
-        .select('id')
-        .single();
-
-      if (requestError) throw new Error(`DB insert failed: ${requestError.message}`);
-      const requestId = requestData.id;
-
-      // Vorschau-Server antriggern (nur bei PDFs)
-      const previewResponse = await sendToPdfPreviewServer(file);
-
-if (previewResponse?.success && previewResponse.images?.length > 0) {
-  const rawFilename = previewResponse.images[0];
-  const jpegFilename = rawFilename.split("/").pop();
-  const jpegUrl = `${PDF_PREVIEW_BASE_URL}${jpegFilename}`;
-
-
-  try {
-    const jpegRes = await fetch(jpegUrl);
-    if (!jpegRes.ok) throw new Error("Failed to fetch preview image from server");
-    const jpegBlob = await jpegRes.blob();
-
-    const previewPath = `${user.id}/${safeFileName.replace(/\.[^/.]+$/, "_preview.jpg")}`;
-    const { error: previewUploadError } = await supabase.storage
-      .from("ocr-files")
-      .upload(previewPath, jpegBlob, {
-        contentType: "image/jpeg",
-        upsert: true,
-      });
-
-    if (previewUploadError) {
-      console.warn("❌ Preview upload failed:", previewUploadError.message);
-    } else {
-      const publicUrl = supabase.storage.from("ocr-files").getPublicUrl(previewPath).data.publicUrl;
-      console.log("✅ Preview JPEG uploaded:", publicUrl);
-      setPreviewUrl(publicUrl); // Vorschau wird angezeigt
-    }
-  } catch (err) {
-    console.warn("⚠️ JPEG fetch/upload error:", err);
-  }
-}
-
-      
-      // Save file to Supabase storage (ocr-files)
-const { error: uploadError } = await supabase.storage
-  .from("ocr-files")
-  .upload(securePath, file, { upsert: true });
-
-if (uploadError) {
-  throw new Error(`Failed to save file to ocr-files: ${uploadError.message}`);
-}
-
-
-      setIsUploading(false);
       setIsProcessing(true);
-
       const formData = new FormData();
       formData.append("document", file);
 
@@ -263,7 +258,6 @@ if (uploadError) {
       });
 
       const result = await mindeeResponse.json();
-
       if (!mindeeResponse.ok) {
         throw new Error(result.api_request?.error?.message || "Mindee OCR failed");
       }
@@ -277,15 +271,11 @@ if (uploadError) {
         processed_at: new Date().toISOString()
       }).eq('id', requestId);
 
-      const mappingId = await processOcrResult(result, requestId, safeFileName);
+      await processOcrResult(result, requestId, safeFileName);
 
       onOcrResult(result);
       setSuccess(true);
-      toast({ 
-        title: "OCR completed", 
-        description: "Document processed successfully. You can now review the extracted data." 
-      });
-
+      toast({ title: "OCR completed", description: "Document processed successfully." });
       navigate(`/ocr/review/${requestId}`);
     } catch (err: any) {
       setError(err.message);
@@ -337,14 +327,18 @@ if (uploadError) {
 
         {previewUrl && (
           <div className="aspect-video relative bg-muted flex items-center justify-center rounded overflow-hidden group">
-  <img
-    src={previewUrl}
-    alt="Preview"
-    className="transition-transform duration-300 ease-in-out max-h-full max-w-full object-contain rounded group-hover:scale-125"
-  />
-</div>
-            <p className="text-xs text-center mt-1 truncate">{fileName}</p>
+            <img
+              src={previewUrl}
+              alt="Preview"
+              className="transition-transform duration-300 ease-in-out max-h-full max-w-full object-contain rounded group-hover:scale-125"
+            />
           </div>
+        )}
+
+        {file && !success && !isProcessing && (
+          <Button onClick={handleOcrStart} disabled={!tokens || tokens < 1} className="mt-3">
+            OCR starten
+          </Button>
         )}
 
         {fileName && !previewUrl && (
