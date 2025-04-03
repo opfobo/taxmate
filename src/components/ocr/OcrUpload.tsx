@@ -119,23 +119,24 @@ export const OcrUpload = ({
   };
 
   const sendToPdfPreviewServer = async (file: File) => {
-    if (!file || !file.name.endsWith(".pdf")) return;
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch("https://pcgs.ru/pdfserver/convert", {
-        method: "POST",
-        body: formData,
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || "Preview conversion failed");
-console.log("📷 Preview conversion result:", json);
-setPreviewUrl(json.images?.[0] || null);
+  if (!file || !file.name.endsWith(".pdf")) return null;
+  const formData = new FormData();
+  formData.append("file", file);
+  try {
+    const res = await fetch("https://pcgs.ru/pdfserver/convert", {
+      method: "POST",
+      body: formData,
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || "Preview conversion failed");
+    console.log("📷 Preview conversion result:", json);
+    return json;
+  } catch (err) {
+    console.warn("❌ PDF Preview server error:", err);
+    return null;
+  }
+};
 
-    } catch (err) {
-      console.warn("❌ PDF Preview server error:", err);
-    }
-  };
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const inputElement = e.target as HTMLInputElement;
