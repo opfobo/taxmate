@@ -148,6 +148,7 @@ export const OcrUpload = ({
     const selectedFile = inputElement.files[0];
 
     resetStates();
+    setIsUploading(true);
     setFile(selectedFile);
 
     if (!user) {
@@ -195,7 +196,10 @@ if (selectedFile.type === "application/pdf") {
     const jpegUrl = `${PDF_PREVIEW_BASE_URL}${jpegFilename}`;
     try {
       const jpegRes = await fetch(jpegUrl);
-      if (!jpegRes.ok) throw new Error("Failed to fetch preview image from server");
+      if (!jpegRes.ok) {
+  console.warn("JPEG preview fetch failed:", jpegRes.status, jpegUrl);
+  throw new Error("Failed to fetch preview image from server");
+}
       const jpegBlob = await jpegRes.blob();
 
       const previewPath = `${user.id}/${generatedSafeFileName.replace(/\.[^/.]+$/, "_preview.jpg")}`;
@@ -243,6 +247,18 @@ if (selectedFile.type.startsWith("image/")) {
         setPreviewUrl(signedUrlData.signedUrl);
       }
     }
+
+    // 🔧 Füge diese Zeilen hinzu – Upload zusätzlich in ocr-files
+    const { error: ocrFilesUploadError } = await supabase.storage
+      .from("ocr-files")
+      .upload(imagePath, selectedFile, {
+        contentType: selectedFile.type,
+        upsert: true,
+      });
+
+    if (ocrFilesUploadError) {
+      console.warn("❌ Upload in ocr-files fehlgeschlagen:", ocrFilesUploadError.message);
+    }
   };
   reader.readAsDataURL(selectedFile);
 }
@@ -267,40 +283,7 @@ if (selectedFile.type.startsWith("image/")) {
     setRequestId(requestData.id);
 
     // Vorschau vorbereiten (PDF → JPEG)
-    const previewResponse = await sendToPdfPreviewServer(selectedFile);
-    if (previewResponse?.success && previewResponse.images?.length > 0) {
-      const rawFilename = previewResponse.images[0];
-      const jpegFilename = rawFilename.split("/").pop();
-      const jpegUrl = `${PDF_PREVIEW_BASE_URL}${jpegFilename}`;
-      try {
-        const jpegRes = await fetch(jpegUrl);
-        if (!jpegRes.ok) throw new Error("Failed to fetch preview image from server");
-        const jpegBlob = await jpegRes.blob();
 
-        const previewPath = `${user.id}/${generatedSafeFileName.replace(/\.[^/.]+$/, "_preview.jpg")}`;
-        const { error: previewUploadError } = await supabase.storage
-          .from("ocr-temp")
-          .upload(previewPath, jpegBlob, {
-            contentType: "image/jpeg",
-            upsert: true,
-          });
-
-        if (!previewUploadError) {
-          const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-  .from("ocr-temp")
-  .createSignedUrl(previewPath, 600);
-
-if (signedUrlError) {
-  console.warn("❌ Vorschau-Link Fehler:", signedUrlError.message);
-} else {
-  setPreviewUrl(signedUrlData?.signedUrl || null);
-}
-
-        }
-      } catch (err) {
-        console.warn("⚠️ JPEG fetch/upload error:", err);
-      }
-    }
 
     // Datei hochladen (aber noch kein OCR!)
     const { error: uploadError } = await supabase.storage
