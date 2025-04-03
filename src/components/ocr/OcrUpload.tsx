@@ -150,30 +150,6 @@ export const OcrUpload = ({
     resetStates();
     setFile(selectedFile);
 
-    // Direktvorschau bei Bilddateien (Base64)
-if (selectedFile.type.startsWith("image/")) {
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const base64 = e.target?.result as string;
-    setPreviewUrl(base64);
-
-    // Optional: Bild in ocr-temp hochladen (für spätere Vorschau-Nutzung)
-    const previewPath = `${user.id}/${generatedSafeFileName.replace(/\.[^/.]+$/, "_preview.jpg")}`;
-    const { error: imagePreviewUploadError } = await supabase.storage
-      .from("ocr-temp")
-      .upload(previewPath, selectedFile, {
-        contentType: selectedFile.type,
-        upsert: true,
-      });
-
-    if (imagePreviewUploadError) {
-      console.warn("❌ Vorschau-Bild Upload fehlgeschlagen:", imagePreviewUploadError.message);
-    }
-  };
-  reader.readAsDataURL(selectedFile);
-}
-
-
     if (!user) {
       setError("You must be logged in.");
       toast({ title: "Login required", variant: "destructive" });
@@ -210,6 +186,30 @@ if (selectedFile.type.startsWith("image/")) {
 
     setSafeFileName(generatedSafeFileName);
 
+        // Direktvorschau bei Bilddateien (Base64)
+if (selectedFile.type.startsWith("image/")) {
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target?.result as string;
+    setPreviewUrl(base64);
+
+    // Optional: Bild in ocr-temp hochladen (für spätere Vorschau-Nutzung)
+    const previewPath = `${user.id}/${generatedSafeFileName.replace(/\.[^/.]+$/, "_preview.jpg")}`;
+    const { error: imagePreviewUploadError } = await supabase.storage
+      .from("ocr-temp")
+      .upload(previewPath, selectedFile, {
+        contentType: selectedFile.type,
+        upsert: true,
+      });
+
+    if (imagePreviewUploadError) {
+      console.warn("❌ Vorschau-Bild Upload fehlgeschlagen:", imagePreviewUploadError.message);
+    }
+  };
+  reader.readAsDataURL(selectedFile);
+}
+
+    
     const { data: requestData, error: requestError } = await supabase
       .from('ocr_requests')
       .insert({
@@ -350,13 +350,24 @@ if (selectedFile.type.startsWith("image/")) {
         )}
 
         {previewUrl && (
-          <div className="aspect-video relative bg-muted flex items-center justify-center rounded overflow-hidden group">
-            <img
-              src={previewUrl}
-              alt="Preview"
-              className="transition-transform duration-300 ease-in-out max-h-full max-w-full object-contain rounded group-hover:scale-125"
-            />
-          </div>
+          <div
+  className="relative overflow-hidden rounded group w-full max-w-sm aspect-video"
+  onMouseMove={(e) => {
+    const img = e.currentTarget.querySelector("img") as HTMLImageElement;
+    if (!img) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    img.style.transformOrigin = `${x}% ${y}%`;
+  }}
+>
+  <img
+    src={previewUrl ?? ""}
+    alt="Preview"
+    className="object-contain w-full h-full transition-transform duration-300 ease-in-out scale-100 group-hover:scale-[2]"
+  />
+</div>
+
         )}
 
         {file && !success && !isProcessing && (
