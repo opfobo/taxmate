@@ -129,7 +129,9 @@ export const OcrUpload = ({
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Preview conversion failed");
-      console.log("📷 Preview conversion result:", json);
+console.log("📷 Preview conversion result:", json);
+setPreviewUrl(json.images?.[0] || null);
+
     } catch (err) {
       console.warn("❌ PDF Preview server error:", err);
     }
@@ -204,7 +206,7 @@ export const OcrUpload = ({
       // Save file to Supabase storage (ocr-files)
 const { error: uploadError } = await supabase.storage
   .from("ocr-files")
-  .upload(securePath, file);
+  .upload(securePath, file, { upsert: true });
 
 if (uploadError) {
   throw new Error(`Failed to save file to ocr-files: ${uploadError.message}`);
