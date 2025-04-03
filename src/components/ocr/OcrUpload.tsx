@@ -216,6 +216,7 @@ if (selectedFile.type === "application/pdf") {
           .createSignedUrl(previewPath, 600);
         if (!signedUrlError && signedUrlData?.signedUrl) {
           setPreviewUrl(signedUrlData.signedUrl);
+          setIsUploading(false);
         }
       }
     } catch (err) {
@@ -259,6 +260,7 @@ if (selectedFile.type.startsWith("image/")) {
     if (ocrFilesUploadError) {
       console.warn("❌ Upload in ocr-files fehlgeschlagen:", ocrFilesUploadError.message);
     }
+    setIsUploading(false);
   };
   reader.readAsDataURL(selectedFile);
 }
