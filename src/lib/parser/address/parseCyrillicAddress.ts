@@ -1,66 +1,95 @@
-// src/lib/parser/address/parseCyrillicAddress.ts
+// src/lib/parser/parseCyrillicAddresses.ts
 
-import { ParsedAddress } from "./types";
-import {
-  namePattern,
-  phonePattern,
-  zipPattern,
-  regionPattern,
-  emailPattern,
-  birthdatePattern,
-  streetKvPattern,
-  cityPattern,
-} from "./regex";
+export interface ParsedCyrillicAddress {
+  name: string;
+  phone: string;
+  postal_code?: string;
+  region?: string;
+  city?: string;
+  street?: string;
+  house?: string;
+  block?: string;
+  apartment?: string;
+  birthday?: string;
+  email?: string;
+  raw: string;
+}
 
-export function parseCyrillicAddress(input: string): ParsedAddress {
-  const result: ParsedAddress = {
-    name: null,
-    phone: null,
-    zip: null,
-    city: null,
-    region: null,
-    street: null,
-    kv: null,
-    email: null,
-    birthdate: null,
-    raw: input.trim(),
+export function parseCyrillicAddress(input: string): ParsedCyrillicAddress {
+  const raw = input.trim();
+  const lines = raw.split(/\n|\r|,/).map(l => l.trim()).filter(Boolean);
+  const joined = lines.join(" ");
+
+  const result: ParsedCyrillicAddress = {
+    name: '',
+    phone: '',
+    raw,
   };
 
-  const normalized = input.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+  // 📞 Telefonnummer
+  const phoneMatch = joined.match(/(?:\+7|8)?[\s\-]?(\(?9\d{2}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2})/);
+  if (phoneMatch) {
+    result.phone = `'${phoneMatch[0].replace(/[^\d]/g, '')}`;
+  }
 
-  const match = (regex: RegExp) => {
-    const found = regex.exec(normalized);
-    return found?.[0]?.trim() || null;
-  };
+  // 📧 E-Mail
+  const emailMatch = joined.match(/[\w.-]+@[\w.-]+\.[a-z]{2,}/i);
+  if (emailMatch) {
+    result.email = emailMatch[0];
+  }
 
-  result.name = match(namePattern);
-  result.phone = match(phonePattern)?.replace(/^8/, "+7").replace(/[^+\d]/g, "");
-  result.zip = match(zipPattern);
-  result.region = match(regionPattern);
-  result.email = match(emailPattern);
-  result.birthdate = match(birthdatePattern);
-  result.kv = match(streetKvPattern);
-  result.city = match(cityPattern);
+  // 🎂 Geburtstag
+  const birthdayMatch = joined.match(/\b(\d{2}[./-]\d{2}[./-](?:\d{4}|\d{2}))\b/);
+  if (birthdayMatch) {
+    result.birthday = birthdayMatch[1].replace(/\//g, '.');
+  }
 
-  // Street (heuristisch: der Teil vor Hausnummer und kv)
-  const kv = result.kv || "";
-  const zip = result.zip || "";
-  const phone = result.phone || "";
-  const email = result.email || "";
-  const bday = result.birthdate || "";
+  // 🧍‍♂️ Name
+  const nameMatch = joined.match(/[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+/);
+  if (nameMatch) {
+    result.name = nameMatch[0];
+  }
 
-  let cleaned = normalized
-    .replace(kv, "")
-    .replace(zip, "")
-    .replace(result.name || "", "")
-    .replace(phone, "")
-    .replace(email, "")
-    .replace(bday, "")
-    .replace(result.city || "", "")
-    .replace(result.region || "", "")
-    .trim();
+  // 📦 PLZ
+  const postalMatch = joined.match(/\b\d{6}\b/);
+  if (postalMatch) result.postal_code = postalMatch[0];
 
-  result.street = cleaned || null;
+  // 🏙️ Stadt
+  const cityMatch = joined.match(/г\.\s?[А-Яа-яё\- ]+/);
+  if (cityMatch) result.city = cityMatch[0].replace(/^г\.\s?/, '').trim();
+
+  // 🛣️ Straße
+  const streetMatch = joined.match(/ул\.?\s?[А-Яа-яё\- ]+/);
+  if (streetMatch) result.street = streetMatch[0].replace(/^ул\.?\s?/, '').trim();
+
+  // 🏠 Hausnummer
+  const houseMatch = joined.match(/д\.\s?(\d+[а-яА-Яа-я]*)/);
+  if (houseMatch) result.house = houseMatch[1];
+
+  // 🧱 Korpus / Block
+  const blockMatch = joined.match(/корп(?:\.|ус)?\s?(\d+)/i);
+  if (blockMatch) result.block = blockMatch[1];
+
+  // 🚪 Wohnung
+  const kvMatch = joined.match(/кв\.?\s?(\d+)/);
+  if (kvMatch) result.apartment = kvMatch[1];
+
+  // 🌍 Region / Oblast / Krai / Respublika
+  const regionPatterns = [
+    /([А-Яа-яё\- ]+?)\s*(обл\.|область)/i,
+    /([А-Яа-яё\- ]+?)\s*(край)/i,
+    /([А-Яа-яё\- ]+?)\s*(респ\.|республика)/i,
+  ];
+
+  for (const pattern of regionPatterns) {
+    const match = joined.match(pattern);
+    if (match) {
+      result.region = match[0]
+        .replace(/(обл\.?|область|край|респ\.?|республика)/i, '')
+        .trim();
+      break;
+    }
+  }
 
   return result;
 }
