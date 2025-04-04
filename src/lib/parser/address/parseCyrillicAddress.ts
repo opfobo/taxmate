@@ -23,10 +23,9 @@ export interface ParsedCyrillicAddress {
 
 export function parseCyrillicAddress(input: string): ParsedCyrillicAddress {
   const raw = input.trim();
-  const lines = raw
-  .replace(/(?:\r\n|\r|\n)+/g, "\n") // Erkenne ALLE Arten von Zeilenumbrüchen (auch bei Copy-Paste)
-  .split("\n")
-  .map(line => line.trim())
+  const lines = input
+  .split(/[\r\n]+/) // Fange alle Umbrucharten ab
+  .map((line) => line.trim())
   .filter(Boolean);
   const result: ParsedCyrillicAddress = {
     raw,
