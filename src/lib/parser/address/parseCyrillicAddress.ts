@@ -36,9 +36,10 @@ export function parseCyrillicAddress(input: string): ParsedCyrillicAddress {
 
     // Telefonnummer
     if (/\b(?:\+7|8)?[\s\-]?\(?9\d{2}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}\b/.test(normalized)) {
+      const clean = line.match(/\d{7,}/)?.[0] ?? line;
       result.phone = {
-        original: line.match(/\d{7,}/)?.[0] ?? line,
-        translit: transliterate(line),
+        original: clean,
+        translit: transliterate(clean),
       };
       continue;
     }
@@ -54,18 +55,20 @@ export function parseCyrillicAddress(input: string): ParsedCyrillicAddress {
 
     // Geburtstag
     if (/\b\d{2}[./-]\d{2}[./-]\d{2,4}\b/.test(line)) {
+      const clean = line.replace(/\//g, ".");
       result.birthday = {
-        original: line.replace(/\//g, "."),
-        translit: transliterate(line),
+        original: clean,
+        translit: transliterate(clean),
       };
       continue;
     }
 
     // PLZ
     if (/\b\d{6}\b/.test(line)) {
+      const code = line.match(/\b\d{6}\b/)?.[0] ?? line;
       result.postal_code = {
-        original: line.match(/\b\d{6}\b/)?.[0],
-        translit: transliterate(line),
+        original: code,
+        translit: transliterate(code),
       };
       continue;
     }
@@ -79,11 +82,12 @@ export function parseCyrillicAddress(input: string): ParsedCyrillicAddress {
       continue;
     }
 
-    // Stadt (г. Москва, Санкт-Петербург etc.)
+    // Stadt
     if (/^г[.\s]/.test(normalized) || /санкт[- ]петербург/.test(normalized)) {
+      const cityClean = line.replace(/^г[.\s]*/i, "").trim();
       result.city = {
-        original: line.replace(/^г[.\s]*/i, ""),
-        translit: transliterate(line),
+        original: cityClean,
+        translit: transliterate(cityClean),
       };
       continue;
     }
@@ -91,49 +95,48 @@ export function parseCyrillicAddress(input: string): ParsedCyrillicAddress {
     // Straße
     if (/ул\.?|улица|проспект|переулок|пр\.|пер\./.test(normalized)) {
       const streetMatch = line.match(/(ул\.?|улица|проспект|переулок|пр\.|пер\.)\s?([А-Яа-яё0-9.,\-\s]+)/i);
-      if (streetMatch) {
-        result.street = {
-          original: streetMatch[2].trim(),
-          translit: transliterate(streetMatch[2]),
-        };
-      } else {
-        result.street = {
-          original: line,
-          translit: transliterate(line),
-        };
-      }
+      const clean = streetMatch?.[2]?.trim() ?? line;
+      result.street = {
+        original: clean,
+        translit: transliterate(clean),
+      };
       continue;
     }
 
-    // Hausnummer / квартира / корпус
+    // Hausnummer
     if (/д\.|дом\s?\d+/.test(normalized)) {
       const houseMatch = line.match(/д\.?\s?(\d+[а-яА-Яа-я]*)/);
       if (houseMatch) {
+        const clean = houseMatch[1];
         result.house = {
-          original: houseMatch[1],
-          translit: transliterate(houseMatch[1]),
+          original: clean,
+          translit: transliterate(clean),
         };
       }
       continue;
     }
 
+    // Block / корпус
     if (/корп\.|корпус/.test(normalized)) {
       const blockMatch = line.match(/корп(?:\.|ус)?\s?(\d+)/i);
       if (blockMatch) {
+        const clean = blockMatch[1];
         result.block = {
-          original: blockMatch[1],
-          translit: transliterate(blockMatch[1]),
+          original: clean,
+          translit: transliterate(clean),
         };
       }
       continue;
     }
 
+    // Wohnung
     if (/кв\.|квартира/.test(normalized)) {
       const aptMatch = line.match(/кв\.?\s?(\d+)/);
       if (aptMatch) {
+        const clean = aptMatch[1];
         result.apartment = {
-          original: aptMatch[1],
-          translit: transliterate(aptMatch[1]),
+          original: clean,
+          translit: transliterate(clean),
         };
       }
       continue;
@@ -148,7 +151,7 @@ export function parseCyrillicAddress(input: string): ParsedCyrillicAddress {
       continue;
     }
 
-    // Unrecognized line
+    // Unrecognized
     result.unrecognized!.push(line);
   }
 
