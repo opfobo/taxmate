@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { parseCyrillicAddress, ParsedCyrillicAddress } from "@/lib/parser/parseCyrillicAddress";
+import { parseCyrillicAddress, ParsedCyrillicAddress } from "@/lib/parser/address/parseCyrillicAddress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
