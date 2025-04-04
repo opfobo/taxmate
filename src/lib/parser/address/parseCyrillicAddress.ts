@@ -1,4 +1,3 @@
-// src/lib/parser/address/parseCyrillicAddress.ts
 import { transliterate } from "./transliteration";
 
 export interface ParsedField {
@@ -64,8 +63,9 @@ export function parseCyrillicAddress(input: string): ParsedCyrillicAddress {
     }
 
     // PLZ
-    if (/\b\d{6}\b/.test(line)) {
-      const code = line.match(/\b\d{6}\b/)?.[0] ?? line;
+    const postalMatch = line.match(/\b\d{6}\b/);
+    if (postalMatch) {
+      const code = postalMatch[0];
       result.postal_code = {
         original: code,
         translit: transliterate(code),
@@ -104,41 +104,35 @@ export function parseCyrillicAddress(input: string): ParsedCyrillicAddress {
     }
 
     // Hausnummer
-    if (/д\.|дом\s?\d+/.test(normalized)) {
-      const houseMatch = line.match(/д\.?\s?(\d+[а-яА-Яа-я]*)/);
-      if (houseMatch) {
-        const clean = houseMatch[1];
-        result.house = {
-          original: clean,
-          translit: transliterate(clean),
-        };
-      }
+    const houseMatch = line.match(/д\.?\s?(\d+[а-яА-Яа-я]*)/);
+    if (houseMatch) {
+      const clean = houseMatch[1];
+      result.house = {
+        original: clean,
+        translit: transliterate(clean),
+      };
       continue;
     }
 
     // Block / корпус
-    if (/корп\.|корпус/.test(normalized)) {
-      const blockMatch = line.match(/корп(?:\.|ус)?\s?(\d+)/i);
-      if (blockMatch) {
-        const clean = blockMatch[1];
-        result.block = {
-          original: clean,
-          translit: transliterate(clean),
-        };
-      }
+    const blockMatch = line.match(/корп(?:\.|ус)?\s?(\d+)/i);
+    if (blockMatch) {
+      const clean = blockMatch[1];
+      result.block = {
+        original: clean,
+        translit: transliterate(clean),
+      };
       continue;
     }
 
     // Wohnung
-    if (/кв\.|квартира/.test(normalized)) {
-      const aptMatch = line.match(/кв\.?\s?(\d+)/);
-      if (aptMatch) {
-        const clean = aptMatch[1];
-        result.apartment = {
-          original: clean,
-          translit: transliterate(clean),
-        };
-      }
+    const aptMatch = line.match(/кв\.?\s?(\d+)/);
+    if (aptMatch) {
+      const clean = aptMatch[1];
+      result.apartment = {
+        original: clean,
+        translit: transliterate(clean),
+      };
       continue;
     }
 
