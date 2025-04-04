@@ -93,12 +93,14 @@ export function parseCyrillicAddress(input: string): ParsedCyrillicAddress {
     }
 
     // 🛣️ Straße
-    if (/ул\.?|улица|проспект|переулок|пр\.|пер\./.test(normalized)) {
-      const match = line.match(/(ул\.?|улица|проспект|переулок|пр\.|пер\.)\s?(.+)/i);
-      const street = match?.[2]?.trim() ?? line;
+    if (/(^|[^а-яёa-z])(ул\.|улица|проспект|переулок|пр\.|пер\.)(\s|$)/i.test(normalized)) {
+      const match = line.match(/(ул\.?|улица|проспект|переулок|пр\.|пер\.)\s*(.+)/i);
+      const prefix = match?.[1]?.trim() ?? "";
+      const rest = match?.[2]?.trim() ?? line;
+
       result.street = {
-        original: street,
-        translit: transliterate(street),
+        original: `${prefix} ${rest}`.trim(),
+        translit: transliterate(`${prefix} ${rest}`.trim()),
       };
       continue;
     }
