@@ -64,15 +64,15 @@ export function parseCyrillicAddress(input: string): ParsedCyrillicAddress {
       continue;
     }
 
-    // 🏙️ Stadt
-    if (/^(г\.\s*)?[А-Яа-яё\s\-]+$/.test(line) && !line.includes("обл") && !line.includes("респ")) {
-  const clean = line.replace(/^г\.\s*/i, "").trim();
-  result.city = {
-    original: clean,
-    translit: transliterate(clean),
-  };
-  continue;
-}
+// 🏙️ Stadt
+     if (/^г\.\s?[А-Яа-яё\- ]+/.test(normalized) || /санкт[- ]петербург/.test(normalized)) {
+       const clean = line.replace(/^г\.\s*/i, "").trim();
+       result.city = {
+         original: clean,
+         translit: transliterate(clean),
+       };
+       continue;
+     }
 
     // 📦 PLZ (6-stellig)
     if (/\b\d{6}\b/.test(normalized)) {
