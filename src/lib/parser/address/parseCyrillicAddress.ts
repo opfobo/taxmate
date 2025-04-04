@@ -1,4 +1,4 @@
-// src/lib/parser/parseCyrillicAddresses.ts
+// src/lib/parser/parseCyrillicAddress.ts
 
 export interface ParsedCyrillicAddress {
   name: string;
