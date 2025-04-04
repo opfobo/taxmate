@@ -1,141 +1,118 @@
-// src/pages/test/AddressParserInteractivePage.tsx
+// src/pages/test/address.tsx
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { transliterate } from "@/lib/parser/address/transliteration";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
-const FIELD_OPTIONS = [
-  { value: "name", label: "Name", icon: "👤" },
-  { value: "phone", label: "Telefon", icon: "📞" },
-  { value: "email", label: "E-Mail", icon: "📷" },
-  { value: "birthday", label: "Geburtsdatum", icon: "🎂" },
-  { value: "street", label: "Straße", icon: "🛣️" },
-  { value: "city", label: "Stadt", icon: "🏙️" },
-  { value: "postal_code", label: "PLZ", icon: "🏷️" },
-  { value: "region", label: "Region", icon: "🌍" },
-  { value: "unknown", label: "Unbekannt", icon: "❓" },
-];
+type FieldKey = "?" | "name" | "street" | "city" | "region" | "postal_code" | "phone" | "email" | "birthday";
 
-type LineField = {
-  id: number;
-  raw: string;
-  translit: string;
-  type: string;
+const detectFieldType = (line: string): FieldKey => {
+  const norm = line.toLowerCase();
+  if (/[\w.-]+@[\w.-]+\.[a-z]{2,}/i.test(line)) return "email";
+  if (/(?:\+7|8)?[\s\-]?\(?9\d{2}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}/.test(norm)) return "phone";
+  if (/\b\d{2}[./-]\d{2}[./-]\d{2,4}\b/.test(norm)) return "birthday";
+  if (/^\d{6}$/.test(norm)) return "postal_code";
+  if (/обл\.|область|край|респ\.|республика/.test(norm)) return "region";
+  if (/^г\.\s?[А-Яа-яё\- ]+/.test(norm) || /санкт[- ]петербург/.test(norm)) return "city";
+  if (/ул\.?|улица|проспект|переулок|пр\.|пер\./.test(norm)) return "street";
+  if (/^[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+$/.test(line)) return "name";
+  return "?";
 };
 
-let idCounter = 1;
-
-export default function AddressParserInteractivePage() {
+export default function AddressParserTestPage() {
   const [input, setInput] = useState("");
-  const [fields, setFields] = useState<LineField[]>([]);
+  const [lines, setLines] = useState<
+    { id: number; original: string; translit: string; type: FieldKey }[]
+  >([]);
 
-  const guessType = (line: string): string => {
-    const lower = line.toLowerCase();
-    if (/\+?7|8\d{10}/.test(lower)) return "phone";
-    if (/@/.test(lower)) return "email";
-    if (/\d{2}[./-]\d{2}[./-]\d{2,4}/.test(lower)) return "birthday";
-    if (/[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+/.test(line)) return "name";
-    if (/ул\.|улица|проспект|пер\.|переулок/.test(lower)) return "street";
-    if (/г\.\s?[А-Яа-яё]+/.test(lower)) return "city";
-    if (/область|республика|край/.test(lower)) return "region";
-    if (/^\d{6}$/.test(lower)) return "postal_code";
-    return "unknown";
-  };
-
-  const handleParse = () => {
-    const lines = input
+  const handleSplit = () => {
+    const splitLines = input
       .split(/\r?\n/)
-      .map((line) => line.trim())
+      .map((l) => l.trim())
       .filter(Boolean);
 
-    const mapped = lines.map((line) => ({
-      id: idCounter++,
-      raw: line,
+    const structured = splitLines.map((line, idx) => ({
+      id: idx,
+      original: line,
       translit: transliterate(line),
-      type: guessType(line),
+      type: detectFieldType(line),
     }));
 
-    setFields(mapped);
+    setLines(structured);
   };
 
-  const handleTypeChange = (id: number, newType: string) => {
-    setFields((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, type: newType } : f))
+  const handleTypeChange = (id: number, newType: FieldKey) => {
+    setLines((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, type: newType } : l))
     );
   };
 
-  const handleTranslitChange = (id: number, newValue: string) => {
-    setFields((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, translit: newValue } : f))
+  const handleTranslitChange = (id: number, newText: string) => {
+    setLines((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, translit: newText } : l))
     );
-  };
-
-  const handleAddField = () => {
-    setFields((prev) => [
-      ...prev,
-      {
-        id: idCounter++,
-        raw: "",
-        translit: "",
-        type: "unknown",
-      },
-    ]);
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-10 px-4 space-y-6">
-      <h1 className="text-2xl font-bold">📦 Address Parser Test (Interactive)</h1>
+    <div className="max-w-4xl mx-auto py-10 px-4 space-y-6">
+      <h1 className="text-2xl font-bold flex items-center gap-2">
+        📦 Address Parser Test (interactive)
+      </h1>
 
       <div>
-        <Label htmlFor="address-input">Adresse eingeben (jede Angabe in separater Zeile):</Label>
+        <Label htmlFor="address-input">
+          Adresse eingeben (jede Angabe in separater Zeile):
+        </Label>
         <Textarea
           id="address-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          rows={6}
-          placeholder="z. B. Иванов Иван Иванович\n+79123456789\nexample@mail.ru\n01.01.1990\nг. Москва, ул. Ленина, д. 10"
+          placeholder={`г. Москва\nул. Ленина 12\nкв. 5\n101000\nИванов Иван Иванович\n+7 912 345 67 89\nivanov@mail.ru`}
+          rows={8}
         />
       </div>
 
-      <Button onClick={handleParse}>Zeilen analysieren</Button>
+      <Button onClick={handleSplit}>Zeilen analysieren</Button>
 
-      {fields.length > 0 && (
+      {lines.length > 0 && (
         <Card className="bg-muted/40 mt-6">
           <CardContent className="p-4 space-y-4">
             <h2 className="text-lg font-semibold mb-2">🔍 Analyse & Feldzuweisung</h2>
-
-            {fields.map((field) => (
-              <div key={field.id} className="flex gap-2 items-center">
+            {lines.map((line) => (
+              <div
+                key={line.id}
+                className="flex flex-col md:flex-row gap-3 items-start md:items-center"
+              >
                 <Select
-                  value={field.type}
-                  onValueChange={(val) => handleTypeChange(field.id, val)}
+                  value={line.type}
+                  onValueChange={(val) => handleTypeChange(line.id, val as FieldKey)}
                 >
-                  <SelectTrigger className="w-36">
-                    <SelectValue />
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Typ wählen" />
                   </SelectTrigger>
                   <SelectContent>
-                    {FIELD_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.icon} {opt.label}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="?">❓ Unbekannt</SelectItem>
+                    <SelectItem value="name">👤 Name</SelectItem>
+                    <SelectItem value="street">🛣️ Straße</SelectItem>
+                    <SelectItem value="city">🏙️ Stadt</SelectItem>
+                    <SelectItem value="region">🌍 Region</SelectItem>
+                    <SelectItem value="postal_code">📦 PLZ</SelectItem>
+                    <SelectItem value="phone">📞 Telefon</SelectItem>
+                    <SelectItem value="email">📧 E-Mail</SelectItem>
+                    <SelectItem value="birthday">🎂 Geburtsdatum</SelectItem>
                   </SelectContent>
                 </Select>
-
                 <Input
-                  value={field.translit}
-                  onChange={(e) => handleTranslitChange(field.id, e.target.value)}
+                  value={line.translit}
+                  className="flex-1"
+                  onChange={(e) => handleTranslitChange(line.id, e.target.value)}
                 />
               </div>
             ))}
-
-            <Button variant="outline" onClick={handleAddField}>
-              ➕ Neues Feld hinzufügen
-            </Button>
           </CardContent>
         </Card>
       )}
