@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AddressParserTestPage from "@/pages/test/AddressParserTestPage";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
@@ -126,6 +127,10 @@ const App = () => (
                   <AnalyticsPage />
                 </ProtectedRoute>
               } />
+              <Routes>
+
+  <Route path="/test/address" element={<AddressParserTestPage />} />
+</Routes>
               
               {/* Legacy routes - redirect to new structure */}
               <Route path="/orders" element={<Navigate to="/dashboard/orders/sales" replace />} />
