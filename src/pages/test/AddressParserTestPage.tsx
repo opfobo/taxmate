@@ -17,32 +17,36 @@ export default function AddressParserTestPage() {
     let result = null;
 
     switch (region) {
-      case "RU":
-        const rawParsed = parseCyrillicAddress(input);
-        const finalParsed: any = {
-          raw: rawParsed.raw,
-          unrecognized: rawParsed.unrecognized || [],
-        };
+      // innerhalb von handleParse()
 
-        for (const [key, value] of Object.entries(rawParsed)) {
-          if (key === "raw") continue;
+case "RU":
+  const rawParsed = parseCyrillicAddress(input);
+  const finalParsed: any = {
+    raw: rawParsed.raw,
+  };
 
-if (key === "unrecognized") {
-  finalParsed.unrecognized = rawParsed.unrecognized?.length
-    ? rawParsed.unrecognized
-    : "–";
-  continue;
-}
-          if (typeof value === "string") {
-            finalParsed[key] = {
-              original: value,
-              translit: transliterate(value),
-            };
-          }
-        }
+  for (const [key, value] of Object.entries(rawParsed)) {
+    if (key === "raw") continue;
 
-        result = finalParsed;
-        break;
+    if (key === "unrecognized") {
+      finalParsed.unrecognized =
+        Array.isArray(value) && value.length > 0
+          ? value
+          : ["–"];
+      continue;
+    }
+
+    if (typeof value === "string") {
+      finalParsed[key] = {
+        original: value,
+        translit: transliterate(value),
+      };
+    }
+  }
+
+  result = finalParsed;
+  break;
+
 
       case "EU":
         result = { raw: input, note: "EU parsing not yet implemented." };
@@ -105,14 +109,15 @@ if (key === "unrecognized") {
   <div key={key}>
     <span className="font-medium">{key}:</span>{" "}
     {typeof value === "object" && value !== null
-      ? value.original && value.translit
+      ? "original" in value && "translit" in value
         ? `${value.original} → ${value.translit}`
         : Array.isArray(value)
           ? value.join(", ")
-          : String(value)
+          : JSON.stringify(value)
       : String(value)}
   </div>
 ))}
+
 
             </div>
           </CardContent>
