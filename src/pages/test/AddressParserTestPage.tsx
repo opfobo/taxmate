@@ -1,122 +1,118 @@
+// src/pages/test/address.tsx
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { parseCyrillicAddress } from "@/lib/parser/address/parseCyrillicAddress";
+import { transliterate } from "@/lib/parser/address/transliteration";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { transliterate } from "@/lib/parser/address/transliteration";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
-type Region = "RU" | "EU" | "GLOBAL";
+type FieldKey = "?" | "name" | "street" | "city" | "region" | "postal_code" | "phone" | "email" | "birthday";
+
+const detectFieldType = (line: string): FieldKey => {
+  const norm = line.toLowerCase();
+  if (/[\w.-]+@[\w.-]+\.[a-z]{2,}/i.test(line)) return "email";
+  if (/(?:\+7|8)?[\s\-]?\(?9\d{2}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}/.test(norm)) return "phone";
+  if (/\b\d{2}[./-]\d{2}[./-]\d{2,4}\b/.test(norm)) return "birthday";
+  if (/^\d{6}$/.test(norm)) return "postal_code";
+  if (/обл\.|область|край|респ\.|республика/.test(norm)) return "region";
+  if (/^г\.\s?[А-Яа-яё\- ]+/.test(norm) || /санкт[- ]петербург/.test(norm)) return "city";
+  if (/ул\.?|улица|проспект|переулок|пр\.|пер\./.test(norm)) return "street";
+  if (/^[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+$/.test(line)) return "name";
+  return "?";
+};
 
 export default function AddressParserTestPage() {
   const [input, setInput] = useState("");
-  const [region, setRegion] = useState<Region>("RU");
-  const [parsed, setParsed] = useState<any | null>(null);
+  const [lines, setLines] = useState<
+    { id: number; original: string; translit: string; type: FieldKey }[]
+  >([]);
 
-  const handleParse = () => {
-    let result = null;
+  const handleSplit = () => {
+    const splitLines = input
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
 
-    switch (region) {
-      // innerhalb von handleParse()
+    const structured = splitLines.map((line, idx) => ({
+      id: idx,
+      original: line,
+      translit: transliterate(line),
+      type: detectFieldType(line),
+    }));
 
-case "RU":
-  const rawParsed = parseCyrillicAddress(input);
-  const finalParsed: any = {
-    raw: rawParsed.raw,
+    setLines(structured);
   };
 
-  for (const [key, value] of Object.entries(rawParsed)) {
-    if (key === "raw") continue;
+  const handleTypeChange = (id: number, newType: FieldKey) => {
+    setLines((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, type: newType } : l))
+    );
+  };
 
-    if (key === "unrecognized") {
-      finalParsed.unrecognized =
-        Array.isArray(value) && value.length > 0
-          ? value
-          : ["–"];
-      continue;
-    }
-
-    if (typeof value === "object" && value !== null && "original" in value) {
-      finalParsed[key] = value;
-    }
-  }
-
-  result = finalParsed;
-  break;
-
-
-      case "EU":
-        result = { raw: input, note: "EU parsing not yet implemented." };
-        break;
-
-      case "GLOBAL":
-        result = { raw: input, note: "Global parsing not yet implemented." };
-        break;
-    }
-
-    setParsed(result);
+  const handleTranslitChange = (id: number, newText: string) => {
+    setLines((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, translit: newText } : l))
+    );
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-10 px-4 space-y-6">
+    <div className="max-w-4xl mx-auto py-10 px-4 space-y-6">
       <h1 className="text-2xl font-bold flex items-center gap-2">
-        📦 Address Parser Test
+        📦 Address Parser Test (interactive)
       </h1>
 
-      <div className="flex gap-2">
-        <Button
-          variant={region === "RU" ? "default" : "outline"}
-          onClick={() => setRegion("RU")}
-        >
-          RU
-        </Button>
-        <Button
-          variant={region === "EU" ? "default" : "outline"}
-          onClick={() => setRegion("EU")}
-        >
-          EU
-        </Button>
-        <Button
-          variant={region === "GLOBAL" ? "default" : "outline"}
-          onClick={() => setRegion("GLOBAL")}
-        >
-          Global
-        </Button>
-      </div>
-
       <div>
-        <Label htmlFor="address-input">Adresse eingeben (z. B. Copy-Paste aus E-Mail):</Label>
+        <Label htmlFor="address-input">
+          Adresse eingeben (jede Angabe in separater Zeile):
+        </Label>
         <Textarea
           id="address-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="z. B. Иванов Иван Иванович, ул. Ленина, д. 10, кв. 5, Москва, 101000"
-          rows={6}
+          placeholder={`г. Москва\nул. Ленина 12\nкв. 5\n101000\nИванов Иван Иванович\n+7 912 345 67 89\nivanov@mail.ru`}
+          rows={8}
         />
       </div>
 
-      <Button onClick={handleParse}>Adresse analysieren</Button>
+      <Button onClick={handleSplit}>Zeilen analysieren</Button>
 
-      {parsed && (
-        <Card className="bg-muted/40 mt-4">
-          <CardContent className="p-4">
-            <h2 className="text-lg font-semibold mb-2">🔍 Analyseergebnis</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm">
-              {Object.entries(parsed).map(([key, value]) => (
-  <div key={key}>
-    <span className="font-medium">{key}:</span>{" "}
-    {Array.isArray(value)
-  ? value.join(", ")
-  : typeof value === "object" && value !== null
-    ? value.original || value.translit
-      ? `${value.original ?? "—"} → ${value.translit ?? "—"}`
-      : JSON.stringify(value)
-    : String(value)}
-  </div>
-))}
-
-
-            </div>
+      {lines.length > 0 && (
+        <Card className="bg-muted/40 mt-6">
+          <CardContent className="p-4 space-y-4">
+            <h2 className="text-lg font-semibold mb-2">🔍 Analyse & Feldzuweisung</h2>
+            {lines.map((line) => (
+              <div
+                key={line.id}
+                className="flex flex-col md:flex-row gap-3 items-start md:items-center"
+              >
+                <Select
+                  value={line.type}
+                  onValueChange={(val) => handleTypeChange(line.id, val as FieldKey)}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Typ wählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="?">❓ Unbekannt</SelectItem>
+                    <SelectItem value="name">👤 Name</SelectItem>
+                    <SelectItem value="street">🛣️ Straße</SelectItem>
+                    <SelectItem value="city">🏙️ Stadt</SelectItem>
+                    <SelectItem value="region">🌍 Region</SelectItem>
+                    <SelectItem value="postal_code">📦 PLZ</SelectItem>
+                    <SelectItem value="phone">📞 Telefon</SelectItem>
+                    <SelectItem value="email">📧 E-Mail</SelectItem>
+                    <SelectItem value="birthday">🎂 Geburtsdatum</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  value={line.translit}
+                  className="flex-1"
+                  onChange={(e) => handleTranslitChange(line.id, e.target.value)}
+                />
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}
