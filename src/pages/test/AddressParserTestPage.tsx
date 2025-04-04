@@ -113,6 +113,9 @@ export default function AddressParserTestPage() {
                 />
               </div>
             ))}
+            <Button variant="outline" onClick={handleAddField}>
+              ➕ Neues Feld hinzufügen
+            </Button>
           </CardContent>
         </Card>
       )}
