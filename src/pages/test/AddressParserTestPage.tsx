@@ -108,13 +108,13 @@ case "RU":
               {Object.entries(parsed).map(([key, value]) => (
   <div key={key}>
     <span className="font-medium">{key}:</span>{" "}
-    {typeof value === "object" && value !== null
-      ? "original" in value && "translit" in value
-        ? `${value.original} → ${value.translit}`
-        : Array.isArray(value)
-          ? value.join(", ")
-          : JSON.stringify(value)
-      : String(value)}
+    {Array.isArray(value)
+  ? value.join(", ")
+  : typeof value === "object" && value !== null
+    ? value.original || value.translit
+      ? `${value.original ?? "—"} → ${value.translit ?? "—"}`
+      : JSON.stringify(value)
+    : String(value)}
   </div>
 ))}
 
