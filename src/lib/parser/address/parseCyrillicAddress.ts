@@ -65,23 +65,25 @@ export function parseCyrillicAddress(input: string): ParsedCyrillicAddress {
     }
 
     // 🏙️ Stadt
-    if (/^г\.\s?[А-Яа-яё\- ]+/.test(normalized) || /санкт[- ]петербург/.test(normalized)) {
-      const clean = line.replace(/^г\.\s*/i, "").trim();
-      result.city = {
-        original: clean,
-        translit: transliterate(clean),
-      };
-      continue;
-    }
+    if (/^(г\.\s*)?[А-Яа-яё\s\-]+$/.test(line) && !line.includes("обл") && !line.includes("респ")) {
+  const clean = line.replace(/^г\.\s*/i, "").trim();
+  result.city = {
+    original: clean,
+    translit: transliterate(clean),
+  };
+  continue;
+}
 
     // 📦 PLZ (6-stellig)
-    if (/^\d{6}$/.test(line)) {
-      result.postal_code = {
-        original: line,
-        translit: transliterate(line),
-      };
-      continue;
-    }
+    if (/\b\d{6}\b/.test(normalized)) {
+  const match = normalized.match(/\b\d{6}\b/);
+  const code = match?.[0] ?? line;
+  result.postal_code = {
+    original: code,
+    translit: transliterate(code),
+  };
+  continue;
+}
 
     // 🌍 Region
     if (/обл\.|область|край|респ\.|республика/.test(normalized)) {
@@ -95,11 +97,11 @@ export function parseCyrillicAddress(input: string): ParsedCyrillicAddress {
     // 🛣️ Straße
     if (/(^|[^а-яёa-z])(ул\.|улица|проспект|переулок|пр\.|пер\.)(\s|$)/i.test(normalized)) {
       const match = line.match(/(ул\.?|улица|проспект|переулок|пр\.|пер\.)\s*(.+)/i);
-      const prefix = match?.[1]?.trim() ?? "";
-      const rest = match?.[2]?.trim() ?? line;
+      const prefix = match?.[1]?.trimEnd() ?? "";
+      const rest = match?.[2]?.trimStart() ?? "";
 
       result.street = {
-        original: `${prefix} ${rest}`.trim(),
+        original: `${prefix}${rest}`.trim(),
         translit: transliterate(`${prefix} ${rest}`.trim()),
       };
       continue;
