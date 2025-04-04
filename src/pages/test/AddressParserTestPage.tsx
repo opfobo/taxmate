@@ -36,11 +36,8 @@ case "RU":
       continue;
     }
 
-    if (typeof value === "string") {
-      finalParsed[key] = {
-        original: value,
-        translit: transliterate(value),
-      };
+    if (typeof value === "object" && value !== null && "original" in value) {
+      finalParsed[key] = value;
     }
   }
 
