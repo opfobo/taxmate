@@ -60,83 +60,115 @@ const App = () => (
               <Route path="/contact" element={<Contact />} />
               <Route path="/impressum" element={<Impressum />} />
               <Route path="/test/ocr" element={<OcrTestPage />} />
-              
+              <Route path="/test/address" element={<ProtectedRoute><AddressParserTestPage /></ProtectedRoute>}/>
+              <Route
+                path="/test/address"
+                element={
+                  <ProtectedRoute>
+                    <AddressParserTestPage />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Protected Routes */}
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              } />
-              <Route path="/settings" element={
-                <ProtectedRoute>
-                  <SettingsPage />
-                </ProtectedRoute>
-              } />
-              
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <SettingsPage />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* OCR Routes */}
-              <Route path="/ocr/review/:requestId" element={
-                <ProtectedRoute>
-                  <OcrInvoiceReviewPage />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/dashboard/ocr" element={
-                <ProtectedRoute>
-                  <OcrPage />
-                </ProtectedRoute>
-              } />
-              
+              <Route
+                path="/ocr/review/:requestId"
+                element={
+                  <ProtectedRoute>
+                    <OcrInvoiceReviewPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/ocr"
+                element={
+                  <ProtectedRoute>
+                    <OcrPage />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Orders Routes */}
-              <Route path="/dashboard/orders" element={
-                <ProtectedRoute>
-                  <OrdersLayout />
-                </ProtectedRoute>
-              }>
+              <Route
+                path="/dashboard/orders"
+                element={
+                  <ProtectedRoute>
+                    <OrdersLayout />
+                  </ProtectedRoute>
+                }
+              >
                 <Route index element={<Navigate to="/dashboard/orders/sales" replace />} />
                 <Route path="sales" element={<SalesOrdersPage />} />
                 <Route path="purchases" element={<PurchasesOrdersPage />} />
                 <Route path="transactions" element={<TransactionsPage />} />
                 <Route path="consumers" element={<ConsumersPage />} />
               </Route>
-              
-              <Route path="/shoppers" element={
-                <ProtectedRoute>
-                  <ShoppersPage />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/dashboard/tax-reports" element={
-                <ProtectedRoute>
-                  <TaxReportsPage />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/dashboard/resources" element={
-                <ProtectedRoute>
-                  <ResourcesPage />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/dashboard/analytics" element={
-                <ProtectedRoute>
-                  <AnalyticsPage />
-                </ProtectedRoute>
-              } />
 
+              <Route
+                path="/shoppers"
+                element={
+                  <ProtectedRoute>
+                    <ShoppersPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/tax-reports"
+                element={
+                  <ProtectedRoute>
+                    <TaxReportsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/resources"
+                element={
+                  <ProtectedRoute>
+                    <ResourcesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/analytics"
+                element={
+                  <ProtectedRoute>
+                    <AnalyticsPage />
+                  </ProtectedRoute>
+                }
+              />
 
-  <Route path="/test/address" element={<ProtectedRoute><AddressParserTestPage /></ProtectedRoute>} /></Routes>
-              
-              {/* Legacy routes - redirect to new structure */}
+              {/* Redirects */}
               <Route path="/orders" element={<Navigate to="/dashboard/orders/sales" replace />} />
               <Route path="/consumers" element={<Navigate to="/dashboard/orders/consumers" replace />} />
               <Route path="/dashboard/transactions" element={<Navigate to="/dashboard/orders/transactions" replace />} />
-              
-              {/* Catch-all Route */}
+
+              {/* Catch-all */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
