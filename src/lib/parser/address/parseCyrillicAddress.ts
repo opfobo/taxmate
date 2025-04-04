@@ -22,13 +22,15 @@ export interface ParsedCyrillicAddress {
 }
 
 export function parseCyrillicAddress(input: string): ParsedCyrillicAddress {
+  console.log("📋 Detected lines:", lines);
   const raw = input.trim();
+  console.log("📋 Detected lines:", lines);
   const lines = raw
   .replace(/(?:\r\n|\r|\n)+/g, "\n") // Erkenne ALLE Arten von Zeilenumbrüchen (auch bei Copy-Paste)
   .split("\n")
   .map(line => line.trim())
   .filter(Boolean);
-
+console.log("📋 Detected lines:", lines);
   const result: ParsedCyrillicAddress = {
     raw,
     unrecognized: [],
