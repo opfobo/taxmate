@@ -25,7 +25,14 @@ export default function AddressParserTestPage() {
         };
 
         for (const [key, value] of Object.entries(rawParsed)) {
-          if (["raw", "unrecognized"].includes(key)) continue;
+          if (key === "raw") continue;
+
+if (key === "unrecognized") {
+  finalParsed.unrecognized = rawParsed.unrecognized?.length
+    ? rawParsed.unrecognized
+    : "–";
+  continue;
+}
           if (typeof value === "string") {
             finalParsed[key] = {
               original: value,
@@ -95,13 +102,18 @@ export default function AddressParserTestPage() {
             <h2 className="text-lg font-semibold mb-2">🔍 Analyseergebnis</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm">
               {Object.entries(parsed).map(([key, value]) => (
-                <div key={key}>
-                  <span className="font-medium">{key}:</span>{" "}
-                  {typeof value === "object" && value !== null
-                    ? value.original + " → " + value.translit
-                    : String(value)}
-                </div>
-              ))}
+  <div key={key}>
+    <span className="font-medium">{key}:</span>{" "}
+    {typeof value === "object" && value !== null
+      ? value.original && value.translit
+        ? `${value.original} → ${value.translit}`
+        : Array.isArray(value)
+          ? value.join(", ")
+          : String(value)
+      : String(value)}
+  </div>
+))}
+
             </div>
           </CardContent>
         </Card>
