@@ -1,11 +1,10 @@
-// src/pages/test/AddressParserTestPage.tsx
-
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { parseCyrillicAddress } from "@/lib/parser/address/parseCyrillicAddress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { parseCyrillicAddress } from "@/lib/parser/address/parseCyrillicAddress";
+import { transliterate } from "@/lib/parser/address/transliteration";
 
 type Region = "RU" | "EU" | "GLOBAL";
 
@@ -16,17 +15,37 @@ export default function AddressParserTestPage() {
 
   const handleParse = () => {
     let result = null;
+
     switch (region) {
       case "RU":
-        result = parseCyrillicAddress(input);
+        const rawParsed = parseCyrillicAddress(input);
+        const finalParsed: any = {
+          raw: rawParsed.raw,
+          unrecognized: rawParsed.unrecognized || [],
+        };
+
+        for (const [key, value] of Object.entries(rawParsed)) {
+          if (["raw", "unrecognized"].includes(key)) continue;
+          if (typeof value === "string") {
+            finalParsed[key] = {
+              original: value,
+              translit: transliterate(value),
+            };
+          }
+        }
+
+        result = finalParsed;
         break;
+
       case "EU":
         result = { raw: input, note: "EU parsing not yet implemented." };
         break;
+
       case "GLOBAL":
         result = { raw: input, note: "Global parsing not yet implemented." };
         break;
     }
+
     setParsed(result);
   };
 
@@ -37,9 +56,24 @@ export default function AddressParserTestPage() {
       </h1>
 
       <div className="flex gap-2">
-        <Button variant={region === "RU" ? "default" : "outline"} onClick={() => setRegion("RU")}>RU</Button>
-        <Button variant={region === "EU" ? "default" : "outline"} onClick={() => setRegion("EU")}>EU</Button>
-        <Button variant={region === "GLOBAL" ? "default" : "outline"} onClick={() => setRegion("GLOBAL")}>Global</Button>
+        <Button
+          variant={region === "RU" ? "default" : "outline"}
+          onClick={() => setRegion("RU")}
+        >
+          RU
+        </Button>
+        <Button
+          variant={region === "EU" ? "default" : "outline"}
+          onClick={() => setRegion("EU")}
+        >
+          EU
+        </Button>
+        <Button
+          variant={region === "GLOBAL" ? "default" : "outline"}
+          onClick={() => setRegion("GLOBAL")}
+        >
+          Global
+        </Button>
       </div>
 
       <div>
@@ -49,7 +83,7 @@ export default function AddressParserTestPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="z. B. Иванов Иван Иванович, ул. Ленина, д. 10, кв. 5, Москва, 101000"
-          rows={8}
+          rows={6}
         />
       </div>
 
@@ -63,7 +97,9 @@ export default function AddressParserTestPage() {
               {Object.entries(parsed).map(([key, value]) => (
                 <div key={key}>
                   <span className="font-medium">{key}:</span>{" "}
-                  {typeof value === "string" ? value : JSON.stringify(value)}
+                  {typeof value === "object" && value !== null
+                    ? value.original + " → " + value.translit
+                    : String(value)}
                 </div>
               ))}
             </div>
