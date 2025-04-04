@@ -57,6 +57,18 @@ export default function AddressParserTestPage() {
     );
   };
 
+    const handleAddField = () => {
+    setFields((prev) => [
+      ...prev,
+      {
+        id: idCounter++,
+        raw: "",
+        translit: "",
+        type: "unknown",
+      },
+    ]);
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-10 px-4 space-y-6">
       <h1 className="text-2xl font-bold flex items-center gap-2">
