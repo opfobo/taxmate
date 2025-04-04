@@ -56,11 +56,29 @@ export default function AddressParserTestPage() {
           <CardContent className="p-4">
             <h2 className="text-lg font-semibold mb-2">🔍 Analyseergebnis</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm">
-              {Object.entries(parsed).map(([key, value]) => (
-                <div key={key}>
-                  <span className="font-medium">{key}:</span> {String(value ?? "—")}
-                </div>
-              ))}
+              {Object.entries(parsed).map(([key, value]) => {
+  if (key === "translit" && typeof value === "object" && value !== null) {
+    return (
+      <div key={key} className="col-span-full">
+        <span className="font-medium block mb-1">🔤 Translit:</span>
+        <div className="pl-4 space-y-1 text-sm text-muted-foreground">
+          {Object.entries(value).map(([subKey, subValue]) => (
+            <div key={subKey}>
+              <span className="font-medium">{subKey}:</span> {String(subValue ?? "—")}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div key={key}>
+      <span className="font-medium">{key}:</span> {String(value ?? "—")}
+    </div>
+  );
+})}
+
             </div>
           </CardContent>
         </Card>
