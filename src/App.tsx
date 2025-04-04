@@ -129,8 +129,7 @@ const App = () => (
               } />
               <Routes>
 
-  <Route path="/test/address" element={<AddressParserTestPage />} />
-</Routes>
+  <Route path="/test/address" element={<ProtectedRoute><AddressParserTestPage /></ProtectedRoute>} /></Routes>
               
               {/* Legacy routes - redirect to new structure */}
               <Route path="/orders" element={<Navigate to="/dashboard/orders/sales" replace />} />
