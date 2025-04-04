@@ -127,7 +127,7 @@ const App = () => (
                   <AnalyticsPage />
                 </ProtectedRoute>
               } />
-              <Routes>
+
 
   <Route path="/test/address" element={<ProtectedRoute><AddressParserTestPage /></ProtectedRoute>} /></Routes>
               
