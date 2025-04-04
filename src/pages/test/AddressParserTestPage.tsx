@@ -1,9 +1,11 @@
+// src/pages/test/AddressParserTestPage.tsx
+
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { parseCyrillicAddress } from "@/lib/parser/address/parseCyrillicAddress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { parseCyrillicAddress } from "@/lib/parser/address/parseCyrillicAddress";
 
 type Region = "RU" | "EU" | "GLOBAL";
 
@@ -30,7 +32,9 @@ export default function AddressParserTestPage() {
 
   return (
     <div className="max-w-3xl mx-auto py-10 px-4 space-y-6">
-      <h1 className="text-2xl font-bold">📦 Address Parser Test</h1>
+      <h1 className="text-2xl font-bold flex items-center gap-2">
+        📦 Address Parser Test
+      </h1>
 
       <div className="flex gap-2">
         <Button variant={region === "RU" ? "default" : "outline"} onClick={() => setRegion("RU")}>RU</Button>
@@ -45,7 +49,7 @@ export default function AddressParserTestPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="z. B. Иванов Иван Иванович, ул. Ленина, д. 10, кв. 5, Москва, 101000"
-          rows={6}
+          rows={8}
         />
       </div>
 
@@ -56,29 +60,12 @@ export default function AddressParserTestPage() {
           <CardContent className="p-4">
             <h2 className="text-lg font-semibold mb-2">🔍 Analyseergebnis</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm">
-              {Object.entries(parsed).map(([key, value]) => {
-  if (key === "translit" && typeof value === "object" && value !== null) {
-    return (
-      <div key={key} className="col-span-full">
-        <span className="font-medium block mb-1">🔤 Translit:</span>
-        <div className="pl-4 space-y-1 text-sm text-muted-foreground">
-          {Object.entries(value).map(([subKey, subValue]) => (
-            <div key={subKey}>
-              <span className="font-medium">{subKey}:</span> {String(subValue ?? "—")}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div key={key}>
-      <span className="font-medium">{key}:</span> {String(value ?? "—")}
-    </div>
-  );
-})}
-
+              {Object.entries(parsed).map(([key, value]) => (
+                <div key={key}>
+                  <span className="font-medium">{key}:</span>{" "}
+                  {typeof value === "string" ? value : JSON.stringify(value)}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
