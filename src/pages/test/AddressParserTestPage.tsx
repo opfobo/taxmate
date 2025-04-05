@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 
+// Typisierung für Felderkennung
+
 type FieldKey =
   | "?"
   | "name"
@@ -28,16 +30,12 @@ type FieldKey =
 
 const detectFieldType = (line: string): FieldKey => {
   const norm = line.toLowerCase();
-  if (/[\w.-]+@[\w.-]+\.[a-z]{2,}/i.test(line)) return "email";
-  if (
-    /(?:\+7|8)?[\s\-]?\(?9\d{2}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}/.test(norm)
-  )
-    return "phone";
+  if (/^[\w.-]+@[\w.-]+\.[a-z]{2,}$/i.test(line)) return "email";
+  if (/(?:\+7|8)?[\s-]?\(?9\d{2}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/.test(norm)) return "phone";
   if (/\b\d{2}[./-]\d{2}[./-]\d{2,4}\b/.test(norm)) return "birthday";
   if (/^\d{6}$/.test(norm)) return "postal_code";
   if (/обл\.|область|край|респ\.|республика/.test(norm)) return "region";
-  if (/^г\.\s?[А-Яа-яё\- ]+/.test(norm) || /санкт[- ]петербург/.test(norm))
-    return "city";
+  if (/^г\.\s?[А-Яа-яё\- ]+/.test(norm) || /санкт[- ]петербург/.test(norm)) return "city";
   if (/ул\.?|улица|проспект|переулок|пр\.|пер\./.test(norm)) return "street";
   if (/^[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+$/.test(line)) return "name";
   return "?";
@@ -58,11 +56,39 @@ export default function AddressParserTestPage() {
     setTranslitOutput(transliterated);
   }, [input]);
 
-  const handleSplit = () => {
-    const splitLines = input
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean);
+  const isMultiline = (text: string) =>
+    text.trim().split(/\r?\n/).filter(Boolean).length > 1;
+
+  const handleSplit = async () => {
+    let splitLines: string[] = [];
+
+    if (isMultiline(input)) {
+      splitLines = input
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean);
+    } else {
+      try {
+        const res = await fetch("https://pcgs.ru/address-api/parse", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ address: input }),
+        });
+        const result = await res.json();
+        const s = result.structured;
+
+        splitLines = [
+          s.city,
+          `${s.street ?? ""} ${s.house_number ?? ""}`.trim(),
+          s.postal_code,
+          s.name,
+          s.phone,
+          s.email,
+        ].filter(Boolean);
+      } catch (e) {
+        console.error("Fehler bei address-api:", e);
+      }
+    }
 
     const structured = splitLines.map((line, idx) => ({
       id: idx,
@@ -86,6 +112,10 @@ export default function AddressParserTestPage() {
     );
   };
 
+  const handleDeleteLine = (id: number) => {
+    setLines((prev) => prev.filter((l) => l.id !== id));
+  };
+
   const handleAddField = () => {
     const newId = lines.length > 0 ? Math.max(...lines.map((l) => l.id)) + 1 : 0;
     setLines((prev) => [
@@ -105,9 +135,8 @@ export default function AddressParserTestPage() {
         📦 Address Parser Test (interactive)
       </h1>
 
-      {/* Eingabe & Transliteration nebeneinander */}
       <div className="grid md:grid-cols-2 gap-4">
-        {/* Original Input */}
+        {/* Eingabe */}
         <div>
           <Label htmlFor="address-input">
             Adresse eingeben (jede Angabe in separater Zeile):
@@ -121,9 +150,9 @@ export default function AddressParserTestPage() {
           />
         </div>
 
-        {/* Transliteration Output */}
+        {/* Transliteration */}
         <div>
-          <Label htmlFor="translit-output">📝 Automatisch transliteriert:</Label>
+          <Label htmlFor="translit-output">🗘️ Automatisch transliteriert:</Label>
           <Textarea
             id="translit-output"
             value={translitOutput}
@@ -137,51 +166,72 @@ export default function AddressParserTestPage() {
       <Button onClick={handleSplit}>Zeilen analysieren</Button>
 
       {lines.length > 0 && (
-        <Card className="bg-muted/40 mt-6">
-          <CardContent className="p-4 space-y-4">
-            <h2 className="text-lg font-semibold mb-2">
-              🔍 Analyse & Feldzuweisung
-            </h2>
-            {lines.map((line) => (
-              <div
-                key={line.id}
-                className="flex flex-col md:flex-row gap-3 items-start md:items-center"
-              >
-                <Select
-                  value={line.type}
-                  onValueChange={(val) =>
-                    handleTypeChange(line.id, val as FieldKey)
-                  }
+        <>
+          <Card className="bg-muted/40 mt-6">
+            <CardContent className="p-4 space-y-4">
+              <h2 className="text-lg font-semibold mb-2">
+                🔍 Analyse & Feldzuweisung
+              </h2>
+              {lines.map((line) => (
+                <div
+                  key={line.id}
+                  className="flex flex-col md:flex-row gap-3 items-start md:items-center"
                 >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Typ wählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="?">❓ Unbekannt</SelectItem>
-                    <SelectItem value="name">👤 Name</SelectItem>
-                    <SelectItem value="street">🛣️ Straße</SelectItem>
-                    <SelectItem value="city">🏙️ Stadt</SelectItem>
-                    <SelectItem value="region">🌍 Region</SelectItem>
-                    <SelectItem value="postal_code">📦 PLZ</SelectItem>
-                    <SelectItem value="phone">📞 Telefon</SelectItem>
-                    <SelectItem value="email">📧 E-Mail</SelectItem>
-                    <SelectItem value="birthday">🎂 Geburtsdatum</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input
-                  value={line.translit}
-                  className="flex-1"
-                  onChange={(e) =>
-                    handleTranslitChange(line.id, e.target.value)
-                  }
-                />
-              </div>
-            ))}
-            <Button variant="outline" onClick={handleAddField}>
-              ➕ Neues Feld hinzufügen
-            </Button>
-          </CardContent>
-        </Card>
+                  <Select
+                    value={line.type}
+                    onValueChange={(val) =>
+                      handleTypeChange(line.id, val as FieldKey)
+                    }
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Typ wählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="?">❓ Unbekannt</SelectItem>
+                      <SelectItem value="name">👤 Name</SelectItem>
+                      <SelectItem value="street">🛚️ Straße</SelectItem>
+                      <SelectItem value="city">🌇 Stadt</SelectItem>
+                      <SelectItem value="region">🌍 Region</SelectItem>
+                      <SelectItem value="postal_code">📦 PLZ</SelectItem>
+                      <SelectItem value="phone">📞 Telefon</SelectItem>
+                      <SelectItem value="email">📧 E-Mail</SelectItem>
+                      <SelectItem value="birthday">🎂 Geburtsdatum</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    value={line.translit}
+                    className="flex-1"
+                    onChange={(e) =>
+                      handleTranslitChange(line.id, e.target.value)
+                    }
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:bg-red-100"
+                    onClick={() => handleDeleteLine(line.id)}
+                  >
+                    ✖
+                  </Button>
+                </div>
+              ))}
+              <Button variant="outline" onClick={handleAddField}>
+                ➕ Neues Feld hinzufügen
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Pflichtfeld-Hinweis */}
+          <div className="pt-4 space-y-2 text-sm text-muted-foreground">
+            <p>📜 Pflichtfelder für Speicherung:</p>
+            <ul className="list-disc list-inside pl-2">
+              <li>👤 <strong>Name</strong></li>
+              <li>🛚️ <strong>Straße</strong></li>
+              <li>📦 <strong>PLZ</strong></li>
+              <li>📞 oder 📧 <strong>Telefon oder E-Mail</strong></li>
+            </ul>
+          </div>
+        </>
       )}
     </div>
   );
