@@ -34,24 +34,11 @@ const detectFieldType = (line: string): FieldKey => {
   if (/(?:\+7|8)?[\s-]?\(?9\d{2}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/.test(norm)) return "phone";
   if (/\b\d{2}[./-]\d{2}[./-]\d{2,4}\b/.test(norm)) return "birthday";
   if (/^\d{6}$/.test(norm)) return "postal_code";
-  if (/обл\.|область|край|респ\.|республика/.test(norm)) return "region";
-  if (/^г\.\s?[А-Яа-яё\- ]+/.test(norm) || /санкт[- ]петербург/.test(norm)) return "city";
-  if (/ул\.?|улица|проспект|переулок|пр\.|пер\./.test(norm)) return "street";
-  if (/^[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+$/.test(line)) return "name";
+  if (/\u043e\u0431\u043b\.|\u043e\u0431\u043b\u0430\u0441\u0442\u044c|\u043a\u0440\u0430\u0439|\u0440\u0435\u0441\u043f\.|\u0440\u0435\u0441\u043f\u0443\u0431\u043b\u0438\u043a\u0430/.test(norm)) return "region";
+  if (/^\u0433\.?\s?[\u0410-\u042F\u0430-\u044f\u0451\- ]+/.test(norm) || /\u0441\u0430\u043d\u043a\u0442[- ]\u043f\u0435\u0442\u0435\u0440\u0431\u0443\u0440\u0433/.test(norm)) return "city";
+  if (/\u0443\u043b\.?|\u0443\u043b\u0438\u0446\u0430|\u043f\u0440\u043e\u0441\u043f\u0435\u043a\u0442|\u043f\u0435\u0440\u0435\u0443\u043b\u043e\u043a|\u043f\u0440\.|\u043f\u0435\u0440\./.test(norm)) return "street";
+  if (/^[\u0410-\u042f\u0401][\u0430-\u044f\u0451]+ [\u0410-\u042f\u0401][\u0430-\u044f\u0451]+ [\u0410-\u042f\u0401][\u0430-\u044f\u0451]+$/.test(line)) return "name";
   return "?";
-};
-
-const extractExtras = (text: string) => {
-  const phoneMatch = text.match(/(?:\+7|8)?\d{10,11}/);
-  const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}/);
-  const phone = phoneMatch?.[0] ?? null;
-  const email = emailMatch?.[0] ?? null;
-
-  let working = text;
-  if (phone) working = working.replace(phone, "");
-  if (email) working = working.replace(email, "");
-
-  return { phone, email, cleaned: working.trim() };
 };
 
 export default function AddressParserTestPage() {
@@ -74,45 +61,51 @@ export default function AddressParserTestPage() {
 
   const handleSplit = async () => {
     let splitLines: string[] = [];
-    const { phone, email, cleaned } = extractExtras(input);
+    let detectedFields: typeof lines = [];
 
-    if (isMultiline(input)) {
-      splitLines = input
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter(Boolean);
-    } else {
-      try {
-        const res = await fetch("https://pcgs.ru/address-api/parse", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ address: cleaned }),
-        });
-        const result = await res.json();
-        const s = result.structured;
+    const extractPhone = (text: string) => {
+      const match = text.match(/(?:\+7|8)?[\s-]?\(?9\d{2}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/);
+      return match ? match[0] : null;
+    };
 
-        splitLines = [
-          s.city,
-          `${s.street ?? ""} ${s.house_number ?? ""}`.trim(),
-          s.postal_code,
-          s.name,
-        ].filter(Boolean);
-      } catch (e) {
-        console.error("Fehler bei address-api:", e);
+    const extractEmail = (text: string) => {
+      const match = text.match(/[\w.-]+@[\w.-]+\.[a-z]{2,}/i);
+      return match ? match[0] : null;
+    };
+
+    const phone = extractPhone(input);
+    const email = extractEmail(input);
+
+    let cleanedInput = input;
+    if (phone) cleanedInput = cleanedInput.replace(phone, "");
+    if (email) cleanedInput = cleanedInput.replace(email, "");
+    cleanedInput = cleanedInput.trim();
+
+    try {
+      const res = await fetch("https://pcgs.ru/address-api/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: cleanedInput }),
+      });
+      const result = await res.json();
+      const s = result.structured;
+
+      if (s?.street || s?.house_number || s?.city || s?.postal_code || s?.name) {
+        const fullStreet = `${s.street ?? ""} ${s.house_number ?? ""}`.trim();
+        if (fullStreet) detectedFields.push({ id: 0, original: fullStreet, translit: transliterate(fullStreet), type: "street" });
+        if (s.city) detectedFields.push({ id: 1, original: s.city, translit: transliterate(s.city), type: "city" });
+        if (s.postal_code) detectedFields.push({ id: 2, original: s.postal_code, translit: transliterate(s.postal_code), type: "postal_code" });
+        if (s.name) detectedFields.push({ id: 3, original: s.name, translit: transliterate(s.name), type: "name" });
       }
+    } catch (e) {
+      console.error("Fehler bei address-api:", e);
     }
 
-    if (phone) splitLines.push(phone);
-    if (email) splitLines.push(email);
+    let nextId = detectedFields.length;
+    if (phone) detectedFields.push({ id: nextId++, original: phone, translit: phone, type: "phone" });
+    if (email) detectedFields.push({ id: nextId++, original: email, translit: email, type: "email" });
 
-    const structured = splitLines.map((line, idx) => ({
-      id: idx,
-      original: line,
-      translit: transliterate(line),
-      type: detectFieldType(line),
-    }));
-
-    setLines(structured);
+    setLines(detectedFields);
   };
 
   const handleTypeChange = (id: number, newType: FieldKey) => {
@@ -151,7 +144,6 @@ export default function AddressParserTestPage() {
       </h1>
 
       <div className="grid md:grid-cols-2 gap-4">
-        {/* Eingabe */}
         <div>
           <Label htmlFor="address-input">
             Adresse eingeben (jede Angabe in separater Zeile):
@@ -165,9 +157,8 @@ export default function AddressParserTestPage() {
           />
         </div>
 
-        {/* Transliteration */}
         <div>
-          <Label htmlFor="translit-output">🗘️ Automatisch transliteriert:</Label>
+          <Label htmlFor="translit-output">🖘️ Automatisch transliteriert:</Label>
           <Textarea
             id="translit-output"
             value={translitOutput}
@@ -204,7 +195,7 @@ export default function AddressParserTestPage() {
                     <SelectContent>
                       <SelectItem value="?">❓ Unbekannt</SelectItem>
                       <SelectItem value="name">👤 Name</SelectItem>
-                      <SelectItem value="street">🛣️ Straße</SelectItem>
+                      <SelectItem value="street">🚣️ Straße</SelectItem>
                       <SelectItem value="city">🌇 Stadt</SelectItem>
                       <SelectItem value="region">🌍 Region</SelectItem>
                       <SelectItem value="postal_code">📦 PLZ</SelectItem>
