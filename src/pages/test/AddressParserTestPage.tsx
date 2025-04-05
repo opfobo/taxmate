@@ -107,6 +107,8 @@ export default function AddressParserTestPage() {
     if (phoneMatch) cleanedInput = cleanedInput.replace(phoneMatch[0], "");
     if (emailMatch) cleanedInput = cleanedInput.replace(emailMatch[0], "");
 
+    let newFields: typeof fields = [];
+
     try {
       const res = await fetch("https://pcgs.ru/address-api/parse", {
         method: "POST",
@@ -115,7 +117,7 @@ export default function AddressParserTestPage() {
       });
       const result = await res.json();
       const s = result.structured;
-      const newFields: typeof fields = [];
+
       if (s.name) newFields.push({ key: "name", value: transliterate(s.name) });
       if (s.street) newFields.push({ key: "street", value: transliterate(s.street) });
       if (s.house_number) newFields.push({ key: "house_number", value: transliterate(s.house_number) });
@@ -130,7 +132,8 @@ export default function AddressParserTestPage() {
     if (phoneMatch) detected.push({ key: "phone", value: phoneMatch[0] });
     if (emailMatch) detected.push({ key: "email", value: emailMatch[0] });
 
-    const mandatoryWithEmpty = MANDATORY_FIELDS.filter((m) => ![...newFields, ...detected].some((f) => f.key === m))
+    const existingKeys = [...newFields, ...detected].map((f) => f.key);
+    const mandatoryWithEmpty = MANDATORY_FIELDS.filter((m) => !existingKeys.includes(m))
       .map((key) => ({ key, value: "" }));
 
     setFields([...mandatoryWithEmpty, ...newFields, ...detected]);
@@ -181,7 +184,11 @@ export default function AddressParserTestPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {ALL_FIELDS.map((key) => (
-                      <SelectItem key={key} value={key} disabled={fields.some(x => x.key === key && x.key !== f.key)}>
+                      <SelectItem
+                        key={key}
+                        value={key}
+                        disabled={fields.some(x => x.key === key && x.key !== f.key)}
+                      >
                         {FIELD_LABELS[key]}
                       </SelectItem>
                     ))}
