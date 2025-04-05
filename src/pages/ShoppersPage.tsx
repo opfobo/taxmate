@@ -231,7 +231,9 @@ export default function AddressParserTestPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button onClick={() => fieldToAdd && addField(fieldToAdd)} disabled={!fieldToAdd}>{t("consumer.button_add")}</Button>
+                <Button onClick={() => fieldToAdd && addField(fieldToAdd)} disabled={!fieldToAdd}>
+                  {t("consumer.button_add")}
+                </Button>
               </div>
             )}
           </CardContent>
