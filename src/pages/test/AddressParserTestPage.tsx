@@ -24,6 +24,7 @@ const ALL_FIELDS = [
   "kv",
   "city",
   "postal_code",
+  "country",
   "phone",
   "email",
   "birthday",
@@ -37,6 +38,7 @@ const MANDATORY_FIELDS: FieldKey[] = [
   "house_number",
   "city",
   "postal_code",
+  "country",
   "phone",
 ];
 
@@ -130,6 +132,7 @@ export default function AddressParserTestPage() {
       if (s.kv) newFields.push({ key: "kv", value: addSpacesBetweenWords(transliterate(s.kv)) });
       if (s.city) newFields.push({ key: "city", value: capitalizeAllWords(addSpacesBetweenWords(transliterate(s.city))) });
       if (s.postal_code) newFields.push({ key: "postal_code", value: transliterate(s.postal_code) });
+      if (s.country) newFields.push({ key: "country", value: capitalizeAllWords(transliterate(s.country)) });
     } catch (e) {
       console.error("API Fehler:", e);
     }
