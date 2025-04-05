@@ -38,6 +38,7 @@ const MANDATORY_FIELDS: FieldKey[] = [
   "house_number",
   "city",
   "postal_code",
+  "country",
   "phone",
 ];
 
