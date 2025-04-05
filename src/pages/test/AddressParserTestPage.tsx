@@ -73,8 +73,9 @@ export default function AddressParserTestPage() {
     return text.replace(/(?<=[a-z])(?=[A-Z])/g, " ");
   };
 
-  const capitalize = (text: string) =>
-    text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
+  const capitalizeAllWords = (text: string) => {
+    return text.replace(/\b\w+/g, (w) => w[0].toUpperCase() + w.slice(1));
+  };
 
   const addField = (key: FieldKey) => {
     setFields((prev) => [...prev, { key, value: "" }]);
@@ -128,12 +129,12 @@ export default function AddressParserTestPage() {
       const result = await res.json();
       const s = result.structured;
 
-      if (s.name) newFields.push({ key: "name", value: addSpacesBetweenWords(transliterate(s.name)) });
-      if (s.street) newFields.push({ key: "street", value: addSpacesBetweenWords(transliterate(s.street)) });
+      if (s.name) newFields.push({ key: "name", value: capitalizeAllWords(addSpacesBetweenWords(transliterate(s.name))) });
+      if (s.street) newFields.push({ key: "street", value: capitalizeAllWords(addSpacesBetweenWords(transliterate(s.street))) });
       if (s.house_number) newFields.push({ key: "house_number", value: addSpacesBetweenWords(transliterate(s.house_number)) });
       if (s.block) newFields.push({ key: "block", value: addSpacesBetweenWords(transliterate(s.block)) });
       if (s.kv) newFields.push({ key: "kv", value: addSpacesBetweenWords(transliterate(s.kv)) });
-      if (s.city) newFields.push({ key: "city", value: capitalize(addSpacesBetweenWords(transliterate(s.city))) });
+      if (s.city) newFields.push({ key: "city", value: capitalizeAllWords(addSpacesBetweenWords(transliterate(s.city))) });
       if (s.postal_code) newFields.push({ key: "postal_code", value: transliterate(s.postal_code) });
     } catch (e) {
       console.error("API Fehler:", e);
