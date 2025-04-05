@@ -1,242 +1,241 @@
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "@/hooks/useTranslation";
-import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import Navbar from "@/components/Navbar";
-import ShoppersTable from "@/components/shoppers/ShoppersTable";
-import ShopperDetailsDrawer from "@/components/shoppers/ShopperDetailsDrawer";
+"use client";
+
+import { useEffect, useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { transliterate } from "@/lib/parser/address/transliteration";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, Search, ArrowUpDown, Plus, Loader2 } from "lucide-react";
-import { Shopper } from "@/types/shopper";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import ShopperEditForm from "@/components/shoppers/ShopperEditForm";
-import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
-const ShoppersPage = () => {
+const ALL_FIELDS = [
+  "name",
+  "street",
+  "house_number",
+  "block",
+  "kv",
+  "city",
+  "postal_code",
+  "country",
+  "phone",
+  "email",
+  "birthday",
+  "other",
+] as const;
+type FieldKey = typeof ALL_FIELDS[number];
+
+const MANDATORY_FIELDS: FieldKey[] = [
+  "name",
+  "street",
+  "house_number",
+  "city",
+  "postal_code",
+  "phone",
+];
+
+export default function AddressParserTestPage() {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  // State for search, filters and sorting
-  const [searchQuery, setSearchQuery] = useState("");
-  const [regionFilter, setRegionFilter] = useState<string | null>(null);
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [selectedShopper, setSelectedShopper] = useState<Shopper | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  
-  // Empty shopper template for new shopper creation
-  const emptyShopperTemplate: Omit<Shopper, 'id' | 'created_at' | 'updated_at'> = {
-    first_name: '',
-    last_name: '',
-    user_id: user?.id,
-  };
-  
-  // Fetch shoppers with filters and sorting
-  const { data: shoppers, isLoading, error } = useQuery({
-    queryKey: ["shoppers", user?.id, searchQuery, regionFilter, sortOrder],
-    queryFn: async () => {
-      if (!user) throw new Error("User not authenticated");
-      
-      let query = supabase
-        .from("shoppers")
-        .select("*")
-        .order("created_at", { ascending: sortOrder === "asc" });
-      
-      // Apply search filter if provided
-      if (searchQuery) {
-        query = query.or(`first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`);
-      }
-      
-      // Apply region filter if provided
-      if (regionFilter) {
-        query = query.eq("region", regionFilter);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      
-      return data as Shopper[];
-    },
-    enabled: !!user,
-  });
+  const [input, setInput] = useState("");
+  const [translitOutput, setTranslitOutput] = useState("");
+  const [fields, setFields] = useState<{ key: FieldKey; value: string }[]>([]);
+  const [visible, setVisible] = useState(false);
+  const [fieldToAdd, setFieldToAdd] = useState<FieldKey | null>(null);
 
-  // Fetch unique regions for filter dropdown
-  const { data: regions } = useQuery({
-    queryKey: ["shopper-regions", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      
-      const { data, error } = await supabase
-        .from("shoppers")
-        .select("region")
-        .not("region", "is", null)
-        .order("region");
-      
-      if (error) throw error;
-      
-      // Get unique regions
-      const uniqueRegions = Array.from(new Set(data.map(item => item.region).filter(Boolean)));
-      return uniqueRegions;
-    },
-    enabled: !!user,
-  });
-  
-  const handleShopperSelect = (shopper: Shopper) => {
-    setSelectedShopper(shopper);
-    setIsDetailsOpen(true);
-  };
-  
-  const toggleSortOrder = () => {
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+  useEffect(() => {
+    const transliterated = input
+      .split(/\r?\n/)
+      .map((line) => transliterate(line.trim()))
+      .join("\n");
+    setTranslitOutput(transliterated);
+  }, [input]);
+
+  const addSpacesBetweenWords = (text: string) => {
+    return text.replace(/(?<=[a-z])(?=[A-Z])/g, " ");
   };
 
-  // Handle creating a new shopper
-  const handleCreateShopper = async (values: any) => {
-    try {
-      const { data, error } = await supabase
-        .from("shoppers")
-        .insert([{
-          ...values,
-          user_id: user?.id,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
-        .select();
-      
-      if (error) throw error;
-      
-      toast({
-        title: t("shopper_created"),
-        description: t("shopper_created_successfully"),
-      });
-      
-      // Invalidate shoppers query to refresh the list
-      queryClient.invalidateQueries({ queryKey: ["shoppers"] });
-      setIsCreateModalOpen(false);
-      
-      // Open the details drawer for the newly created shopper
-      if (data && data.length > 0) {
-        setSelectedShopper(data[0]);
-        setIsDetailsOpen(true);
-      }
-    } catch (error) {
-      console.error("Error creating shopper:", error);
-      toast({
-        title: t("error_creating_shopper"),
-        description: error instanceof Error ? error.message : t("unknown_error"),
-        variant: "destructive",
-      });
+  const capitalizeAllWords = (text: string) => {
+    return text.replace(/\b\w+/g, (w) => w[0].toUpperCase() + w.slice(1));
+  };
+
+  const addField = (key: FieldKey) => {
+    setFields((prev) => [...prev, { key, value: "" }]);
+    const newAvailable = ALL_FIELDS.filter(
+      (k) => ![...fields, { key, value: "" }].some((f) => f.key === k)
+    );
+    setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
+  };
+
+  const updateField = (index: number, newValue: string) => {
+    setFields((prev) => {
+      const copy = [...prev];
+      copy[index].value = newValue;
+      return copy;
+    });
+  };
+
+  const changeKey = (index: number, newKey: FieldKey) => {
+    setFields((prev) => {
+      const copy = [...prev];
+      copy[index].key = newKey;
+      return copy;
+    });
+  };
+
+  const removeField = (index: number) => {
+    const field = fields[index];
+    if (MANDATORY_FIELDS.includes(field.key)) {
+      updateField(index, "");
+    } else {
+      const newFields = fields.filter((_, i) => i !== index);
+      setFields(newFields);
+      const newAvailable = ALL_FIELDS.filter(
+        (key) => !newFields.some((f) => f.key === key)
+      );
+      setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
     }
   };
 
+  const handleSplit = async () => {
+    let detected: typeof fields = [];
+    let cleanedInput = input.trim();
+
+    const phoneMatch = cleanedInput.match(/(?:\+7|8)?[\s-]?\(?9\d{2}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/);
+    const emailMatch = cleanedInput.match(/[\w.-]+@[\w.-]+\.[a-z]{2,}/i);
+
+    if (phoneMatch) cleanedInput = cleanedInput.replace(phoneMatch[0], "");
+    if (emailMatch) cleanedInput = cleanedInput.replace(emailMatch[0], "");
+
+    let newFields: typeof fields = [];
+
+    try {
+      const res = await fetch("https://pcgs.ru/address-api/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: cleanedInput }),
+      });
+      const result = await res.json();
+      const s = result.structured;
+
+      if (s.name) newFields.push({ key: "name", value: capitalizeAllWords(addSpacesBetweenWords(transliterate(s.name))) });
+      if (s.street) newFields.push({ key: "street", value: capitalizeAllWords(addSpacesBetweenWords(transliterate(s.street))) });
+      if (s.house_number) newFields.push({ key: "house_number", value: addSpacesBetweenWords(transliterate(s.house_number)) });
+      if (s.block) newFields.push({ key: "block", value: addSpacesBetweenWords(transliterate(s.block)) });
+      if (s.kv) newFields.push({ key: "kv", value: addSpacesBetweenWords(transliterate(s.kv)) });
+      if (s.city) newFields.push({ key: "city", value: capitalizeAllWords(addSpacesBetweenWords(transliterate(s.city))) });
+      if (s.postal_code) newFields.push({ key: "postal_code", value: transliterate(s.postal_code) });
+      if (s.country) newFields.push({ key: "country", value: capitalizeAllWords(transliterate(s.country)) });
+    } catch (e) {
+      console.error("API Fehler:", e);
+    }
+
+    if (phoneMatch) detected.push({ key: "phone", value: phoneMatch[0] });
+    if (emailMatch) detected.push({ key: "email", value: emailMatch[0] });
+
+    const existingKeys = [...newFields, ...detected].map((f) => f.key);
+    const mandatoryWithEmpty = MANDATORY_FIELDS.filter((m) => !existingKeys.includes(m))
+      .map((key) => ({ key, value: "" }));
+
+    const allFields = [...mandatoryWithEmpty, ...newFields, ...detected];
+    setFields(allFields);
+    const newAvailable = ALL_FIELDS.filter((key) => !allFields.some((f) => f.key === key));
+    setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
+    setVisible(true);
+  };
+
+  const availableFields = ALL_FIELDS.filter(
+    (key) => !fields.some((f) => f.key === key)
+  );
+
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
-      <main className="container py-10">
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">{t("shoppers")}</h1>
-            <p className="text-muted-foreground mt-2">
-              {t("shoppers_description")}
-            </p>
-          </div>
-          
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t("create_shopper")}
-          </Button>
+    <div className="max-w-4xl mx-auto py-10 px-4 space-y-6">
+      <h1 className="text-2xl font-bold flex items-center gap-2">
+        {t("consumer.address_parser_title")}
+      </h1>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <Label>{t("consumer.input_address")}</Label>
+          <Textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            rows={8}
+          />
         </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t("search_shoppers")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <Select
-            value={regionFilter || "all"}
-            onValueChange={(value) => setRegionFilter(value === "all" ? null : value)}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={t("region")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("all_regions")}</SelectItem>
-              {regions?.map((region) => (
-                <SelectItem key={region} value={region}>{region}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Button variant="outline" onClick={toggleSortOrder} className="w-auto">
-            <ArrowUpDown className="mr-2 h-4 w-4" />
-            {sortOrder === "asc" ? t("oldest_first") : t("newest_first")}
-          </Button>
+        <div>
+          <Label>{t("consumer.transliterated_output")}</Label>
+          <Textarea
+            value={translitOutput}
+            readOnly
+            rows={8}
+            className="bg-muted/40"
+          />
         </div>
+      </div>
 
-        {error && (
-          <div className="bg-destructive/10 p-4 rounded-lg flex items-start gap-3 my-4">
-            <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
-            <div>
-              <h3 className="font-medium text-destructive">{t("error_loading_shoppers")}</h3>
-              <p className="text-sm text-destructive/90">
-                {error instanceof Error ? error.message : t("unknown_error")}
-              </p>
-            </div>
-          </div>
-        )}
+      <Button onClick={handleSplit}>{t("consumer.analyze_lines")}</Button>
 
-        <ShoppersTable 
-          shoppers={shoppers || []} 
-          isLoading={isLoading} 
-          onShopperSelect={handleShopperSelect} 
-        />
-        
-        <ShopperDetailsDrawer
-          shopper={selectedShopper}
-          open={isDetailsOpen}
-          onClose={() => setIsDetailsOpen(false)}
-          onShopperUpdated={() => {
-            queryClient.invalidateQueries({ queryKey: ["shoppers"] });
-          }}
-        />
+      {visible && (
+        <Card className="bg-muted/40 mt-6">
+          <CardContent className="p-4 space-y-4">
+            <h2 className="text-lg font-semibold mb-2">{t("consumer.analysis_section")}</h2>
+            {fields.map((f, i) => (
+              <div key={i} className="flex gap-3 items-center">
+                <Select value={f.key} onValueChange={(val) => changeKey(i, val as FieldKey)}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue>{t(`consumer.${f.key}`)}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ALL_FIELDS.filter((key) => !fields.some((x) => x.key === key && x.key !== f.key)).map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {t(`consumer.${key}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  value={f.value}
+                  onChange={(e) => updateField(i, e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="text-destructive"
+                  onClick={() => removeField(i)}
+                >
+                  ✖
+                </Button>
+              </div>
+            ))}
 
-        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{t("create_new_shopper")}</DialogTitle>
-              <DialogDescription>
-                {t("fill_shopper_details_below")}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <ShopperEditForm 
-              shopper={{ 
-                id: 'new', 
-                ...emptyShopperTemplate, 
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              } as Shopper} 
-              onComplete={handleCreateShopper}
-              onCancel={() => setIsCreateModalOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      </main>
+            {availableFields.length > 0 && (
+              <div className="flex items-center gap-2 pt-4">
+                <Select value={fieldToAdd ?? undefined} onValueChange={(val) => setFieldToAdd(val as FieldKey)}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue>{fieldToAdd ? t(`consumer.${fieldToAdd}`) : t("consumer.add_field")}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableFields.map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {t(`consumer.${key}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button onClick={() => fieldToAdd && addField(fieldToAdd)} disabled={!fieldToAdd}>{t("consumer.add")}</Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
-};
-
-export default ShoppersPage;
+}
