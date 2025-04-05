@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { ChevronDown } from "lucide-react";
 
 const ALL_FIELDS = [
   "name",
@@ -188,7 +187,7 @@ export default function AddressParserTestPage() {
               <div key={i} className="flex gap-3 items-center">
                 <Select value={f.key} onValueChange={(val) => changeKey(i, val as FieldKey)}>
                   <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder={FIELD_LABELS[f.key]} />
+                    <SelectValue>{FIELD_LABELS[f.key]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {ALL_FIELDS.filter((key) => !fields.some((x) => x.key === key && x.key !== f.key)).map((key) => (
@@ -216,7 +215,7 @@ export default function AddressParserTestPage() {
             {availableFields.length > 0 && (
               <Select onValueChange={(val) => addField(val as FieldKey)}>
                 <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="+ Feld hinzufügen" />
+                  <SelectValue>+ Feld hinzufügen</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {availableFields.map((key) => (
