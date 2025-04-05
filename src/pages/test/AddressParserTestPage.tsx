@@ -41,6 +41,19 @@ const detectFieldType = (line: string): FieldKey => {
   return "?";
 };
 
+const extractExtras = (text: string) => {
+  const phoneMatch = text.match(/(?:\+7|8)?\d{10,11}/);
+  const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}/);
+  const phone = phoneMatch?.[0] ?? null;
+  const email = emailMatch?.[0] ?? null;
+
+  let working = text;
+  if (phone) working = working.replace(phone, "");
+  if (email) working = working.replace(email, "");
+
+  return { phone, email, cleaned: working.trim() };
+};
+
 export default function AddressParserTestPage() {
   const [input, setInput] = useState("");
   const [translitOutput, setTranslitOutput] = useState("");
@@ -61,6 +74,7 @@ export default function AddressParserTestPage() {
 
   const handleSplit = async () => {
     let splitLines: string[] = [];
+    const { phone, email, cleaned } = extractExtras(input);
 
     if (isMultiline(input)) {
       splitLines = input
@@ -72,7 +86,7 @@ export default function AddressParserTestPage() {
         const res = await fetch("https://pcgs.ru/address-api/parse", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ address: input }),
+          body: JSON.stringify({ address: cleaned }),
         });
         const result = await res.json();
         const s = result.structured;
@@ -82,13 +96,14 @@ export default function AddressParserTestPage() {
           `${s.street ?? ""} ${s.house_number ?? ""}`.trim(),
           s.postal_code,
           s.name,
-          s.phone,
-          s.email,
         ].filter(Boolean);
       } catch (e) {
         console.error("Fehler bei address-api:", e);
       }
     }
+
+    if (phone) splitLines.push(phone);
+    if (email) splitLines.push(email);
 
     const structured = splitLines.map((line, idx) => ({
       id: idx,
@@ -189,7 +204,7 @@ export default function AddressParserTestPage() {
                     <SelectContent>
                       <SelectItem value="?">❓ Unbekannt</SelectItem>
                       <SelectItem value="name">👤 Name</SelectItem>
-                      <SelectItem value="street">🛚️ Straße</SelectItem>
+                      <SelectItem value="street">🛣️ Straße</SelectItem>
                       <SelectItem value="city">🌇 Stadt</SelectItem>
                       <SelectItem value="region">🌍 Region</SelectItem>
                       <SelectItem value="postal_code">📦 PLZ</SelectItem>
@@ -220,17 +235,6 @@ export default function AddressParserTestPage() {
               </Button>
             </CardContent>
           </Card>
-
-          {/* Pflichtfeld-Hinweis */}
-          <div className="pt-4 space-y-2 text-sm text-muted-foreground">
-            <p>📜 Pflichtfelder für Speicherung:</p>
-            <ul className="list-disc list-inside pl-2">
-              <li>👤 <strong>Name</strong></li>
-              <li>🛚️ <strong>Straße</strong></li>
-              <li>📦 <strong>PLZ</strong></li>
-              <li>📞 oder 📧 <strong>Telefon oder E-Mail</strong></li>
-            </ul>
-          </div>
         </>
       )}
     </div>
