@@ -73,6 +73,9 @@ export default function AddressParserTestPage() {
     return text.replace(/(?<=[a-z])(?=[A-Z])/g, " ");
   };
 
+  const capitalize = (text: string) =>
+    text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
+
   const addField = (key: FieldKey) => {
     setFields((prev) => [...prev, { key, value: "" }]);
     setAddPlaceholder("+ Feld hinzufügen");
@@ -103,9 +106,6 @@ export default function AddressParserTestPage() {
     }
     setAddPlaceholder("+ Feld hinzufügen");
   };
-
-  const capitalize = (text: string) =>
-    text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
 
   const handleSplit = async () => {
     let detected: typeof fields = [];
