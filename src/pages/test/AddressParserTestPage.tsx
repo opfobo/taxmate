@@ -26,7 +26,10 @@ type FieldKey =
   | "postal_code"
   | "phone"
   | "email"
-  | "birthday";
+  | "birthday"
+  | "block"
+  | "apartment"
+  | "house_number";
 
 const detectFieldType = (line: string): FieldKey => {
   const norm = line.toLowerCase();
@@ -34,10 +37,13 @@ const detectFieldType = (line: string): FieldKey => {
   if (/(?:\+7|8)?[\s-]?\(?9\d{2}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/.test(norm)) return "phone";
   if (/\b\d{2}[./-]\d{2}[./-]\d{2,4}\b/.test(norm)) return "birthday";
   if (/^\d{6}$/.test(norm)) return "postal_code";
-  if (/\u043e\u0431\u043b\.|\u043e\u0431\u043b\u0430\u0441\u0442\u044c|\u043a\u0440\u0430\u0439|\u0440\u0435\u0441\u043f\.|\u0440\u0435\u0441\u043f\u0443\u0431\u043b\u0438\u043a\u0430/.test(norm)) return "region";
-  if (/^\u0433\.?\s?[\u0410-\u042F\u0430-\u044f\u0451\- ]+/.test(norm) || /\u0441\u0430\u043d\u043a\u0442[- ]\u043f\u0435\u0442\u0435\u0440\u0431\u0443\u0440\u0433/.test(norm)) return "city";
-  if (/\u0443\u043b\.?|\u0443\u043b\u0438\u0446\u0430|\u043f\u0440\u043e\u0441\u043f\u0435\u043a\u0442|\u043f\u0435\u0440\u0435\u0443\u043b\u043e\u043a|\u043f\u0440\.|\u043f\u0435\u0440\./.test(norm)) return "street";
-  if (/^[\u0410-\u042f\u0401][\u0430-\u044f\u0451]+ [\u0410-\u042f\u0401][\u0430-\u044f\u0451]+ [\u0410-\u042f\u0401][\u0430-\u044f\u0451]+$/.test(line)) return "name";
+  if (/обл\.|область|край|респ\.|республика/.test(norm)) return "region";
+  if (/^г\.?\s?[А-Яа-яё\- ]+/.test(norm) || /санкт[- ]петербург/.test(norm)) return "city";
+  if (/ул\.?|улица|проспект|переулок|пр\.|пер\./.test(norm)) return "street";
+  if (/кв\.?\s*\d+/i.test(norm)) return "apartment";
+  if (/корпус|к\s*\d+/i.test(norm)) return "block";
+  if (/д\.?\s*\d+/i.test(norm)) return "house_number";
+  if (/^[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+$/.test(line)) return "name";
   return "?";
 };
 
@@ -56,11 +62,7 @@ export default function AddressParserTestPage() {
     setTranslitOutput(transliterated);
   }, [input]);
 
-  const isMultiline = (text: string) =>
-    text.trim().split(/\r?\n/).filter(Boolean).length > 1;
-
   const handleSplit = async () => {
-    let splitLines: string[] = [];
     let detectedFields: typeof lines = [];
 
     const extractPhone = (text: string) => {
@@ -90,22 +92,22 @@ export default function AddressParserTestPage() {
       const result = await res.json();
       const s = result.structured;
 
-      if (s?.street || s?.house_number || s?.city || s?.postal_code || s?.name) {
-        const fullStreet = `${s.street ?? ""} ${s.house_number ?? ""}`.trim();
-        if (fullStreet) detectedFields.push({ id: 0, original: fullStreet, translit: transliterate(fullStreet), type: "street" });
-        if (s.city) detectedFields.push({ id: 1, original: s.city, translit: transliterate(s.city), type: "city" });
-        if (s.postal_code) detectedFields.push({ id: 2, original: s.postal_code, translit: transliterate(s.postal_code), type: "postal_code" });
-        if (s.name) detectedFields.push({ id: 3, original: s.name, translit: transliterate(s.name), type: "name" });
-      }
+      let id = 0;
+      if (s?.street) detectedFields.push({ id: id++, original: s.street, translit: transliterate(s.street), type: "street" });
+      if (s?.house_number) detectedFields.push({ id: id++, original: s.house_number, translit: transliterate(s.house_number), type: "house_number" });
+      if (s?.block) detectedFields.push({ id: id++, original: s.block, translit: transliterate(s.block), type: "block" });
+      if (s?.apartment) detectedFields.push({ id: id++, original: s.apartment, translit: transliterate(s.apartment), type: "apartment" });
+      if (s?.city) detectedFields.push({ id: id++, original: s.city, translit: transliterate(s.city), type: "city" });
+      if (s?.postal_code) detectedFields.push({ id: id++, original: s.postal_code, translit: transliterate(s.postal_code), type: "postal_code" });
+      if (s?.name) detectedFields.push({ id: id++, original: s.name, translit: transliterate(s.name), type: "name" });
+
+      if (phone) detectedFields.push({ id: id++, original: phone, translit: phone, type: "phone" });
+      if (email) detectedFields.push({ id: id++, original: email, translit: email, type: "email" });
+
+      setLines(detectedFields);
     } catch (e) {
       console.error("Fehler bei address-api:", e);
     }
-
-    let nextId = detectedFields.length;
-    if (phone) detectedFields.push({ id: nextId++, original: phone, translit: phone, type: "phone" });
-    if (email) detectedFields.push({ id: nextId++, original: email, translit: email, type: "email" });
-
-    setLines(detectedFields);
   };
 
   const handleTypeChange = (id: number, newType: FieldKey) => {
@@ -178,11 +180,12 @@ export default function AddressParserTestPage() {
               <h2 className="text-lg font-semibold mb-2">
                 🔍 Analyse & Feldzuweisung
               </h2>
-              {lines.map((line) => (
+              {lines.map((line, index) => (
                 <div
                   key={line.id}
                   className="flex flex-col md:flex-row gap-3 items-start md:items-center"
                 >
+                  <span className="w-5 text-right text-sm text-muted-foreground">{index + 1}.</span>
                   <Select
                     value={line.type}
                     onValueChange={(val) =>
@@ -195,7 +198,10 @@ export default function AddressParserTestPage() {
                     <SelectContent>
                       <SelectItem value="?">❓ Unbekannt</SelectItem>
                       <SelectItem value="name">👤 Name</SelectItem>
-                      <SelectItem value="street">🚣️ Straße</SelectItem>
+                      <SelectItem value="street">🚧 Straße</SelectItem>
+                      <SelectItem value="house_number">🏠 Hausnummer</SelectItem>
+                      <SelectItem value="block">🏢 Block</SelectItem>
+                      <SelectItem value="apartment">🏬 KV</SelectItem>
                       <SelectItem value="city">🌇 Stadt</SelectItem>
                       <SelectItem value="region">🌍 Region</SelectItem>
                       <SelectItem value="postal_code">📦 PLZ</SelectItem>
@@ -226,6 +232,18 @@ export default function AddressParserTestPage() {
               </Button>
             </CardContent>
           </Card>
+
+          <div className="pt-4 space-y-2 text-sm text-muted-foreground">
+            <p>📜 Pflichtfelder für Speicherung:</p>
+            <ul className="list-disc list-inside pl-2">
+              <li>👤 <strong>Name</strong></li>
+              <li>🚧 <strong>Straße</strong></li>
+              <li>🏠 <strong>Hausnummer</strong></li>
+              <li>📬 <strong>KV / Block</strong></li>
+              <li>📦 <strong>PLZ</strong></li>
+              <li>📞 <strong>Telefon</strong> <em>(Pflicht)</em> oder 📧 <strong>E-Mail</strong></li>
+            </ul>
+          </div>
         </>
       )}
     </div>
