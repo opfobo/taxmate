@@ -64,6 +64,7 @@ export default function AddressParserTestPage() {
     const transliterated = input
       .split(/\r?\n/)
       .map((line) => transliterate(line.trim()))
+      .map((line) => line.trim())
       .join("\n");
     setTranslitOutput(transliterated);
   }, [input]);
@@ -118,12 +119,12 @@ export default function AddressParserTestPage() {
       const result = await res.json();
       const s = result.structured;
 
-      if (s.name) newFields.push({ key: "name", value: transliterate(s.name) });
-      if (s.street) newFields.push({ key: "street", value: transliterate(s.street) });
-      if (s.house_number) newFields.push({ key: "house_number", value: transliterate(s.house_number) });
-      if (s.block) newFields.push({ key: "block", value: transliterate(s.block) });
-      if (s.kv) newFields.push({ key: "kv", value: transliterate(s.kv) });
-      if (s.city) newFields.push({ key: "city", value: transliterate(s.city) });
+      if (s.name) newFields.push({ key: "name", value: transliterate(s.name).replace(/(?<=[a-zA-Z])(?=[A-Z])/g, " ") });
+      if (s.street) newFields.push({ key: "street", value: transliterate(s.street).replace(/(?<=[a-zA-Z])(?=[A-Z])/g, " ") });
+      if (s.house_number) newFields.push({ key: "house_number", value: transliterate(s.house_number).replace(/(?<=[a-zA-Z])(?=[A-Z])/g, " ") });
+      if (s.block) newFields.push({ key: "block", value: transliterate(s.block).replace(/(?<=[a-zA-Z])(?=[A-Z])/g, " ") });
+      if (s.kv) newFields.push({ key: "kv", value: transliterate(s.kv).replace(/(?<=[a-zA-Z])(?=[A-Z])/g, " ") });
+      if (s.city) newFields.push({ key: "city", value: transliterate(s.city).replace(/(?<=[a-zA-Z])(?=[A-Z])/g, " ") });
       if (s.postal_code) newFields.push({ key: "postal_code", value: transliterate(s.postal_code) });
     } catch (e) {
       console.error("API Fehler:", e);
@@ -180,7 +181,7 @@ export default function AddressParserTestPage() {
               <div key={i} className="flex gap-3 items-center">
                 <Select value={f.key} onValueChange={(val) => changeKey(i, val as FieldKey)}>
                   <SelectTrigger className="w-[200px]">
-                    <SelectValue />
+                    <SelectValue>{FIELD_LABELS[f.key]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {ALL_FIELDS.map((key) => (
