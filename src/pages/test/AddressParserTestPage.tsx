@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const ALL_FIELDS = [
   "name",
@@ -30,20 +31,6 @@ const ALL_FIELDS = [
 ] as const;
 type FieldKey = typeof ALL_FIELDS[number];
 
-const FIELD_LABELS: Record<FieldKey, string> = {
-  name: "👤 Name",
-  street: "🛣️ Straße",
-  house_number: "🏡 Hausnummer",
-  block: "🏢 Block",
-  kv: "📮 KV",
-  city: "🌇 Stadt",
-  postal_code: "📦 PLZ",
-  phone: "📞 Telefon",
-  email: "📧 E-Mail",
-  birthday: "🎂 Geburtsdatum",
-  other: "📝 Sonstiges",
-};
-
 const MANDATORY_FIELDS: FieldKey[] = [
   "name",
   "street",
@@ -54,6 +41,7 @@ const MANDATORY_FIELDS: FieldKey[] = [
 ];
 
 export default function AddressParserTestPage() {
+  const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [translitOutput, setTranslitOutput] = useState("");
   const [fields, setFields] = useState<{ key: FieldKey; value: string }[]>([]);
@@ -167,12 +155,12 @@ export default function AddressParserTestPage() {
   return (
     <div className="max-w-4xl mx-auto py-10 px-4 space-y-6">
       <h1 className="text-2xl font-bold flex items-center gap-2">
-        📦 Address Parser Test (interactive)
+        {t("consumer_title")}
       </h1>
 
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <Label>Adresse eingeben:</Label>
+          <Label>{t("consumer_input_address")}</Label>
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -180,7 +168,7 @@ export default function AddressParserTestPage() {
           />
         </div>
         <div>
-          <Label>🖘️ Automatisch transliteriert:</Label>
+          <Label>{t("consumer_transliterated_output")}</Label>
           <Textarea
             value={translitOutput}
             readOnly
@@ -190,22 +178,22 @@ export default function AddressParserTestPage() {
         </div>
       </div>
 
-      <Button onClick={handleSplit}>Zeilen analysieren</Button>
+      <Button onClick={handleSplit}>{t("consumer_button_analyze")}</Button>
 
       {visible && (
         <Card className="bg-muted/40 mt-6">
           <CardContent className="p-4 space-y-4">
-            <h2 className="text-lg font-semibold mb-2">🔍 Analyse & Feldzuweisung</h2>
+            <h2 className="text-lg font-semibold mb-2">{t("consumer_section_assignment")}</h2>
             {fields.map((f, i) => (
               <div key={i} className="flex gap-3 items-center">
                 <Select value={f.key} onValueChange={(val) => changeKey(i, val as FieldKey)}>
                   <SelectTrigger className="w-[200px]">
-                    <SelectValue>{FIELD_LABELS[f.key]}</SelectValue>
+                    <SelectValue>{t(`consumer_${f.key}`)}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {ALL_FIELDS.filter((key) => !fields.some((x) => x.key === key && x.key !== f.key)).map((key) => (
                       <SelectItem key={key} value={key}>
-                        {FIELD_LABELS[key]}
+                        {t(`consumer_${key}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -231,17 +219,17 @@ export default function AddressParserTestPage() {
               <div className="flex items-center gap-2 pt-4">
                 <Select value={fieldToAdd ?? undefined} onValueChange={(val) => setFieldToAdd(val as FieldKey)}>
                   <SelectTrigger className="w-[200px]">
-                    <SelectValue>{fieldToAdd ? FIELD_LABELS[fieldToAdd] : "+ Feld hinzufügen"}</SelectValue>
+                    <SelectValue>{fieldToAdd ? t(`consumer_${fieldToAdd}`) : t("consumer_add_field")}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {availableFields.map((key) => (
                       <SelectItem key={key} value={key}>
-                        {FIELD_LABELS[key]}
+                        {t(`consumer_${key}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Button onClick={() => fieldToAdd && addField(fieldToAdd)} disabled={!fieldToAdd}>Hinzufügen</Button>
+                <Button onClick={() => fieldToAdd && addField(fieldToAdd)} disabled={!fieldToAdd}>{t("consumer_button_add")}</Button>
               </div>
             )}
           </CardContent>
