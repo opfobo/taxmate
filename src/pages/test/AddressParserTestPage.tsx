@@ -58,7 +58,7 @@ export default function AddressParserTestPage() {
   const [translitOutput, setTranslitOutput] = useState("");
   const [fields, setFields] = useState<{ key: FieldKey; value: string }[]>([]);
   const [visible, setVisible] = useState(false);
-  const [fieldToAdd, setFieldToAdd] = useState<FieldKey>(ALL_FIELDS[0]);
+  const [fieldToAdd, setFieldToAdd] = useState<FieldKey | null>(null);
 
   useEffect(() => {
     const transliterated = input
@@ -78,7 +78,10 @@ export default function AddressParserTestPage() {
 
   const addField = (key: FieldKey) => {
     setFields((prev) => [...prev, { key, value: "" }]);
-    setFieldToAdd(ALL_FIELDS[0]);
+    const newAvailable = ALL_FIELDS.filter(
+      (k) => ![...fields, { key, value: "" }].some((f) => f.key === k)
+    );
+    setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
   };
 
   const updateField = (index: number, newValue: string) => {
@@ -102,7 +105,12 @@ export default function AddressParserTestPage() {
     if (MANDATORY_FIELDS.includes(field.key)) {
       updateField(index, "");
     } else {
-      setFields((prev) => prev.filter((_, i) => i !== index));
+      const newFields = fields.filter((_, i) => i !== index);
+      setFields(newFields);
+      const newAvailable = ALL_FIELDS.filter(
+        (key) => !newFields.some((f) => f.key === key)
+      );
+      setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
     }
   };
 
@@ -145,7 +153,10 @@ export default function AddressParserTestPage() {
     const mandatoryWithEmpty = MANDATORY_FIELDS.filter((m) => !existingKeys.includes(m))
       .map((key) => ({ key, value: "" }));
 
-    setFields([...mandatoryWithEmpty, ...newFields, ...detected]);
+    const allFields = [...mandatoryWithEmpty, ...newFields, ...detected];
+    setFields(allFields);
+    const newAvailable = ALL_FIELDS.filter((key) => !allFields.some((f) => f.key === key));
+    setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
     setVisible(true);
   };
 
@@ -216,21 +227,23 @@ export default function AddressParserTestPage() {
             ))}
 
             {/* Permanenter Add-Button */}
-            <div className="flex items-center gap-2 pt-4">
-              <Select value={fieldToAdd} onValueChange={(val) => setFieldToAdd(val as FieldKey)}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue>{FIELD_LABELS[fieldToAdd] || "+ Feld hinzufügen"}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {availableFields.map((key) => (
-                    <SelectItem key={key} value={key}>
-                      {FIELD_LABELS[key]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button onClick={() => addField(fieldToAdd)} disabled={!fieldToAdd}>Hinzufügen</Button>
-            </div>
+            {availableFields.length > 0 && (
+              <div className="flex items-center gap-2 pt-4">
+                <Select value={fieldToAdd ?? undefined} onValueChange={(val) => setFieldToAdd(val as FieldKey)}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue>{fieldToAdd ? FIELD_LABELS[fieldToAdd] : "+ Feld hinzufügen"}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableFields.map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {FIELD_LABELS[key]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button onClick={() => fieldToAdd && addField(fieldToAdd)} disabled={!fieldToAdd}>Hinzufügen</Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
