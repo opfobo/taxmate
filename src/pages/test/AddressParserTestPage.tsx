@@ -1,3 +1,4 @@
+// Vollständig überarbeitete Version mit festen Pflichtfeldern oben
 "use client";
 
 import { useEffect, useState } from "react";
@@ -15,154 +16,141 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 
-// Typisierung für Felderkennung
+// Feldtypen
+const REQUIRED_FIELDS = [
+  "name",
+  "street",
+  "house_number",
+  "block",
+  "postal_code",
+  "phone_or_email"
+] as const;
 
-type FieldKey =
-  | "?"
-  | "name"
-  | "street"
-  | "city"
-  | "region"
-  | "postal_code"
-  | "phone"
-  | "email"
-  | "birthday"
-  | "block"
-  | "apartment"
-  | "house_number";
+const OPTIONAL_FIELDS = [
+  "city",
+  "region",
+  "birthday",
+  "?"
+] as const;
 
-const detectFieldType = (line: string): FieldKey => {
-  const norm = line.toLowerCase();
-  if (/^[\w.-]+@[\w.-]+\.[a-z]{2,}$/i.test(line)) return "email";
-  if (/(?:\+7|8)?[\s-]?\(?9\d{2}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/.test(norm)) return "phone";
-  if (/\b\d{2}[./-]\d{2}[./-]\d{2,4}\b/.test(norm)) return "birthday";
-  if (/^\d{6}$/.test(norm)) return "postal_code";
-  if (/обл\.|область|край|респ\.|республика/.test(norm)) return "region";
-  if (/^г\.?\s?[А-Яа-яё\- ]+/.test(norm) || /санкт[- ]петербург/.test(norm)) return "city";
-  if (/ул\.?|улица|проспект|переулок|пр\.|пер\./.test(norm)) return "street";
-  if (/кв\.?\s*\d+/i.test(norm)) return "apartment";
-  if (/корпус|к\s*\d+/i.test(norm)) return "block";
-  if (/д\.?\s*\d+/i.test(norm)) return "house_number";
-  if (/^[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+$/.test(line)) return "name";
-  return "?";
+const ALL_FIELDS = [
+  ...REQUIRED_FIELDS,
+  ...OPTIONAL_FIELDS
+] as const;
+
+type FieldKey = typeof ALL_FIELDS[number];
+
+const fieldIcons: Record<FieldKey, string> = {
+  name: "👤 Name",
+  street: "🛣️ Straße",
+  house_number: "🏠 Hausnummer",
+  block: "🏢 KV / Block",
+  postal_code: "📦 PLZ",
+  phone_or_email: "📞/📧 Telefon/E-Mail",
+  city: "🌇 Stadt",
+  region: "🌍 Region",
+  birthday: "🎂 Geburtsdatum",
+  "?": "❓ Unbekannt"
 };
 
 export default function AddressParserTestPage() {
   const [input, setInput] = useState("");
   const [translitOutput, setTranslitOutput] = useState("");
-  const [lines, setLines] = useState<
-    { id: number; original: string; translit: string; type: FieldKey }[]
-  >([]);
+  const [fieldValues, setFieldValues] = useState<Record<FieldKey, string>>({
+    name: "",
+    street: "",
+    house_number: "",
+    block: "",
+    postal_code: "",
+    phone_or_email: "",
+    city: "",
+    region: "",
+    birthday: "",
+    "?": ""
+  });
 
   useEffect(() => {
-    const transliterated = input
+    const translit = input
       .split(/\r?\n/)
       .map((line) => transliterate(line.trim()))
       .join("\n");
-    setTranslitOutput(transliterated);
+    setTranslitOutput(translit);
   }, [input]);
 
+  const extractPhone = (text: string) => {
+    const match = text.match(/(?:\+7|8)?[\s-]?\(?9\d{2}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/);
+    return match ? match[0] : null;
+  };
+
+  const extractEmail = (text: string) => {
+    const match = text.match(/[\w.-]+@[\w.-]+\.[a-z]{2,}/i);
+    return match ? match[0] : null;
+  };
+
   const handleSplit = async () => {
-    let detectedFields: typeof lines = [];
-
-    const extractPhone = (text: string) => {
-      const match = text.match(/(?:\+7|8)?[\s-]?\(?9\d{2}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/);
-      return match ? match[0] : null;
-    };
-
-    const extractEmail = (text: string) => {
-      const match = text.match(/[\w.-]+@[\w.-]+\.[a-z]{2,}/i);
-      return match ? match[0] : null;
-    };
-
     const phone = extractPhone(input);
     const email = extractEmail(input);
+    let cleaned = input;
+    if (phone) cleaned = cleaned.replace(phone, "");
+    if (email) cleaned = cleaned.replace(email, "");
+    cleaned = cleaned.trim();
 
-    let cleanedInput = input;
-    if (phone) cleanedInput = cleanedInput.replace(phone, "");
-    if (email) cleanedInput = cleanedInput.replace(email, "");
-    cleanedInput = cleanedInput.trim();
+    let parsed: Record<FieldKey, string> = {
+      name: "",
+      street: "",
+      house_number: "",
+      block: "",
+      postal_code: "",
+      phone_or_email: phone ?? email ?? "",
+      city: "",
+      region: "",
+      birthday: "",
+      "?": ""
+    };
 
     try {
       const res = await fetch("https://pcgs.ru/address-api/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: cleanedInput }),
+        body: JSON.stringify({ address: cleaned })
       });
       const result = await res.json();
       const s = result.structured;
-
-      let id = 0;
-      if (s?.street) detectedFields.push({ id: id++, original: s.street, translit: transliterate(s.street), type: "street" });
-      if (s?.house_number) detectedFields.push({ id: id++, original: s.house_number, translit: transliterate(s.house_number), type: "house_number" });
-      if (s?.block) detectedFields.push({ id: id++, original: s.block, translit: transliterate(s.block), type: "block" });
-      if (s?.apartment) detectedFields.push({ id: id++, original: s.apartment, translit: transliterate(s.apartment), type: "apartment" });
-      if (s?.city) detectedFields.push({ id: id++, original: s.city, translit: transliterate(s.city), type: "city" });
-      if (s?.postal_code) detectedFields.push({ id: id++, original: s.postal_code, translit: transliterate(s.postal_code), type: "postal_code" });
-      if (s?.name) detectedFields.push({ id: id++, original: s.name, translit: transliterate(s.name), type: "name" });
-
-      if (phone) detectedFields.push({ id: id++, original: phone, translit: phone, type: "phone" });
-      if (email) detectedFields.push({ id: id++, original: email, translit: email, type: "email" });
-
-      setLines(detectedFields);
-    } catch (e) {
-      console.error("Fehler bei address-api:", e);
+      if (s) {
+        parsed.name = s.name ?? "";
+        parsed.street = s.street ?? "";
+        parsed.house_number = s.house_number ?? "";
+        parsed.block = s.block ?? "";
+        parsed.postal_code = s.postal_code ?? "";
+        parsed.city = s.city ?? "";
+      }
+    } catch (err) {
+      console.error("API-Fehler:", err);
     }
+
+    setFieldValues(parsed);
   };
 
-  const handleTypeChange = (id: number, newType: FieldKey) => {
-    setLines((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, type: newType } : l))
-    );
-  };
-
-  const handleTranslitChange = (id: number, newText: string) => {
-    setLines((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, translit: newText } : l))
-    );
-  };
-
-  const handleDeleteLine = (id: number) => {
-    setLines((prev) => prev.filter((l) => l.id !== id));
-  };
-
-  const handleAddField = () => {
-    const newId = lines.length > 0 ? Math.max(...lines.map((l) => l.id)) + 1 : 0;
-    setLines((prev) => [
-      ...prev,
-      {
-        id: newId,
-        original: "",
-        translit: "",
-        type: "?",
-      },
-    ]);
+  const updateField = (key: FieldKey, value: string) => {
+    setFieldValues((prev) => ({ ...prev, [key]: value }));
   };
 
   return (
     <div className="max-w-4xl mx-auto py-10 px-4 space-y-6">
-      <h1 className="text-2xl font-bold flex items-center gap-2">
-        📦 Address Parser Test (interactive)
-      </h1>
+      <h1 className="text-2xl font-bold">📦 Address Parser Test (interactive)</h1>
 
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="address-input">
-            Adresse eingeben (jede Angabe in separater Zeile):
-          </Label>
+          <Label>Adresse eingeben (jede Angabe in separater Zeile):</Label>
           <Textarea
-            id="address-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={`г. Москва\nул. Ленина 12\n101000\nИванов Иван Иванович\n+7 912 345 67 89\nivanov@mail.ru`}
             rows={8}
           />
         </div>
-
         <div>
-          <Label htmlFor="translit-output">🖘️ Automatisch transliteriert:</Label>
+          <Label>🖘️ Automatisch transliteriert:</Label>
           <Textarea
-            id="translit-output"
             value={translitOutput}
             readOnly
             rows={8}
@@ -173,79 +161,40 @@ export default function AddressParserTestPage() {
 
       <Button onClick={handleSplit}>Zeilen analysieren</Button>
 
-      {lines.length > 0 && (
-        <>
-          <Card className="bg-muted/40 mt-6">
-            <CardContent className="p-4 space-y-4">
-              <h2 className="text-lg font-semibold mb-2">
-                🔍 Analyse & Feldzuweisung
-              </h2>
-              {lines.map((line, index) => (
-                <div
-                  key={line.id}
-                  className="flex flex-col md:flex-row gap-3 items-start md:items-center"
-                >
-                  <span className="w-5 text-right text-sm text-muted-foreground">{index + 1}.</span>
-                  <Select
-                    value={line.type}
-                    onValueChange={(val) =>
-                      handleTypeChange(line.id, val as FieldKey)
-                    }
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Typ wählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="?">❓ Unbekannt</SelectItem>
-                      <SelectItem value="name">👤 Name</SelectItem>
-                      <SelectItem value="street">🚧 Straße</SelectItem>
-                      <SelectItem value="house_number">🏠 Hausnummer</SelectItem>
-                      <SelectItem value="block">🏢 Block</SelectItem>
-                      <SelectItem value="apartment">🏬 KV</SelectItem>
-                      <SelectItem value="city">🌇 Stadt</SelectItem>
-                      <SelectItem value="region">🌍 Region</SelectItem>
-                      <SelectItem value="postal_code">📦 PLZ</SelectItem>
-                      <SelectItem value="phone">📞 Telefon</SelectItem>
-                      <SelectItem value="email">📧 E-Mail</SelectItem>
-                      <SelectItem value="birthday">🎂 Geburtsdatum</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    value={line.translit}
-                    className="flex-1"
-                    onChange={(e) =>
-                      handleTranslitChange(line.id, e.target.value)
-                    }
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:bg-red-100"
-                    onClick={() => handleDeleteLine(line.id)}
-                  >
-                    ✖
-                  </Button>
-                </div>
-              ))}
-              <Button variant="outline" onClick={handleAddField}>
-                ➕ Neues Feld hinzufügen
-              </Button>
-            </CardContent>
-          </Card>
+      <Card className="bg-muted/40 mt-6">
+        <CardContent className="p-4 space-y-4">
+          <h2 className="text-lg font-semibold mb-2">🔍 Analyse & Feldzuweisung</h2>
 
-          <div className="pt-4 space-y-2 text-sm text-muted-foreground">
-            <p>📜 Pflichtfelder für Speicherung:</p>
-            <ul className="list-disc list-inside pl-2">
-              <li>👤 <strong>Name</strong></li>
-              <li>🚧 <strong>Straße</strong></li>
-              <li>🏠 <strong>Hausnummer</strong></li>
-              <li>📬 <strong>KV / Block</strong></li>
-              <li>📦 <strong>PLZ</strong></li>
-              <li>📞 <strong>Telefon</strong> <em>(Pflicht)</em> oder 📧 <strong>E-Mail</strong></li>
-            </ul>
-          </div>
-        </>
-      )}
+          {ALL_FIELDS.map((key, idx) => (
+            <div
+              key={key}
+              className="flex items-center gap-3"
+            >
+              <div className="text-sm w-6 text-right text-muted-foreground">{idx + 1}.</div>
+              <Select value={key} disabled>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue>{fieldIcons[key]}</SelectValue>
+                </SelectTrigger>
+              </Select>
+              <Input
+                value={fieldValues[key] ?? ""}
+                onChange={(e) => updateField(key, e.target.value)}
+                className="flex-1"
+              />
+              {REQUIRED_FIELDS.includes(key) ? null : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive hover:bg-red-100"
+                  onClick={() => updateField(key, "")}
+                >
+                  ✖
+                </Button>
+              )}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }
