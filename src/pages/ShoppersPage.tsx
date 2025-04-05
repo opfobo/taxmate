@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { useTranslation } from "react-i18next";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const ALL_FIELDS = [
   "name",
@@ -157,7 +157,7 @@ export default function AddressParserTestPage() {
   return (
     <div className="max-w-4xl mx-auto py-10 px-4 space-y-6">
       <h1 className="text-2xl font-bold flex items-center gap-2">
-        {t("consumer.address_parser_title")}
+        {t("consumer.title")}
       </h1>
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -180,12 +180,12 @@ export default function AddressParserTestPage() {
         </div>
       </div>
 
-      <Button onClick={handleSplit}>{t("consumer.analyze_lines")}</Button>
+      <Button onClick={handleSplit}>{t("consumer.button_analyze")}</Button>
 
       {visible && (
         <Card className="bg-muted/40 mt-6">
           <CardContent className="p-4 space-y-4">
-            <h2 className="text-lg font-semibold mb-2">{t("consumer.analysis_section")}</h2>
+            <h2 className="text-lg font-semibold mb-2">{t("consumer.section_assignment")}</h2>
             {fields.map((f, i) => (
               <div key={i} className="flex gap-3 items-center">
                 <Select value={f.key} onValueChange={(val) => changeKey(i, val as FieldKey)}>
@@ -230,7 +230,7 @@ export default function AddressParserTestPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button onClick={() => fieldToAdd && addField(fieldToAdd)} disabled={!fieldToAdd}>{t("consumer.add")}</Button>
+                <Button onClick={() => fieldToAdd && addField(fieldToAdd)} disabled={!fieldToAdd}>{t("consumer.button_add")}</Button>
               </div>
             )}
           </CardContent>
