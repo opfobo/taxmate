@@ -216,7 +216,7 @@ export default function AddressParserTestPage() {
             {availableFields.length > 0 && (
               <Select onValueChange={(val) => addField(val as FieldKey)}>
                 <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="+ Feld hinzufügen" />
+                  <SelectValue>{"+ Feld hinzufügen"}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {availableFields.map((key) => (
