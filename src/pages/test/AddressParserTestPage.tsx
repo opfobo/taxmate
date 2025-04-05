@@ -104,6 +104,9 @@ export default function AddressParserTestPage() {
     setAddPlaceholder("+ Feld hinzufügen");
   };
 
+  const capitalize = (text: string) =>
+    text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
+
   const handleSplit = async () => {
     let detected: typeof fields = [];
     let cleanedInput = input.trim();
@@ -130,7 +133,7 @@ export default function AddressParserTestPage() {
       if (s.house_number) newFields.push({ key: "house_number", value: addSpacesBetweenWords(transliterate(s.house_number)) });
       if (s.block) newFields.push({ key: "block", value: addSpacesBetweenWords(transliterate(s.block)) });
       if (s.kv) newFields.push({ key: "kv", value: addSpacesBetweenWords(transliterate(s.kv)) });
-      if (s.city) newFields.push({ key: "city", value: addSpacesBetweenWords(transliterate(s.city)) });
+      if (s.city) newFields.push({ key: "city", value: capitalize(addSpacesBetweenWords(transliterate(s.city))) });
       if (s.postal_code) newFields.push({ key: "postal_code", value: transliterate(s.postal_code) });
     } catch (e) {
       console.error("API Fehler:", e);
