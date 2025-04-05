@@ -58,7 +58,7 @@ export default function AddressParserTestPage() {
   const [translitOutput, setTranslitOutput] = useState("");
   const [fields, setFields] = useState<{ key: FieldKey; value: string }[]>([]);
   const [visible, setVisible] = useState(false);
-  const [fieldToAdd, setFieldToAdd] = useState<FieldKey | "">("");
+  const [fieldToAdd, setFieldToAdd] = useState<FieldKey>(ALL_FIELDS[0]);
 
   useEffect(() => {
     const transliterated = input
@@ -78,7 +78,7 @@ export default function AddressParserTestPage() {
 
   const addField = (key: FieldKey) => {
     setFields((prev) => [...prev, { key, value: "" }]);
-    setFieldToAdd("");
+    setFieldToAdd(ALL_FIELDS[0]);
   };
 
   const updateField = (index: number, newValue: string) => {
@@ -219,7 +219,7 @@ export default function AddressParserTestPage() {
             <div className="flex items-center gap-2 pt-4">
               <Select value={fieldToAdd} onValueChange={(val) => setFieldToAdd(val as FieldKey)}>
                 <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="+ Feld hinzufügen" />
+                  <SelectValue>{FIELD_LABELS[fieldToAdd] || "+ Feld hinzufügen"}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {availableFields.map((key) => (
@@ -229,9 +229,7 @@ export default function AddressParserTestPage() {
                   ))}
                 </SelectContent>
               </Select>
-              {fieldToAdd && (
-                <Button onClick={() => addField(fieldToAdd)}>Hinzufügen</Button>
-              )}
+              <Button onClick={() => addField(fieldToAdd)} disabled={!fieldToAdd}>Hinzufügen</Button>
             </div>
           </CardContent>
         </Card>
