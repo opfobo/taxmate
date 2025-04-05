@@ -59,7 +59,6 @@ export default function AddressParserTestPage() {
   const [translitOutput, setTranslitOutput] = useState("");
   const [fields, setFields] = useState<{ key: FieldKey; value: string }[]>([]);
   const [visible, setVisible] = useState(false);
-  const [addPlaceholder, setAddPlaceholder] = useState("+ Feld hinzufügen");
 
   useEffect(() => {
     const transliterated = input
@@ -79,7 +78,6 @@ export default function AddressParserTestPage() {
 
   const addField = (key: FieldKey) => {
     setFields((prev) => [...prev, { key, value: "" }]);
-    setAddPlaceholder("+ Feld hinzufügen");
   };
 
   const updateField = (index: number, newValue: string) => {
@@ -105,7 +103,6 @@ export default function AddressParserTestPage() {
     } else {
       setFields((prev) => prev.filter((_, i) => i !== index));
     }
-    setAddPlaceholder("+ Feld hinzufügen");
   };
 
   const handleSplit = async () => {
@@ -219,8 +216,7 @@ export default function AddressParserTestPage() {
             {availableFields.length > 0 && (
               <Select onValueChange={(val) => addField(val as FieldKey)}>
                 <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder={addPlaceholder} />
-                  <ChevronDown className="ml-auto h-4 w-4 opacity-50" />
+                  <SelectValue placeholder="+ Feld hinzufügen" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableFields.map((key) => (
