@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/hooks/useTranslation";
+import { saveConsumerWithAddress } from "@/lib/supabase/consumerUtils";
 
 const ALL_FIELDS = [
   "name",
@@ -223,7 +224,7 @@ export default function AddressParserTestPage() {
               </div>
             ))}
 
-            {/* Permanenter Add-Button */}
+            {/* Add & Save */}
             {availableFields.length > 0 && (
               <div className="flex items-center gap-2 pt-4">
                 <Select value={fieldToAdd ?? undefined} onValueChange={(val) => setFieldToAdd(val as FieldKey)}>
@@ -238,64 +239,31 @@ export default function AddressParserTestPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button onClick={() => fieldToAdd && addField(fieldToAdd)} disabled={!fieldToAdd}>{t("consumer_button_add")}</Button>
-                {/* Save Button */}
-<div className="pt-4 flex justify-end">
-  <Button
-    onClick={async () => {
-      const consumerData: Record<string, string> = {};
-      fields.forEach(({ key, value }) => {
-        consumerData[key] = value.trim();
-      });
+                <Button onClick={() => fieldToAdd && addField(fieldToAdd)} disabled={!fieldToAdd}>
+                  {t("consumer_button_add")}
+                </Button>
 
-      const { data: userProfile } = await supabase.auth.getUser();
-      const user_id = userProfile?.user?.id;
+                <div className="ml-auto">
+                  <Button
+                    onClick={async () => {
+                      const consumerData: Record<string, string> = {};
+                      fields.forEach(({ key, value }) => {
+                        consumerData[key] = value.trim();
+                      });
 
-      try {
-        const { error } = await supabase.from("consumers").insert([
-          {
-            user_id,
-            full_name: consumerData.name || null,
-            email: consumerData.email || null,
-            phone: consumerData.phone?.replace(/[^\d+]/g, "") || null,
-            address_line1: [consumerData.street, consumerData.house_number].filter(Boolean).join(" "),
-            address_line2: [consumerData.block, consumerData.kv, consumerData.birthday, consumerData.other].filter(Boolean).join(", ") || null,
-            city: consumerData.city || null,
-            postal_code: consumerData.postal_code || null,
-            country: consumerData.country || null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ]);
-
-        if (error) {
-          console.error("Save error:", error);
-          toast({
-            title: t("consumer_save_error"),
-            description: error.message,
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: t("consumer_saved_title"),
-            description: t("consumer_saved_description"),
-          });
-          setInput("");
-          setFields([]);
-          setVisible(false);
-        }
-      } catch (err: any) {
-        console.error("Unexpected save error:", err);
-      }
-    }}
-  >
-    {t("consumer_button_save")}
-  </Button>
-</div>
+                      const success = await saveConsumerWithAddress(input, consumerData, t);
+                      if (success) {
+                        setInput("");
+                        setFields([]);
+                        setVisible(false);
+                      }
+                    }}
+                  >
+                    {t("consumer_button_save")}
+                  </Button>
+                </div>
               </div>
             )}
-            
-
           </CardContent>
         </Card>
       )}
