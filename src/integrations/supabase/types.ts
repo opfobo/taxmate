@@ -12,11 +12,17 @@ export type Database = {
       addresses: {
         Row: {
           additional_info: string | null
+          birthday: string | null
+          block: string | null
           city: string
+          consumer_id: string | null
           country: string
           county: string | null
           created_at: string | null
+          house_number: string | null
           id: string
+          kv: string | null
+          other: string | null
           phone: string | null
           street: string
           type: string
@@ -26,11 +32,17 @@ export type Database = {
         }
         Insert: {
           additional_info?: string | null
+          birthday?: string | null
+          block?: string | null
           city: string
+          consumer_id?: string | null
           country: string
           county?: string | null
           created_at?: string | null
+          house_number?: string | null
           id?: string
+          kv?: string | null
+          other?: string | null
           phone?: string | null
           street: string
           type: string
@@ -40,11 +52,17 @@ export type Database = {
         }
         Update: {
           additional_info?: string | null
+          birthday?: string | null
+          block?: string | null
           city?: string
+          consumer_id?: string | null
           country?: string
           county?: string | null
           created_at?: string | null
+          house_number?: string | null
           id?: string
+          kv?: string | null
+          other?: string | null
           phone?: string | null
           street?: string
           type?: string
@@ -53,6 +71,13 @@ export type Database = {
           zip?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "addresses_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "consumers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "addresses_user_id_fkey"
             columns: ["user_id"]
@@ -143,47 +168,32 @@ export type Database = {
       }
       consumers: {
         Row: {
-          address_line1: string | null
-          address_line2: string | null
-          city: string | null
-          country: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
           id: string
           phone: string | null
-          postal_code: string | null
-          region: string | null
+          raw_input: string | null
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
-          address_line1?: string | null
-          address_line2?: string | null
-          city?: string | null
-          country?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
-          postal_code?: string | null
-          region?: string | null
+          raw_input?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
-          address_line1?: string | null
-          address_line2?: string | null
-          city?: string | null
-          country?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
-          postal_code?: string | null
-          region?: string | null
+          raw_input?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -196,6 +206,7 @@ export type Database = {
           currency: string | null
           customer_address: string | null
           customer_name: string | null
+          file_path: string | null
           id: string
           invoice_date: string | null
           invoice_number: string | null
@@ -216,6 +227,7 @@ export type Database = {
           currency?: string | null
           customer_address?: string | null
           customer_name?: string | null
+          file_path?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
@@ -236,6 +248,7 @@ export type Database = {
           currency?: string | null
           customer_address?: string | null
           customer_name?: string | null
+          file_path?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
@@ -924,6 +937,12 @@ export type Database = {
           uid: string
         }
         Returns: undefined
+      }
+      folder_uid: {
+        Args: {
+          name: string
+        }
+        Returns: string
       }
     }
     Enums: {

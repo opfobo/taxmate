@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -33,6 +34,11 @@ import OcrPage from "@/pages/OcrPage";
 import OrdersLayout from "./layouts/OrdersLayout";
 import SalesOrdersPage from "./pages/orders/SalesOrdersPage";
 import PurchasesOrdersPage from "./pages/orders/PurchasesOrdersPage";
+
+// New OCR Page Components
+import OcrLayout from "./layouts/OcrLayout";
+import InvoiceOcrTab from "./components/ocr/InvoiceOcrTab";
+import ConsumerOcrTab from "./components/ocr/ConsumerOcrTab";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -105,8 +111,24 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              
+              {/* New OCR Routes with Layout */}
               <Route
                 path="/dashboard/ocr"
+                element={
+                  <ProtectedRoute>
+                    <OcrLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="/dashboard/ocr/invoice" replace />} />
+                <Route path="invoice" element={<InvoiceOcrTab />} />
+                <Route path="consumer" element={<ConsumerOcrTab />} />
+              </Route>
+              
+              {/* Simple OCR Page (alternative to layout) */}
+              <Route
+                path="/dashboard/ocr-page"
                 element={
                   <ProtectedRoute>
                     <OcrPage />
