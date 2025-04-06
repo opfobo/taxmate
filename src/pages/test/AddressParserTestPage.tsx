@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/hooks/useTranslation";
+import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const ALL_FIELDS = [
   "name",
@@ -49,6 +51,8 @@ export default function AddressParserTestPage() {
   const [fields, setFields] = useState<{ key: FieldKey; value: string }[]>([]);
   const [visible, setVisible] = useState(false);
   const [fieldToAdd, setFieldToAdd] = useState<FieldKey | null>(null);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [duplicateOptions, setDuplicateOptions] = useState<any[]>([]);
 
   useEffect(() => {
     const transliterated = input
@@ -64,6 +68,10 @@ export default function AddressParserTestPage() {
 
   const capitalizeAllWords = (text: string) => {
     return text.replace(/\b\w+/g, (w) => w[0].toUpperCase() + w.slice(1));
+  };
+
+  const normalizePhone = (phone: string) => {
+    return phone.replace(/[^\d+]/g, "");
   };
 
   const addField = (key: FieldKey) => {
@@ -104,12 +112,40 @@ export default function AddressParserTestPage() {
     }
   };
 
+  const loadDuplicates = async (phone: string, email: string) => {
+    const { data, error } = await supabase
+      .from("consumers")
+      .select("*")
+      .or(`phone.eq.${phone},email.eq.${email}`);
+
+    if (data && data.length > 0) {
+      setDuplicateOptions(data);
+      setDuplicateDialogOpen(true);
+      return true;
+    }
+    return false;
+  };
+
+  const loadConsumerFields = (consumer: any) => {
+    const loadedFields: typeof fields = [];
+    for (const key of ALL_FIELDS) {
+      if (consumer[key]) loadedFields.push({ key, value: consumer[key] });
+    }
+    setFields(loadedFields);
+    setVisible(true);
+  };
+
   const handleSplit = async () => {
     let detected: typeof fields = [];
     let cleanedInput = input.trim();
 
-    const phoneMatch = cleanedInput.match(/(?:\+7|8)?[\s-]?\(?9\d{2}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/);
+    const phoneMatch = cleanedInput.match(/(?:\+7|\+49|8)?[\s-]?\(?\d{2,4}\)?[\s-]?\d{3,}[\s-]?\d{2,}*/);
     const emailMatch = cleanedInput.match(/[\w.-]+@[\w.-]+\.[a-z]{2,}/i);
+
+    const phoneNormalized = phoneMatch ? normalizePhone(phoneMatch[0]) : "";
+    const email = emailMatch ? emailMatch[0] : "";
+
+    if (await loadDuplicates(phoneNormalized, email)) return;
 
     if (phoneMatch) cleanedInput = cleanedInput.replace(phoneMatch[0], "");
     if (emailMatch) cleanedInput = cleanedInput.replace(emailMatch[0], "");
@@ -137,8 +173,8 @@ export default function AddressParserTestPage() {
       console.error("API Fehler:", e);
     }
 
-    if (phoneMatch) detected.push({ key: "phone", value: phoneMatch[0] });
-    if (emailMatch) detected.push({ key: "email", value: emailMatch[0] });
+    if (phoneMatch) detected.push({ key: "phone", value: phoneNormalized });
+    if (emailMatch) detected.push({ key: "email", value: email });
 
     const existingKeys = [...newFields, ...detected].map((f) => f.key);
     const mandatoryWithEmpty = MANDATORY_FIELDS.filter((m) => !existingKeys.includes(m))
@@ -149,6 +185,16 @@ export default function AddressParserTestPage() {
     const newAvailable = ALL_FIELDS.filter((key) => !allFields.some((f) => f.key === key));
     setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
     setVisible(true);
+  };
+
+  const handleSave = async () => {
+    const consumer: Record<string, string> = {};
+    fields.forEach((f) => {
+      consumer[f.key] = f.value;
+    });
+
+    await supabase.from("consumers").insert([consumer]);
+    alert("Gespeichert ✅");
   };
 
   const availableFields = ALL_FIELDS.filter(
@@ -217,7 +263,6 @@ export default function AddressParserTestPage() {
               </div>
             ))}
 
-            {/* Permanenter Add-Button */}
             {availableFields.length > 0 && (
               <div className="flex items-center gap-2 pt-4">
                 <Select value={fieldToAdd ?? undefined} onValueChange={(val) => setFieldToAdd(val as FieldKey)}>
@@ -235,9 +280,34 @@ export default function AddressParserTestPage() {
                 <Button onClick={() => fieldToAdd && addField(fieldToAdd)} disabled={!fieldToAdd}>{t("consumer_button_add")}</Button>
               </div>
             )}
+
+            <Button className="mt-4" onClick={handleSave}>{t("consumer_save")}</Button>
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("consumer_duplicate_found")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {duplicateOptions.map((entry) => (
+              <Card key={entry.id} className="p-3 cursor-pointer" onClick={() => {
+                setDuplicateDialogOpen(false);
+                loadConsumerFields(entry);
+              }}>
+                <div className="font-semibold">{entry.full_name || entry.name}</div>
+                <div className="text-sm text-muted-foreground">{entry.email}</div>
+                <div className="text-sm text-muted-foreground">{entry.phone}</div>
+              </Card>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDuplicateDialogOpen(false)}>{t("consumer_continue_anyway")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
