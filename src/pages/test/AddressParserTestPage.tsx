@@ -239,9 +239,7 @@ export default function AddressParserTestPage() {
                   </SelectContent>
                 </Select>
                 <Button onClick={() => fieldToAdd && addField(fieldToAdd)} disabled={!fieldToAdd}>{t("consumer_button_add")}</Button>
-              </div>
-            )}
-            {/* Save Button */}
+                {/* Save Button */}
 <div className="pt-4 flex justify-end">
   <Button
     onClick={async () => {
@@ -294,6 +292,9 @@ export default function AddressParserTestPage() {
     {t("consumer_button_save")}
   </Button>
 </div>
+              </div>
+            )}
+            
 
           </CardContent>
         </Card>
