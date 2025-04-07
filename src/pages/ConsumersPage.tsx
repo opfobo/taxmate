@@ -196,7 +196,7 @@ const {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <ConsumersTable consumers={data} onConsumerSelect={setSelectedConsumer} />
+          <ConsumersTable consumers={consumers} onConsumerSelect={setSelectedConsumer} />
         )}
 
         {selectedConsumer && (
