@@ -21,6 +21,8 @@ import OcrLayout from "./layouts/OcrLayout";
 import InvoiceOcrTab from "./components/ocr/InvoiceOcrTab";
 import ConsumerOcrTab from "./components/ocr/ConsumerOcrTab";
 import OcrReviewPage from "./pages/ocr/OcrReviewPage";
+import OcrTestPage from "./test/OcrTestPage";
+
 
 function App() {
   const { user, session, loading } = useAuth();
@@ -124,6 +126,10 @@ function App() {
             )
           }
         />
+        <Route
+  path="/dashboard/test/ocr"
+  element={user ? <OcrTestPage /> : <Navigate to="/login" />}
+/>
         <Route
           path="/dashboard/orders"
           element={
