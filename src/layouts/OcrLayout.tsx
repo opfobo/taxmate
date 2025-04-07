@@ -2,8 +2,8 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { PageLayout } from "@/components/PageLayout";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText, User } from "lucide-react";
 
 const OcrLayout = () => {
   const { t } = useTranslation();
@@ -30,34 +30,27 @@ const OcrLayout = () => {
   return (
     <PageLayout>
       <div className="container py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">{t("ocr.title")}</h1>
-          <p className="text-muted-foreground mt-1">{t("ocr.subtitle")}</p>
-        </div>
-
-        <Card>
-          <CardHeader className="border-b px-6">
-            <CardTitle>{t("ocr.documents")}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <Tabs 
-              value={getActiveTab()}
-              onValueChange={handleTabChange}
-              className="w-full"
-            >
-              <TabsList className="mb-6">
-                <TabsTrigger value="invoice">
-                  {t("ocr.invoice_tab")}
-                </TabsTrigger>
-                <TabsTrigger value="consumer">
-                  {t("ocr.consumer_tab")}
-                </TabsTrigger>
-              </TabsList>
-              
-              <Outlet />
-            </Tabs>
-          </CardContent>
-        </Card>
+        <h1 className="text-3xl font-bold mb-6">{t("ocr.title")}</h1>
+        <p className="text-muted-foreground mb-6">{t("ocr.subtitle")}</p>
+        
+        <Tabs 
+          value={getActiveTab()}
+          onValueChange={handleTabChange}
+          className="w-full mb-8"
+        >
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="invoice" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              {t("ocr.invoice_tab")}
+            </TabsTrigger>
+            <TabsTrigger value="consumer" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              {t("ocr.consumer_tab")}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        
+        <Outlet />
       </div>
     </PageLayout>
   );

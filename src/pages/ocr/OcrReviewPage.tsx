@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +13,17 @@ type OcrMapping = {
   image_url?: string;
   response: any;
   created_at: string;
+  ocr_request_id?: string;
+  user_id?: string;
+  total_amount?: string;
+  currency?: string;
+  invoice_number?: string;
+  invoice_date?: string;
+  due_date?: string;
+  customer_name?: string;
+  customer_address?: string;
+  confirmed_at?: string;
+  line_items?: any;
 };
 
 const OcrReviewPage = () => {
@@ -38,9 +50,29 @@ const OcrReviewPage = () => {
         setOcrData(null);
       } else {
         console.log("Mapping-Data erhalten:", data);
-        setOcrData(data);
+        // Convert the data to match OcrMapping type
+        setOcrData({
+          id: data.id || "",
+          status: data.status || "",
+          file_name: data.file_name || "",
+          file_path: data.file_path,
+          response: data.response,
+          created_at: data.created_at,
+          ocr_request_id: data.ocr_request_id,
+          image_url: data.image_url,
+          user_id: data.user_id,
+          total_amount: data.total_amount,
+          currency: data.currency,
+          invoice_number: data.invoice_number,
+          invoice_date: data.invoice_date,
+          due_date: data.due_date,
+          customer_name: data.customer_name,
+          customer_address: data.customer_address,
+          confirmed_at: data.confirmed_at,
+          line_items: data.line_items
+        });
 
-        // Dynamisch Preview-Image URL holen, falls nicht vorhanden
+        // Dynamically get preview image URL if not available
         const previewPath = data.file_path?.replace(/\.[^/.]+$/, "_preview.jpg");
         if (previewPath) {
           const { data: previewData } = await supabase
@@ -50,7 +82,7 @@ const OcrReviewPage = () => {
           if (previewData?.signedUrl) setPreviewUrl(previewData.signedUrl);
         }
 
-        // Originaldatei-URL erzeugen
+        // Create original file URL
         if (data.file_path) {
           const { data: fileData } = await supabase
             .storage
