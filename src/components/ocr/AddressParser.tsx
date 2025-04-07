@@ -152,7 +152,7 @@ export default function AddressParserTestPage() {
     setVisible(true);
   };
   const availableFields = ALL_FIELDS.filter(key => !fields.some(f => f.key === key));
-  return <div className="max-w-4xl mx-auto space-y-6 py-0 px-[15px]">
+  return <div className="max-w-4xl mx-auto space-y-6 py-0 px-[16px]">
       <h1 className="text-2xl font-bold flex items-center gap-2">
         {t("consumer_title")}
       </h1>
