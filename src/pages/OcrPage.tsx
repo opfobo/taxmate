@@ -7,7 +7,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import InvoiceOcrTab from "@/components/ocr/InvoiceOcrTab";
 import ConsumerOcrTab from "@/components/ocr/ConsumerOcrTab";
-import { FileText, User } from "lucide-react";
 
 const OcrPage = () => {
   const { t } = useTranslation();
@@ -40,43 +39,33 @@ const OcrPage = () => {
 
   return (
     <PageLayout>
-      <div className="container py-8 max-w-6xl mx-auto">
+      <div className="container py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">{t("ocr.title")}</h1>
           <p className="text-muted-foreground mt-1">{t("ocr.subtitle")}</p>
         </div>
 
-        <Tabs 
-          value={activeTab} 
-          onValueChange={handleTabChange} 
-          className="w-full"
-        >
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="invoice" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              {t("ocr.invoice_tab")}
-            </TabsTrigger>
-            <TabsTrigger value="consumer" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              {t("ocr.consumer_tab")}
-            </TabsTrigger>
-          </TabsList>
-          
-          <Card>
-            <CardHeader className="pb-2 border-b">
-              <CardTitle>{t("ocr.documents")}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <TabsContent value="invoice" className="mt-0">
+        <Card>
+          <CardHeader className="border-b px-6">
+            <CardTitle>{t("ocr.documents")}</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+              <TabsList className="mb-6">
+                <TabsTrigger value="invoice">{t("ocr.invoice_tab")}</TabsTrigger>
+                <TabsTrigger value="consumer">{t("ocr.consumer_tab")}</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="invoice">
                 <InvoiceOcrTab />
               </TabsContent>
               
-              <TabsContent value="consumer" className="mt-0">
+              <TabsContent value="consumer">
                 <ConsumerOcrTab />
               </TabsContent>
-            </CardContent>
-          </Card>
-        </Tabs>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </PageLayout>
   );
