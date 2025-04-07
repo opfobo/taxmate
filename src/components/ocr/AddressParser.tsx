@@ -26,7 +26,7 @@ export default function AddressParserTestPage() {
   const [visible, setVisible] = useState(false);
   const [fieldToAdd, setFieldToAdd] = useState<FieldKey | null>(null);
   useEffect(() => {
-    const transliterated = input.split(/\r?\n/).map(line => transliterate(line.trim())).join("\n");
+    const transliterated = input.split(/\r?\n/).map(line => transliterate(line.trim())).join(" ");
     setTranslitOutput(transliterated);
   }, [input]);
   const addSpacesBetweenWords = (text: string) => {
