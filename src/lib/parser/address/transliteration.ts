@@ -1,4 +1,3 @@
-// Sehr einfache Transliterationstabelle – erweitert und konsolidiert
 const table: Record<string, string> = {
   а: 'a', б: 'b', в: 'v', г: 'g', д: 'd',
   е: 'e', ё: 'yo', ж: 'zh', з: 'z', и: 'i',
@@ -10,11 +9,12 @@ const table: Record<string, string> = {
 
   // Zeichen entfernen
   '«': '', '»': '', '“': '', '”': '', '„': '', '…': '',
-  '–': '-', '—': '-', '–': '-', '−': '-',
+  '–': '-', // EN dash (U+2013)
+  '—': '-', // EM dash (U+2014)
+  '−': '-', // Minus sign (U+2212)
   '’': "'", '`': "'", '´': "'", '"': '"', "'": "'",
 };
 
-// Optional: Ortspräfix-Kombi-Regeln (nur für Translit, nicht für raw)
 const prefixReplacements: Record<string, string> = {
   'г.': 'G.',
   'д.': 'D.',
