@@ -20,6 +20,7 @@ import OrdersLayout from "./layouts/OrdersLayout";
 import OcrLayout from "./layouts/OcrLayout";
 import InvoiceOcrTab from "./components/ocr/InvoiceOcrTab";
 import ConsumerOcrTab from "./components/ocr/ConsumerOcrTab";
+import OcrReviewPage from "./pages/ocr/OcrReviewPage";
 
 function App() {
   const { user, session, loading } = useAuth();
@@ -97,6 +98,12 @@ function App() {
             )
           }
         />
+        <Route
+  path="/dashboard/ocr/review/:ocrRequestId"
+  element={
+    user ? <OcrReviewPage /> : <Navigate to="/login" />
+  }
+/>
         <Route
           path="/settings"
           element={
