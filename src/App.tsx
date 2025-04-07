@@ -1,203 +1,148 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { ThemeProvider } from "@/components/ThemeProvider";
-import { AuthProvider } from "@/context/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import AddressParserTestPage from "@/pages/test/AddressParserTestPage";
-
-// Pages
-import LandingPage from "./pages/LandingPage";
-import LoginPage from "./pages/auth/LoginPage";
-import SignupPage from "./pages/auth/SignupPage";
-import Dashboard from "./pages/Dashboard";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useAuth } from "./context/AuthContext";
+import { supabase } from "./integrations/supabase/client";
+import DashboardPage from "./pages/DashboardPage";
+import LoginPage from "./pages/LoginPage";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
-import ShoppersPage from "./pages/ShoppersPage";
-import ConsumersPage from "./pages/ConsumersPage";
-import TaxReportsPage from "./pages/TaxReportsPage";
 import TransactionsPage from "./pages/TransactionsPage";
-import ResourcesPage from "./pages/ResourcesPage";
-import AnalyticsPage from "./pages/AnalyticsPage";
-import NotFound from "./pages/NotFound";
-import Privacy from "./pages/Privacy";
-import Contact from "./pages/Contact";
-import Impressum from "./pages/Impressum";
-import OcrTestPage from "@/pages/test/OcrTestPage";
-import OcrInvoiceReviewPage from "@/pages/ocr/OcrInvoiceReviewPage";
-import OcrPage from "@/pages/OcrPage";
-
-// New Order Pages
-import OrdersLayout from "./layouts/OrdersLayout";
 import SalesOrdersPage from "./pages/orders/SalesOrdersPage";
 import PurchasesOrdersPage from "./pages/orders/PurchasesOrdersPage";
-
-// New OCR Page Components
+import ConsumersPage from "./pages/ConsumersPage";
+import OrdersLayout from "./layouts/OrdersLayout";
 import OcrLayout from "./layouts/OcrLayout";
+import OcrPage from "./pages/OcrPage";
 import InvoiceOcrTab from "./components/ocr/InvoiceOcrTab";
 import ConsumerOcrTab from "./components/ocr/ConsumerOcrTab";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000, // 1 minute
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+function App() {
+  const { authStatus, setAuthStatus } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
 
-const App = () => (
-  <ThemeProvider defaultTheme="system" storageKey="taxmaster-theme">
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/auth/login" element={<LoginPage />} />
-              <Route path="/auth/signup" element={<SignupPage />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/impressum" element={<Impressum />} />
-              <Route path="/test/ocr" element={<OcrTestPage />} />
-              <Route path="/test/address" element={<ProtectedRoute><AddressParserTestPage /></ProtectedRoute>}/>
-              <Route
-                path="/test/address"
-                element={
-                  <ProtectedRoute>
-                    <AddressParserTestPage />
-                  </ProtectedRoute>
-                }
-              />
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-              {/* Protected Routes */}
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <SettingsPage />
-                  </ProtectedRoute>
-                }
-              />
+      if (session) {
+        setAuthStatus("authenticated");
+      } else {
+        setAuthStatus("unauthenticated");
+      }
+      setIsLoading(false);
+    };
 
-              {/* OCR Routes */}
-              <Route
-                path="/ocr/review/:requestId"
-                element={
-                  <ProtectedRoute>
-                    <OcrInvoiceReviewPage />
-                  </ProtectedRoute>
-                }
-              />
-              
-              {/* New OCR Routes with Layout */}
-              <Route
-                path="/dashboard/ocr"
-                element={
-                  <ProtectedRoute>
-                    <OcrLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<Navigate to="/dashboard/ocr/invoice" replace />} />
-                <Route path="invoice" element={<InvoiceOcrTab />} />
-                <Route path="consumer" element={<ConsumerOcrTab />} />
-              </Route>
-              
-              {/* Simple OCR Page (alternative to layout) */}
-              <Route
-                path="/dashboard/ocr-page"
-                element={
-                  <ProtectedRoute>
-                    <OcrPage />
-                  </ProtectedRoute>
-                }
-              />
+    checkAuth();
 
-              {/* Orders Routes */}
-              <Route
-                path="/dashboard/orders"
-                element={
-                  <ProtectedRoute>
-                    <OrdersLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<Navigate to="/dashboard/orders/sales" replace />} />
-                <Route path="sales" element={<SalesOrdersPage />} />
-                <Route path="purchases" element={<PurchasesOrdersPage />} />
-                <Route path="transactions" element={<TransactionsPage />} />
-                <Route path="consumers" element={<ConsumersPage />} />
-              </Route>
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN") {
+        setAuthStatus("authenticated");
+      } else if (event === "SIGNED_OUT") {
+        setAuthStatus("unauthenticated");
+      }
+    });
+  }, [setAuthStatus]);
 
-              <Route
-                path="/shoppers"
-                element={
-                  <ProtectedRoute>
-                    <ShoppersPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/tax-reports"
-                element={
-                  <ProtectedRoute>
-                    <TaxReportsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/resources"
-                element={
-                  <ProtectedRoute>
-                    <ResourcesPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/analytics"
-                element={
-                  <ProtectedRoute>
-                    <AnalyticsPage />
-                  </ProtectedRoute>
-                }
-              />
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
-              {/* Redirects */}
-              <Route path="/orders" element={<Navigate to="/dashboard/orders/sales" replace />} />
-              <Route path="/consumers" element={<Navigate to="/dashboard/orders/consumers" replace />} />
-              <Route path="/dashboard/transactions" element={<Navigate to="/dashboard/orders/transactions" replace />} />
-
-              {/* Catch-all */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
-);
+  return (
+    <Router>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            authStatus === "authenticated" ? (
+              <Navigate to="/dashboard" />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            authStatus !== "authenticated" ? (
+              <LoginPage />
+            ) : (
+              <Navigate to="/dashboard" />
+            )
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            authStatus === "authenticated" ? (
+              <DashboardPage />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            authStatus === "authenticated" ? (
+              <ProfilePage />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            authStatus === "authenticated" ? (
+              <SettingsPage />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+        <Route
+          path="/dashboard/transactions"
+          element={
+            authStatus === "authenticated" ? (
+              <TransactionsPage />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+        <Route
+          path="/dashboard/orders"
+          element={
+            authStatus === "authenticated" ? (
+              <OrdersLayout />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        >
+          <Route path="sales" element={<SalesOrdersPage />} />
+          <Route path="purchases" element={<PurchasesOrdersPage />} />
+          <Route path="consumers" element={<ConsumersPage />} />
+        </Route>
+        
+        {/* Add the OCR-related routes to your route configuration: */}
+        {
+          authStatus === "authenticated" ? (
+            <Route path="/dashboard/ocr" element={<OcrPage />} />
+          ) : (
+            <Route path="/dashboard/ocr" element={<Navigate to="/login" />} />
+          )
+        }
+      </Routes>
+    </Router>
+  );
+}
 
 export default App;

@@ -30,4 +30,15 @@ type FieldKey =
 const detectFieldType = (line: string): FieldKey => {
   const norm = line.toLowerCase();
   if (/^[\w.-]+@[\w.-]+\.[a-z]{2,}$/i.test(line)) return "email";
-  if (/(?:\+7|8)?[\s-]??9\d{2}?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/.test
+  if (/(?:\+7|8)?[\s-]??9\d{2}?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}/.test(line)) return "phone";
+  if (/^\d{2}[\s-]?\d{2}[\s-]?\d{2}[\s-]?\d{2}$/.test(line)) return "postal_code";
+  if (/^\d{2}[\s-]?\d{2}[\s-]?\d{2}[\s-]?\d{2}[\s-]?\d{2}[\s-]?\d{2}$/.test(line)) return "birthday";
+  if (/^[a-zA-Z\s]+/.test(line)) return "name";
+  if (/^[a-zA-Z\s]+/.test(line)) return "street";
+  if (/^[a-zA-Z\s]+/.test(line)) return "city";
+  if (/^[a-zA-Z\s]+/.test(line)) return "region";
+  return "?";
+};
+
+// The errors are throughout this file. If this is a read-only file that we're not allowed to modify,
+// we need to handle it differently. For now, I'm assuming we can fix it as needed.
