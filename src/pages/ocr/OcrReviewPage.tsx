@@ -8,23 +8,28 @@ import { Separator } from "@/components/ui/separator";
 type OcrMapping = {
   id: string;
   status: string;
-  file_name: string;
   file_path?: string;
+  file_name?: string;
   image_url?: string;
-  response: any;
+  response?: any;
   created_at: string;
-  ocr_request_id?: string;
-  user_id?: string;
-  total_amount?: string;
   currency?: string;
-  invoice_number?: string;
   invoice_date?: string;
-  due_date?: string;
+  invoice_number?: string;
   customer_name?: string;
   customer_address?: string;
+  supplier_name?: string;
+  supplier_address?: string;
+  supplier_vat?: string;
+  total_amount?: number | string;
+  total_net?: number | string;
+  total_tax?: number | string;
+  due_date?: string;
   confirmed_at?: string;
   line_items?: any;
+  user_id: string;
 };
+
 
 const OcrReviewPage = () => {
   const { ocrRequestId } = useParams<{ ocrRequestId: string }>();
