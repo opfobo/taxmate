@@ -1,3 +1,4 @@
+
 import { useLocation } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useState } from "react";
@@ -128,10 +129,9 @@ const ConsumersPage = () => {
   };
 
   const { data = [], isLoading, refetch } = useQuery<ConsumerWithOrderStats[], Error>({
-  queryKey: ["consumers", searchQuery],
-  queryFn: () => fetchConsumers(searchQuery),
-});
-
+    queryKey: ["consumers", searchQuery],
+    queryFn: () => fetchConsumers(searchQuery),
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -173,7 +173,7 @@ const ConsumersPage = () => {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <ConsumersTable consumers={consumers} onConsumerSelect={setSelectedConsumer} />
+          <ConsumersTable consumers={data} onConsumerSelect={setSelectedConsumer} />
         )}
 
         {selectedConsumer && (

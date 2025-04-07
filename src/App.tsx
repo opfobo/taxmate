@@ -18,12 +18,11 @@ import PurchasesOrdersPage from "./pages/orders/PurchasesOrdersPage";
 import ConsumersPage from "./pages/ConsumersPage";
 import OrdersLayout from "./layouts/OrdersLayout";
 import OcrLayout from "./layouts/OcrLayout";
-import OcrPage from "./pages/OcrPage";
 import InvoiceOcrTab from "./components/ocr/InvoiceOcrTab";
 import ConsumerOcrTab from "./components/ocr/ConsumerOcrTab";
 
 function App() {
-  const { authStatus, setAuthStatus } = useAuth();
+  const { user, session, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -33,9 +32,9 @@ function App() {
       } = await supabase.auth.getSession();
 
       if (session) {
-        setAuthStatus("authenticated");
+        // No longer using setAuthStatus
       } else {
-        setAuthStatus("unauthenticated");
+        // No longer using setAuthStatus
       }
       setIsLoading(false);
     };
@@ -44,14 +43,14 @@ function App() {
 
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN") {
-        setAuthStatus("authenticated");
+        // No longer using setAuthStatus
       } else if (event === "SIGNED_OUT") {
-        setAuthStatus("unauthenticated");
+        // No longer using setAuthStatus
       }
     });
-  }, [setAuthStatus]);
+  }, []);
 
-  if (isLoading) {
+  if (loading || isLoading) {
     return <div>Loading...</div>;
   }
 
@@ -61,7 +60,7 @@ function App() {
         <Route
           path="/"
           element={
-            authStatus === "authenticated" ? (
+            user ? (
               <Navigate to="/dashboard" />
             ) : (
               <Navigate to="/login" />
@@ -71,7 +70,7 @@ function App() {
         <Route
           path="/login"
           element={
-            authStatus !== "authenticated" ? (
+            !user ? (
               <LoginPage />
             ) : (
               <Navigate to="/dashboard" />
@@ -81,7 +80,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            authStatus === "authenticated" ? (
+            user ? (
               <DashboardPage />
             ) : (
               <Navigate to="/login" />
@@ -91,7 +90,7 @@ function App() {
         <Route
           path="/profile"
           element={
-            authStatus === "authenticated" ? (
+            user ? (
               <ProfilePage />
             ) : (
               <Navigate to="/login" />
@@ -101,7 +100,7 @@ function App() {
         <Route
           path="/settings"
           element={
-            authStatus === "authenticated" ? (
+            user ? (
               <SettingsPage />
             ) : (
               <Navigate to="/login" />
@@ -111,7 +110,7 @@ function App() {
         <Route
           path="/dashboard/transactions"
           element={
-            authStatus === "authenticated" ? (
+            user ? (
               <TransactionsPage />
             ) : (
               <Navigate to="/login" />
@@ -121,7 +120,7 @@ function App() {
         <Route
           path="/dashboard/orders"
           element={
-            authStatus === "authenticated" ? (
+            user ? (
               <OrdersLayout />
             ) : (
               <Navigate to="/login" />
@@ -136,7 +135,7 @@ function App() {
         <Route
           path="/dashboard/ocr"
           element={
-            authStatus === "authenticated" ? (
+            user ? (
               <OcrLayout />
             ) : (
               <Navigate to="/login" />
