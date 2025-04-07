@@ -26,9 +26,16 @@ export default function AddressParserTestPage() {
   const [visible, setVisible] = useState(false);
   const [fieldToAdd, setFieldToAdd] = useState<FieldKey | null>(null);
   useEffect(() => {
-    const transliterated = input.split(/\r?\n/).map(line => transliterate(line.trim())).join(" ");
-    setTranslitOutput(transliterated);
-  }, [input]);
+  const transliterated = input
+    .split(/\r?\n/)
+    .map(line => transliterate(line.trim()))
+    .filter(Boolean)
+    .map(line => line.trim())
+    .join(" ")
+    .replace(/\s{2,}/g, " "); // doppelte Leerzeichen entfernen
+
+  setTranslitOutput(transliterated);
+}, [input]);
   const addSpacesBetweenWords = (text: string) => {
     return text.replace(/(?<=[a-z])(?=[A-Z])/g, " ");
   };
