@@ -46,8 +46,13 @@ const OcrReviewPage = () => {
   }
 
   if (!ocrData) {
-    return <div className="p-6 text-red-600">OCR-Ergebnis nicht gefunden.</div>;
-  }
+  return (
+    <div className="p-6 text-red-600">
+      ⚠️ Kein Ergebnis geladen<br />
+      OCR-ID: {ocrRequestId}<br />
+      Prüfe RLS-Policy, Feld `response` und `image_url`
+    </div>
+  );  }
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
