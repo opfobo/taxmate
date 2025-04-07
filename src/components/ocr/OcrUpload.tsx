@@ -321,7 +321,7 @@ if (selectedFile.type.startsWith("image/")) {
       onOcrResult(result);
       setSuccess(true);
       toast({ title: "OCR completed", description: "Document processed successfully." });
-      navigate(`/ocr/review/${requestId}`);
+      navigate(`/dashboard/ocr/review/${requestId}`);
     } catch (err: any) {
       setError(err.message);
       toast({ title: "OCR failed", description: err.message, variant: "destructive" });
