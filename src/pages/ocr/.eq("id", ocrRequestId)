@@ -29,8 +29,9 @@ const OcrReviewPage = () => {
       const { data, error } = await supabase
         .from("ocr_invoice_mappings")
         .select("*")
-        .eq("id", ocrRequestId)
+        .eq("ocr_request_id", ocrRequestId)
         .single();
+
 
       if (error) {
         console.error("Error loading OCR mapping:", error);
