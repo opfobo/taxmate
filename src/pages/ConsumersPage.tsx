@@ -128,10 +128,33 @@ const ConsumersPage = () => {
     }
   };
 
-  const { data = [], isLoading, refetch } = useQuery<ConsumerWithOrderStats[], Error>({
-    queryKey: ["consumers", searchQuery],
-    queryFn: () => fetchConsumers(searchQuery),
-  });
+const {
+  data: consumers = [],
+  isLoading,
+  refetch,
+} = useQuery<any[]>({
+  queryKey: ["consumers", searchQuery],
+  queryFn: async () => {
+    let query = supabase
+      .from("consumers")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (searchQuery.length > 2) {
+      query = query.ilike("full_name", `%${searchQuery}%`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Fehler beim Laden der Consumers:", error);
+      return [];
+    }
+
+    return data;
+  },
+});
+
 
   return (
     <div className="min-h-screen bg-background">
