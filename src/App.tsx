@@ -21,7 +21,7 @@ import OcrLayout from "./layouts/OcrLayout";
 import InvoiceOcrTab from "./components/ocr/InvoiceOcrTab";
 import ConsumerOcrTab from "./components/ocr/ConsumerOcrTab";
 import OcrReviewPage from "./pages/ocr/OcrReviewPage";
-import OcrTestPage from "@/test/OcrTestPage";
+import OcrTestPage from "./pages/ocr/OcrTestPage";
 
 
 function App() {
@@ -127,7 +127,7 @@ function App() {
           }
         />
         <Route
-  path="/dashboard/test/ocr"
+  path="/dashboard/ocr/test"
   element={user ? <OcrTestPage /> : <Navigate to="/login" />}
 />
         <Route
