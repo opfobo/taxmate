@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter as Router,
   Route,
@@ -14,7 +15,7 @@ import SettingsPage from "./pages/SettingsPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import SalesOrdersPage from "./pages/orders/SalesOrdersPage";
 import PurchasesOrdersPage from "./pages/orders/PurchasesOrdersPage";
-import ConsumersPage from "./pages/orders/ConsumersPage";
+import ConsumersPage from "./pages/ConsumersPage";
 import OrdersLayout from "./layouts/OrdersLayout";
 import OcrLayout from "./layouts/OcrLayout";
 import OcrPage from "./pages/OcrPage";
@@ -132,14 +133,20 @@ function App() {
           <Route path="consumers" element={<ConsumersPage />} />
         </Route>
         
-        {/* Add the OCR-related routes to your route configuration: */}
-        {
-          authStatus === "authenticated" ? (
-            <Route path="/dashboard/ocr" element={<OcrPage />} />
-          ) : (
-            <Route path="/dashboard/ocr" element={<Navigate to="/login" />} />
-          )
-        }
+        <Route
+          path="/dashboard/ocr"
+          element={
+            authStatus === "authenticated" ? (
+              <OcrLayout />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        >
+          <Route path="" element={<InvoiceOcrTab />} />
+          <Route path="invoice" element={<InvoiceOcrTab />} />
+          <Route path="consumer" element={<ConsumerOcrTab />} />
+        </Route>
       </Routes>
     </Router>
   );

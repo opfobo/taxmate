@@ -1,18 +1,31 @@
 
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { PageLayout } from "@/components/PageLayout";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useLocation, useNavigate } from "react-router-dom";
 
 const OcrLayout = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   
-  const isInvoiceTab = !location.pathname.includes("/consumer");
-  const isConsumerTab = location.pathname.includes("/consumer");
+  // Determine active tab based on path
+  const getActiveTab = () => {
+    if (location.pathname.includes("/consumer")) {
+      return "consumer";
+    }
+    return "invoice";
+  };
+  
+  // Handle tab changes
+  const handleTabChange = (value: string) => {
+    if (value === "consumer") {
+      navigate("/dashboard/ocr/consumer");
+    } else {
+      navigate("/dashboard/ocr/invoice");
+    }
+  };
   
   return (
     <PageLayout>
@@ -28,20 +41,15 @@ const OcrLayout = () => {
           </CardHeader>
           <CardContent className="p-6">
             <Tabs 
-              value={isConsumerTab ? "consumer" : "invoice"}
+              value={getActiveTab()}
+              onValueChange={handleTabChange}
               className="w-full"
             >
               <TabsList className="mb-6">
-                <TabsTrigger 
-                  value="invoice" 
-                  onClick={() => navigate("/dashboard/ocr/invoice")}
-                >
+                <TabsTrigger value="invoice">
                   {t("ocr.invoice_tab")}
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="consumer" 
-                  onClick={() => navigate("/dashboard/ocr/consumer")}
-                >
+                <TabsTrigger value="consumer">
                   {t("ocr.consumer_tab")}
                 </TabsTrigger>
               </TabsList>
