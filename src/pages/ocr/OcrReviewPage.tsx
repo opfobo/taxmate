@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import DocumentPreview from "@/components/ocr/DocumentPreview";
 
+
 type OcrMapping = {
   id: string;
   status: string;
