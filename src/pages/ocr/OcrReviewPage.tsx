@@ -36,6 +36,7 @@ const OcrReviewPage = () => {
         console.error("Error loading OCR mapping:", error);
         setOcrData(null);
       } else {
+        console.log("Mapping-Data erhalten:", data);
         setOcrData(data);
 
         // Dynamisch Preview-Image URL holen, falls nicht vorhanden
