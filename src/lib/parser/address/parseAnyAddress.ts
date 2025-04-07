@@ -1,10 +1,15 @@
-import type { ParsedAddress } from "./types";
-import { parseCyrillicAddress } from "./parseCyrillicAddress";
+
 import { parseLatinAddress } from "./parseLatinAddress";
+import { parseCyrillicAddress } from "./parseCyrillicAddress";
+import { ParsedAddress } from "../../types/parsedAddress";
 
-type ParsedAnyAddress = ParsedAddress | ReturnType<typeof parseCyrillicAddress>;
-
-export function parseAnyAddress(input: string): ParsedAnyAddress {
-  const isCyrillic = /[А-Яа-яЁё]/.test(input);
-  return isCyrillic ? parseCyrillicAddress(input) : parseLatinAddress(input);
+export function parseAnyAddress(fullAddress: string): ParsedAddress {
+  const isCyrillic = /[а-яА-ЯёЁ]/.test(fullAddress);
+  
+  if (isCyrillic) {
+    const result = parseCyrillicAddress(fullAddress) as unknown as ParsedAddress;
+    return result;
+  } else {
+    return parseLatinAddress(fullAddress);
+  }
 }
