@@ -8,8 +8,8 @@ import { Loader2, Upload, FileText, Image as ImageIcon, CheckCircle, AlertCircle
 import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/context/AuthContext";
 import { PDF_PREVIEW_BASE_URL } from "@/constants/config";
+import { getApiKey } from "@/supabase/helpers/getApiKey"; // 👈 hinzufügen
 
-const MINDEE_API_KEY = "4173d96a82bd5fc4423bfc3c0bda37ed";
 const MINDEE_API_URL = "https://api.mindee.net/v1/products/mindee/invoices/v4/predict";
 
 export interface OcrUploadProps {
@@ -294,13 +294,26 @@ if (selectedFile.type.startsWith("image/")) {
       const formData = new FormData();
       formData.append("document", file);
 
-      const mindeeResponse = await fetch(MINDEE_API_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Token ${MINDEE_API_KEY}`
-        },
-        body: formData
-      });
+      const mindeeKey = await getApiKey("mindee");
+
+if (!mindeeKey) {
+  setError("Kein gültiger Mindee-API-Key gefunden.");
+  toast({
+    title: "Fehlender API-Key",
+    description: "Bitte überprüfe die Konfiguration für OCR.",
+    variant: "destructive",
+  });
+  return;
+}
+
+const mindeeResponse = await fetch(MINDEE_API_URL, {
+  method: "POST",
+  headers: {
+    Authorization: `Token ${mindeeKey}`
+  },
+  body: formData
+});
+
 
       const result = await mindeeResponse.json();
       if (!mindeeResponse.ok) {
