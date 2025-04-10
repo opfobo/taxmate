@@ -8,7 +8,7 @@ import {
 import { useEffect, useState } from "react";
 import { useAuth } from "./context/AuthContext";
 import { supabase } from "./integrations/supabase/client";
-import DashboardPage from "./pages/DashboardPage";
+import DashboardPage from "./pages/dashboard/DashboardPage";
 import LoginPage from "./pages/auth/LoginPage";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
@@ -22,7 +22,6 @@ import InvoiceOcrTab from "./components/ocr/InvoiceOcrTab";
 import ConsumerOcrTab from "./components/ocr/ConsumerOcrTab";
 import OcrReviewPage from "./pages/ocr/OcrReviewPage";
 import OcrTestPage from "./pages/ocr/OcrTestPage";
-
 
 function App() {
   const { user, session, loading } = useAuth();
@@ -101,11 +100,11 @@ function App() {
           }
         />
         <Route
-  path="/dashboard/ocr/review/:ocrRequestId"
-  element={
-    user ? <OcrReviewPage /> : <Navigate to="/login" />
-  }
-/>
+          path="/dashboard/ocr/review/:ocrRequestId"
+          element={
+            user ? <OcrReviewPage /> : <Navigate to="/login" />
+          }
+        />
         <Route
           path="/settings"
           element={
@@ -127,9 +126,9 @@ function App() {
           }
         />
         <Route
-  path="/dashboard/ocr/test"
-  element={user ? <OcrTestPage /> : <Navigate to="/login" />}
-/>
+          path="/dashboard/ocr/test"
+          element={user ? <OcrTestPage /> : <Navigate to="/login" />}
+        />
         <Route
           path="/dashboard/orders"
           element={

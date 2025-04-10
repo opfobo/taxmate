@@ -1,5 +1,5 @@
 
-import { PageLayout } from "@/components/PageLayout";
+import { PageLayout } from "@/components/common/PageLayout";
 import OcrInvoiceReview from "@/components/ocr/OcrInvoiceReview";
 
 const OcrInvoiceReviewPage = () => {

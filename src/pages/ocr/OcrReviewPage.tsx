@@ -30,7 +30,6 @@ type OcrMapping = {
   user_id: string;
 };
 
-
 const OcrReviewPage = () => {
   const { ocrRequestId } = useParams<{ ocrRequestId: string }>();
   const [ocrData, setOcrData] = useState<OcrMapping | null>(null);
@@ -49,23 +48,22 @@ const OcrReviewPage = () => {
         .eq("ocr_request_id", ocrRequestId)
         .single();
 
-
       if (error) {
         console.error("Error loading OCR mapping:", error);
         setOcrData(null);
       } else {
         console.log("Mapping-Data erhalten:", data);
-        // Convert the data to match OcrMapping type
-        setOcrData({
+        
+        // Create a properly typed object from the data
+        const typedData: OcrMapping = {
           id: data.id || "",
           status: data.status || "",
-          file_name: data.file_name || "",
+          file_name: data.file_name,
           file_path: data.file_path,
           response: data.response,
           created_at: data.created_at,
-          ocr_request_id: data.ocr_request_id,
-          image_url: data.image_url,
           user_id: data.user_id,
+          image_url: data.image_url,
           total_amount: data.total_amount,
           currency: data.currency,
           invoice_number: data.invoice_number,
@@ -73,9 +71,16 @@ const OcrReviewPage = () => {
           due_date: data.due_date,
           customer_name: data.customer_name,
           customer_address: data.customer_address,
+          supplier_name: data.supplier_name,
+          supplier_address: data.supplier_address,
+          supplier_vat: data.supplier_vat,
+          total_net: data.total_net,
+          total_tax: data.total_tax,
           confirmed_at: data.confirmed_at,
           line_items: data.line_items
-        });
+        };
+        
+        setOcrData(typedData);
 
         // Dynamically get preview image URL if not available
         const previewPath = data.file_path?.replace(/\.[^/.]+$/, "_preview.jpg");

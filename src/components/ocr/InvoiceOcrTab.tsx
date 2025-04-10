@@ -1,3 +1,4 @@
+
 import { useTranslation } from "@/hooks/useTranslation";
 import OcrUpload from "@/components/ocr/OcrUpload";
 import { useNavigate } from "react-router-dom";

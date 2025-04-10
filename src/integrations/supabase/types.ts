@@ -125,6 +125,45 @@ export type Database = {
           },
         ]
       }
+      api_keys: {
+        Row: {
+          api_key: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          label: string | null
+          max_usage: number | null
+          priority: number | null
+          service: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          api_key: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          max_usage?: number | null
+          priority?: number | null
+          service: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          api_key?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          max_usage?: number | null
+          priority?: number | null
+          service?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       cashback: {
         Row: {
           cashback_amount: number
@@ -565,6 +604,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ruspost_barcodes: {
+        Row: {
+          barcode: string
+          created_at: string | null
+          id: string
+          is_used: boolean | null
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          barcode: string
+          created_at?: string | null
+          id?: string
+          is_used?: boolean | null
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          barcode?: string
+          created_at?: string | null
+          id?: string
+          is_used?: boolean | null
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           address_line1: string | null
@@ -623,6 +689,47 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipping_tracking_references: {
+        Row: {
+          added_by: string | null
+          carrier: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          label_url: string | null
+          order_id: string | null
+          tracking_code: string
+        }
+        Insert: {
+          added_by?: string | null
+          carrier?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          label_url?: string | null
+          order_id?: string | null
+          tracking_code: string
+        }
+        Update: {
+          added_by?: string | null
+          carrier?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          label_url?: string | null
+          order_id?: string | null
+          tracking_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipping_tracking_references_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
