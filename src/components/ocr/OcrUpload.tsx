@@ -8,7 +8,8 @@ import { Loader2, Upload, FileText, Image as ImageIcon, CheckCircle, AlertCircle
 import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/context/AuthContext";
 import { PDF_PREVIEW_BASE_URL } from "@/constants/config";
-import { getApiKey } from "@/lib/supabase/helpers/getApiKey"; // Updated path
+import { getApiKey } from "@/lib/supabase/helpers/getApiKey";
+import { parseAddressWithGpt } from "@/lib/gpt/parseAddressWithGpt"; // ✅ GPT import ergänzt
 
 const MINDEE_API_URL = "https://api.mindee.net/v1/products/mindee/invoices/v4/predict";
 
@@ -43,9 +44,9 @@ export const OcrUpload = ({
   const fetchTokens = async () => {
     if (!user) return;
     const { data, error } = await supabase
-      .from('ocr_tokens')
-      .select('tokens')
-      .eq('user_id', user.id)
+      .from("ocr_tokens")
+      .select("tokens")
+      .eq("user_id", user.id)
       .single();
     if (!error) setTokens(data?.tokens || 0);
   };
@@ -65,9 +66,13 @@ export const OcrUpload = ({
     setSafeFileName(null);
     setRequestId(null);
     setPreviewUrl(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleAddressParsing = async (rawAddress: string) => {
+    const parsed = await parseAddressWithGpt(rawAddress);
+    console.log("📦 Parsed Address:", parsed);
+    // 🔧 Hier folgt später die Duplikatsuche, Anzeige etc.
   };
 
   const processOcrResult = async (result: any, requestId: string, safeFileName: string) => {
@@ -83,6 +88,9 @@ export const OcrUpload = ({
       const supplierAddress = prediction.supplier_address?.value || null;
       const customerName = prediction.customer_name?.value || null;
       const customerAddress = prediction.customer_address?.value || null;
+
+      await handleAddressParsing(customerAddress); // ✅ GPT Parsing Triggern
+
       const lineItems = prediction.line_items?.map((item: any, index: number) => ({
         id: uuidv4(),
         description: item.description || `Item ${index + 1}`,
@@ -92,7 +100,7 @@ export const OcrUpload = ({
       })) || [];
 
       const { data: mappingData, error: mappingError } = await supabase
-        .from('ocr_invoice_mappings')
+        .from("ocr_invoice_mappings")
         .insert({
           user_id: user.id,
           ocr_request_id: requestId,
@@ -106,19 +114,19 @@ export const OcrUpload = ({
           total_amount: totalAmount,
           total_tax: totalTax,
           total_net: totalNet,
-          currency: prediction.locale?.currency || 'EUR',
+          currency: prediction.locale?.currency || "EUR",
           line_items: lineItems,
           file_path: `${user.id}/${safeFileName}`,
-          status: 'pending'
+          status: "pending"
         })
-        .select('id')
+        .select("id")
         .single();
 
       if (mappingError) throw new Error(`Failed to create invoice mapping: ${mappingError.message}`);
 
       return mappingData.id;
     } catch (err: any) {
-      console.error('Error processing OCR result:', err);
+      console.error("Error processing OCR result:", err);
       throw err;
     }
   };
