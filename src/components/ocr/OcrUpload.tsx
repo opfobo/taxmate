@@ -9,7 +9,6 @@ import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/context/AuthContext";
 import { PDF_PREVIEW_BASE_URL } from "@/constants/config";
 import { getApiKey } from "@/lib/supabase/helpers/getApiKey";
-import { parseAddressWithGpt } from "@/lib/gpt/parseAddressWithGpt"; // ✅ GPT import ergänzt
 
 const MINDEE_API_URL = "https://api.mindee.net/v1/products/mindee/invoices/v4/predict";
 
@@ -69,11 +68,6 @@ export const OcrUpload = ({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleAddressParsing = async (rawAddress: string) => {
-    const parsed = await parseAddressWithGpt(rawAddress);
-    console.log("📦 Parsed Address:", parsed);
-    // 🔧 Hier folgt später die Duplikatsuche, Anzeige etc.
-  };
 
   const processOcrResult = async (result: any, requestId: string, safeFileName: string) => {
     if (!user) return;
@@ -88,8 +82,6 @@ export const OcrUpload = ({
       const supplierAddress = prediction.supplier_address?.value || null;
       const customerName = prediction.customer_name?.value || null;
       const customerAddress = prediction.customer_address?.value || null;
-
-      await handleAddressParsing(customerAddress); // ✅ GPT Parsing Triggern
 
       const lineItems = prediction.line_items?.map((item: any, index: number) => ({
         id: uuidv4(),
