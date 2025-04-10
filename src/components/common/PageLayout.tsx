@@ -1,6 +1,6 @@
 
 import { ReactNode } from "react";
-import Navbar from "@/components/common/Navbar";
+import Navbar from "@/components/Navbar";
 
 interface PageLayoutProps {
   children: ReactNode;

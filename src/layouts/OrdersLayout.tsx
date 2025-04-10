@@ -9,7 +9,7 @@ import {
   CreditCard, 
   Users 
 } from "lucide-react";
-import { PageLayout } from "@/components/PageLayout";
+import { PageLayout } from "@/components/common/PageLayout";
 
 const OrdersLayout = () => {
   const { t } = useTranslation();

@@ -1,8 +1,10 @@
+
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { PageLayout } from "@/components/PageLayout";
+import { PageLayout } from "@/components/common/PageLayout";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, User } from "lucide-react";
+
 const OcrLayout = () => {
   const {
     t
@@ -29,7 +31,6 @@ const OcrLayout = () => {
   return <PageLayout>
       <div className="container py-8">
         <h1 className="text-3xl font-bold mb-6">{t("ocr.title")}</h1>
-        
         
         <Tabs value={getActiveTab()} onValueChange={handleTabChange} className="w-full mb-8">
           <TabsList className="grid w-full grid-cols-2">

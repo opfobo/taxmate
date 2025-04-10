@@ -6,22 +6,23 @@ import {
   Navigate,
 } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useAuth } from "./context/AuthContext";
-import { supabase } from "./integrations/supabase/client";
-import DashboardPage from "./pages/dashboard/DashboardPage";
-import LoginPage from "./pages/auth/LoginPage";
-import ProfilePage from "./pages/ProfilePage";
-import SettingsPage from "./pages/SettingsPage";
-import TransactionsPage from "./pages/TransactionsPage";
-import SalesOrdersPage from "./pages/orders/SalesOrdersPage";
-import PurchasesOrdersPage from "./pages/orders/PurchasesOrdersPage";
-import ConsumersPage from "./pages/ConsumersPage";
-import OrdersLayout from "./layouts/OrdersLayout";
-import OcrLayout from "./layouts/OcrLayout";
-import InvoiceOcrTab from "./components/ocr/InvoiceOcrTab";
-import ConsumerOcrTab from "./components/ocr/ConsumerOcrTab";
-import OcrReviewPage from "./pages/ocr/OcrReviewPage";
-import OcrTestPage from "./pages/ocr/OcrTestPage";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import DashboardPage from "@/pages/Dashboard";
+import LoginPage from "@/pages/auth/LoginPage";
+import ProfilePage from "@/pages/ProfilePage";
+import SettingsPage from "@/pages/SettingsPage";
+import TransactionsPage from "@/pages/TransactionsPage";
+import SalesOrdersPage from "@/pages/orders/SalesOrdersPage";
+import PurchasesOrdersPage from "@/pages/orders/PurchasesOrdersPage";
+import ConsumersPage from "@/pages/ConsumersPage";
+import OrdersLayout from "@/layouts/OrdersLayout";
+import OcrLayout from "@/layouts/OcrLayout";
+import InvoiceOcrTab from "@/components/ocr/InvoiceOcrTab";
+import ConsumerOcrTab from "@/components/ocr/ConsumerOcrTab";
+import OcrReviewPage from "@/pages/ocr/OcrReviewPage";
+import OcrTestPage from "@/pages/ocr/OcrTestPage";
+import OcrInvoiceReviewPage from "@/pages/ocr/OcrInvoiceReviewPage";
 
 function App() {
   const { user, session, loading } = useAuth();

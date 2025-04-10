@@ -1,6 +1,6 @@
 
 import { useTranslation } from "@/hooks/useTranslation";
-import { PageLayout } from "@/components/PageLayout";
+import { PageLayout } from "@/components/common/PageLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -38,19 +38,23 @@ const OcrPage = () => {
   };
 
   return (
-    <>
-      <Card>
-        <CardContent className="p-6">
-          <TabsContent value="invoice">
-            <InvoiceOcrTab />
-          </TabsContent>
-          
-          <TabsContent value="consumer">
-            <ConsumerOcrTab />
-          </TabsContent>
-        </CardContent>
-      </Card>
-    </>
+    <PageLayout>
+      <div className="container py-8">
+        <h1 className="text-3xl font-bold mb-6">{t("ocr.title")}</h1>
+        
+        <Card>
+          <CardContent className="p-6">
+            <TabsContent value="invoice">
+              <InvoiceOcrTab />
+            </TabsContent>
+            
+            <TabsContent value="consumer">
+              <ConsumerOcrTab />
+            </TabsContent>
+          </CardContent>
+        </Card>
+      </div>
+    </PageLayout>
   );
 };
 
