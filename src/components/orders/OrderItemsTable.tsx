@@ -2,7 +2,7 @@
 import React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import Image from "@/components/Image";
+import Image from "@/components/common/Image";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 

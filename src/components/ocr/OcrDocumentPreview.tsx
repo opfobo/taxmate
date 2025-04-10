@@ -3,15 +3,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { AlertCircle } from "lucide-react";
 
 interface OcrDocumentPreviewProps {
-  filePath: string; // z. B. "user123/ocr_1234.pdf"
+  filePath?: string; // Make optional
+  imageUrl?: string; // Add imageUrl prop
+  fileName?: string; // Add fileName prop
 }
 
-const OcrDocumentPreview = ({ filePath }: OcrDocumentPreviewProps) => {
+const OcrDocumentPreview = ({ filePath, imageUrl, fileName }: OcrDocumentPreviewProps) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // If imageUrl is provided directly, use it
+    if (imageUrl) {
+      setPreviewUrl(imageUrl);
+      return;
+    }
+
+    // Otherwise try to fetch from storage using filePath
+    if (!filePath) {
+      setError("No file path or image URL provided");
+      return;
+    }
+
     const fetchUrls = async () => {
       try {
         const previewPath = filePath.replace(".pdf", "_preview.jpg");
@@ -40,20 +54,21 @@ const OcrDocumentPreview = ({ filePath }: OcrDocumentPreviewProps) => {
     };
 
     fetchUrls();
-  }, [filePath]);
+  }, [filePath, imageUrl]);
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-medium">ocr.document_preview</h3>
+      <h3 className="text-sm font-medium">
+        {fileName ? fileName : "ocr.document_preview"}
+      </h3>
       {previewUrl ? (
         <div className="border rounded-md overflow-hidden group">
-  <img
-    src={previewUrl}
-    alt="Preview"
-    className="w-full object-contain transition-transform duration-300 ease-in-out group-hover:scale-125"
-  />
-</div>
-
+          <img
+            src={previewUrl}
+            alt="Preview"
+            className="w-full object-contain transition-transform duration-300 ease-in-out group-hover:scale-125"
+          />
+        </div>
       ) : (
         <div className="text-sm text-muted-foreground flex items-center space-x-2">
           <AlertCircle className="w-4 h-4" />

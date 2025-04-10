@@ -2,7 +2,7 @@
 import React from "react";
 import { Image as ImageIcon, Plus } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-import Image from "@/components/Image";
+import Image from "@/components/common/Image";
 import { cn } from "@/lib/utils";
 
 interface ImagePreviewProps {

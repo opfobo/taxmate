@@ -8,7 +8,7 @@ import { Loader2, Upload, FileText, Image as ImageIcon, CheckCircle, AlertCircle
 import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/context/AuthContext";
 import { PDF_PREVIEW_BASE_URL } from "@/constants/config";
-import { getApiKey } from "@/supabase/helpers/getApiKey"; // 👈 hinzufügen
+import { getApiKey } from "@/lib/supabase/helpers/getApiKey"; // Updated path
 
 const MINDEE_API_URL = "https://api.mindee.net/v1/products/mindee/invoices/v4/predict";
 
