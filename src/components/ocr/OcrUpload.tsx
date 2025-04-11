@@ -294,9 +294,11 @@ if (selectedFile.type.startsWith("image/")) {
       const formData = new FormData();
       formData.append("document", file);
 
-      const mindeeKey = await getApiKey("mindee");
+const mindeeKey = await getApiKey("mindee");
+console.log("🔍 API-Key geladen:", mindeeKey);
 
 if (!mindeeKey) {
+  console.warn("⚠️ getApiKey hat keinen Key zurückgegeben");
   setError("Kein gültiger Mindee-API-Key gefunden.");
   toast({
     title: "Fehlender API-Key",
