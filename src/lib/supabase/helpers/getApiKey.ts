@@ -7,29 +7,28 @@ export async function getApiKey(service: string): Promise<string | null> {
       .select("id, api_key, usage_count, max_usage")
       .eq("service", service)
       .eq("is_active", true)
-      .lt("usage_count", supabase.literal("max_usage")) // nicht über Limit
-      .order("usage_count", { ascending: true }) // am wenigsten verbraucht
-      .limit(1);
+      .order("usage_count", { ascending: true })
+      .limit(10); // erst mal alle holen
 
     if (error) {
       console.error("❌ Supabase-Fehler beim Laden des API-Keys:", error);
       return null;
     }
 
-    const selectedKey = data?.[0];
+    const availableKey = data?.find(k => k.usage_count < k.max_usage);
 
-    if (!selectedKey) {
-      console.warn(`⚠️ Kein verfügbarer API-Key für '${service}' gefunden (alle verbraucht?).`);
+    if (!availableKey) {
+      console.warn(`⚠️ Kein API-Key für '${service}' verfügbar (alle verbraucht).`);
       return null;
     }
 
-    // Optional: +1 usage_count hochzählen
+    // Optional: usage_count hochzählen
     await supabase
       .from("api_keys")
-      .update({ usage_count: selectedKey.usage_count + 1 })
-      .eq("id", selectedKey.id);
+      .update({ usage_count: availableKey.usage_count + 1 })
+      .eq("id", availableKey.id);
 
-    return selectedKey.api_key;
+    return availableKey.api_key;
   } catch (err) {
     console.error("❌ Unbekannter Fehler in getApiKey:", err);
     return null;
