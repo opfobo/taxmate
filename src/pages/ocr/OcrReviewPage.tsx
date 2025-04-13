@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -14,7 +13,6 @@ import { useTranslation } from "@/hooks/useTranslation";
 import OcrDocumentPreview from "@/components/ocr/OcrDocumentPreview";
 import { format } from "date-fns";
 
-// Define types for the OCR data
 interface OcrRequestData {
   id: string;
   created_at: string;
@@ -53,8 +51,8 @@ const OcrReviewPage = () => {
   const { toast } = useToast();
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Fetch OCR request data
   const { data: ocrRequest, isLoading: isLoadingRequest } = useQuery({
     queryKey: ["ocrRequest", ocrRequestId],
     queryFn: async () => {
@@ -70,7 +68,6 @@ const OcrReviewPage = () => {
     enabled: !!ocrRequestId && !!user,
   });
 
-  // Fetch OCR invoice mapping data
   const { data: invoiceMapping, isLoading: isLoadingMapping } = useQuery({
     queryKey: ["invoiceMapping", ocrRequestId],
     queryFn: async () => {
@@ -86,29 +83,38 @@ const OcrReviewPage = () => {
     enabled: !!ocrRequestId && !!user,
   });
 
-  // Combined loading state
+  useEffect(() => {
+    const loadPreview = async () => {
+      if (!invoiceMapping?.file_path) return;
+      const { data, error } = await supabase.storage
+        .from("ocr-files")
+        .createSignedUrl(invoiceMapping.file_path, 600);
+      if (!error && data?.signedUrl) {
+        setPreviewUrl(data.signedUrl);
+      }
+    };
+
+    loadPreview();
+  }, [invoiceMapping?.file_path]);
+
   const isLoading = isLoadingRequest || isLoadingMapping;
 
-  // Prepare document metadata for display
   const documentMeta = {
     fileName: ocrRequest?.file_name || "Document",
     uploadDate: ocrRequest?.created_at ? format(new Date(ocrRequest.created_at), "PPP") : "-",
     rawData: ocrRequest?.response || {},
-    imageUrl: invoiceMapping?.file_path || "",
+    imageUrl: previewUrl || "",
     status: invoiceMapping?.status || "pending",
     invoiceNumber: invoiceMapping?.invoice_number || "-",
-    invoiceDate: invoiceMapping?.invoice_date 
-      ? format(new Date(invoiceMapping.invoice_date), "PPP") 
+    invoiceDate: invoiceMapping?.invoice_date
+      ? format(new Date(invoiceMapping.invoice_date), "PPP")
       : "-",
-    dueDate: "-", // Not available in current schema
-    totalAmount: invoiceMapping?.total_amount 
-      ? `${invoiceMapping.total_amount} ${invoiceMapping.currency || "EUR"}` 
+    totalAmount: invoiceMapping?.total_amount
+      ? `${invoiceMapping.total_amount} ${invoiceMapping.currency || "EUR"}`
       : "-",
   };
 
-  // Handle form submission
   const handleSubmit = async () => {
-    // Logic for saving edited data would go here
     setIsEditing(false);
     toast({
       title: "Changes saved",
@@ -148,20 +154,18 @@ const OcrReviewPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Document Preview */}
             <Card>
               <CardHeader>
                 <CardTitle>{t("ocr.document_preview")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <OcrDocumentPreview 
-                  imageUrl={documentMeta.imageUrl} 
+                <OcrDocumentPreview
+                  imageUrl={documentMeta.imageUrl}
                   fileName={documentMeta.fileName}
                 />
               </CardContent>
             </Card>
 
-            {/* Document Details */}
             <Card>
               <CardHeader>
                 <CardTitle>{t("ocr.document_details")}</CardTitle>
@@ -172,10 +176,8 @@ const OcrReviewPage = () => {
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="text-muted-foreground">{t("ocr.file_name")}</div>
                     <div>{documentMeta.fileName}</div>
-                    
                     <div className="text-muted-foreground">{t("ocr.upload_date")}</div>
                     <div>{documentMeta.uploadDate}</div>
-                    
                     <div className="text-muted-foreground">{t("ocr.status")}</div>
                     <div className="flex items-center">
                       {documentMeta.status === "confirmed" ? (
@@ -187,34 +189,30 @@ const OcrReviewPage = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div>
                   <h3 className="font-semibold mb-2">{t("ocr.invoice_details")}</h3>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="text-muted-foreground">{t("ocr.invoice_number")}</div>
                     <div>{documentMeta.invoiceNumber}</div>
-                    
                     <div className="text-muted-foreground">{t("ocr.invoice_date")}</div>
                     <div>{documentMeta.invoiceDate}</div>
-                    
                     <div className="text-muted-foreground">{t("ocr.total_amount")}</div>
                     <div className="font-medium">{documentMeta.totalAmount}</div>
                   </div>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div>
                   <h3 className="font-semibold mb-2">{t("ocr.supplier_info")}</h3>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="text-muted-foreground">{t("ocr.supplier_name")}</div>
                     <div>{invoiceMapping?.supplier_name || "-"}</div>
-                    
                     <div className="text-muted-foreground">{t("ocr.supplier_address")}</div>
                     <div>{invoiceMapping?.supplier_address || "-"}</div>
-                    
                     <div className="text-muted-foreground">{t("ocr.supplier_vat")}</div>
                     <div>{invoiceMapping?.supplier_vat || "-"}</div>
                   </div>
