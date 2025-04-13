@@ -14,39 +14,36 @@ const OcrDocumentPreview = ({ filePath, imageUrl, fileName }: OcrDocumentPreview
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (imageUrl) {
-      setPreviewUrl(imageUrl);
-      return;
-    }
-
-    if (!filePath) {
-      setError("No file path or image URL provided");
-      return;
-    }
-
     const fetchUrls = async () => {
-      try {
-        const baseName = filePath.split("/").pop()?.replace(".pdf", "") ?? "";
-        const previewPath = filePath.replace(/\.pdf$/, `_preview.jpg`);
+      if ((!filePath || filePath === "") && (!imageUrl || imageUrl === "")) {
+        setError("Kein Pfad oder Bild-URL angegeben");
+        return;
+      }
 
-        // Vorschaubild laden
+      if (imageUrl && !filePath) {
+        setPreviewUrl(imageUrl);
+        return;
+      }
+
+      try {
+        const previewPath = filePath!.replace(/\.pdf$/i, "_preview.jpg");
+
         const { data: previewData, error: previewError } = await supabase.storage
           .from("ocr-files")
           .createSignedUrl(previewPath, 3600);
 
-        if (previewError || !previewData) {
+        if (previewError || !previewData?.signedUrl) {
           console.warn("❌ Fehler beim Laden der Vorschau:", previewError);
           setError("Keine Vorschau verfügbar");
         } else {
           setPreviewUrl(previewData.signedUrl);
         }
 
-        // Original-PDF signierten Link holen
         const { data: originalData, error: originalError } = await supabase.storage
           .from("ocr-files")
-          .createSignedUrl(filePath, 3600);
+          .createSignedUrl(filePath!, 3600);
 
-        if (!originalError && originalData) {
+        if (!originalError && originalData?.signedUrl) {
           setOriginalUrl(originalData.signedUrl);
         }
       } catch (err) {
@@ -60,9 +57,7 @@ const OcrDocumentPreview = ({ filePath, imageUrl, fileName }: OcrDocumentPreview
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-medium">
-        {fileName ?? "ocr.document_preview"}
-      </h3>
+      <h3 className="text-sm font-medium">{fileName ?? "ocr.document_preview"}</h3>
 
       {previewUrl ? (
         <div className="border rounded-md overflow-hidden group">
