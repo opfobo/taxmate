@@ -20,35 +20,38 @@ const OcrDocumentPreview = ({ filePath, imageUrl, fileName }: OcrDocumentPreview
     }
 
     if (!filePath) {
-      setError("Kein Pfad angegeben");
+      setError("No file path or image URL provided");
       return;
     }
 
-    const isPdf = filePath.toLowerCase().endsWith(".pdf");
-    const previewPath = isPdf
-      ? filePath.replace(/\.pdf$/i, "_preview.jpg")
-      : filePath;
-
     const fetchUrls = async () => {
       try {
-        const [{ data: previewData, error: previewError }, { data: originalData, error: originalError }] =
-          await Promise.all([
-            supabase.storage.from("ocr-files").createSignedUrl(previewPath, 60),
-            supabase.storage.from("ocr-files").createSignedUrl(filePath, 60)
-          ]);
+        const baseName = filePath.split("/").pop()?.replace(".pdf", "") ?? "";
+        const previewPath = filePath.replace(/\.pdf$/, `_preview.jpg`);
+
+        // Vorschaubild laden
+        const { data: previewData, error: previewError } = await supabase.storage
+          .from("ocr-files")
+          .createSignedUrl(previewPath, 3600);
 
         if (previewError || !previewData) {
+          console.warn("❌ Fehler beim Laden der Vorschau:", previewError);
           setError("Keine Vorschau verfügbar");
         } else {
           setPreviewUrl(previewData.signedUrl);
         }
 
+        // Original-PDF signierten Link holen
+        const { data: originalData, error: originalError } = await supabase.storage
+          .from("ocr-files")
+          .createSignedUrl(filePath, 3600);
+
         if (!originalError && originalData) {
           setOriginalUrl(originalData.signedUrl);
         }
       } catch (err) {
-        console.error("❌ Vorschaufehler:", err);
-        setError("Fehler beim Laden der Vorschau.");
+        console.error("❌ Vorschau konnte nicht geladen werden:", err);
+        setError("Fehler beim Laden der Vorschau");
       }
     };
 
@@ -62,21 +65,11 @@ const OcrDocumentPreview = ({ filePath, imageUrl, fileName }: OcrDocumentPreview
       </h3>
 
       {previewUrl ? (
-        <div
-          className="relative overflow-hidden rounded group w-full max-w-sm aspect-video border"
-          onMouseMove={(e) => {
-            const img = e.currentTarget.querySelector("img") as HTMLImageElement;
-            if (!img) return;
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = ((e.clientX - rect.left) / rect.width) * 100;
-            const y = ((e.clientY - rect.top) / rect.height) * 100;
-            img.style.transformOrigin = `${x}% ${y}%`;
-          }}
-        >
+        <div className="border rounded-md overflow-hidden group">
           <img
             src={previewUrl}
             alt="Preview"
-            className="object-contain w-full h-full transition-transform duration-300 ease-in-out scale-100 group-hover:scale-[2]"
+            className="w-full object-contain transition-transform duration-300 ease-in-out group-hover:scale-125"
           />
         </div>
       ) : (
@@ -86,14 +79,14 @@ const OcrDocumentPreview = ({ filePath, imageUrl, fileName }: OcrDocumentPreview
         </div>
       )}
 
-      {originalUrl && filePath?.toLowerCase().endsWith(".pdf") && (
+      {originalUrl && (
         <a
           href={originalUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs text-blue-600 underline"
         >
-          Original PDF öffnen
+          Originaldokument öffnen
         </a>
       )}
     </div>
