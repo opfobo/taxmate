@@ -3,9 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { AlertCircle } from "lucide-react";
 
 interface OcrDocumentPreviewProps {
-  filePath?: string; // Make optional
-  imageUrl?: string; // Add imageUrl prop
-  fileName?: string; // Add fileName prop
+  filePath?: string;
+  imageUrl?: string;
+  fileName?: string;
 }
 
 const OcrDocumentPreview = ({ filePath, imageUrl, fileName }: OcrDocumentPreviewProps) => {
@@ -14,42 +14,41 @@ const OcrDocumentPreview = ({ filePath, imageUrl, fileName }: OcrDocumentPreview
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // If imageUrl is provided directly, use it
     if (imageUrl) {
       setPreviewUrl(imageUrl);
       return;
     }
 
-    // Otherwise try to fetch from storage using filePath
     if (!filePath) {
-      setError("No file path or image URL provided");
+      setError("Kein Pfad angegeben");
       return;
     }
 
+    const isPdf = filePath.toLowerCase().endsWith(".pdf");
+    const previewPath = isPdf
+      ? filePath.replace(/\.pdf$/i, "_preview.jpg")
+      : filePath;
+
     const fetchUrls = async () => {
       try {
-        const previewPath = filePath.replace(".pdf", "_preview.jpg");
+        const [{ data: previewData, error: previewError }, { data: originalData, error: originalError }] =
+          await Promise.all([
+            supabase.storage.from("ocr-files").createSignedUrl(previewPath, 60),
+            supabase.storage.from("ocr-files").createSignedUrl(filePath, 60)
+          ]);
 
-        const { data: previewSigned, error: previewError } = await supabase.storage
-          .from("ocr-files")
-          .createSignedUrl(previewPath, 60);
-
-        const { data: originalSigned, error: originalError } = await supabase.storage
-          .from("ocr-files")
-          .createSignedUrl(filePath, 60);
-
-        if (previewError || !previewSigned) {
+        if (previewError || !previewData) {
           setError("Keine Vorschau verfügbar");
         } else {
-          setPreviewUrl(previewSigned.signedUrl);
+          setPreviewUrl(previewData.signedUrl);
         }
 
-        if (!originalError && originalSigned) {
-          setOriginalUrl(originalSigned.signedUrl);
+        if (!originalError && originalData) {
+          setOriginalUrl(originalData.signedUrl);
         }
       } catch (err) {
-        console.error("Fehler beim Laden der Vorschau:", err);
-        setError("Vorschau konnte nicht geladen werden.");
+        console.error("❌ Vorschaufehler:", err);
+        setError("Fehler beim Laden der Vorschau.");
       }
     };
 
@@ -59,14 +58,25 @@ const OcrDocumentPreview = ({ filePath, imageUrl, fileName }: OcrDocumentPreview
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-medium">
-        {fileName ? fileName : "ocr.document_preview"}
+        {fileName ?? "ocr.document_preview"}
       </h3>
+
       {previewUrl ? (
-        <div className="border rounded-md overflow-hidden group">
+        <div
+          className="relative overflow-hidden rounded group w-full max-w-sm aspect-video border"
+          onMouseMove={(e) => {
+            const img = e.currentTarget.querySelector("img") as HTMLImageElement;
+            if (!img) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+            img.style.transformOrigin = `${x}% ${y}%`;
+          }}
+        >
           <img
             src={previewUrl}
             alt="Preview"
-            className="w-full object-contain transition-transform duration-300 ease-in-out group-hover:scale-125"
+            className="object-contain w-full h-full transition-transform duration-300 ease-in-out scale-100 group-hover:scale-[2]"
           />
         </div>
       ) : (
@@ -75,14 +85,15 @@ const OcrDocumentPreview = ({ filePath, imageUrl, fileName }: OcrDocumentPreview
           <span>{error || "Keine Vorschau verfügbar"}</span>
         </div>
       )}
-      {originalUrl && (
+
+      {originalUrl && filePath?.toLowerCase().endsWith(".pdf") && (
         <a
           href={originalUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs text-blue-600 underline"
         >
-          Originaldokument öffnen
+          Original PDF öffnen
         </a>
       )}
     </div>
