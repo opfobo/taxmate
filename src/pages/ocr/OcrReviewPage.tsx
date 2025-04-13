@@ -51,7 +51,6 @@ const OcrReviewPage = () => {
   const { toast } = useToast();
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const { data: ocrRequest, isLoading: isLoadingRequest } = useQuery({
     queryKey: ["ocrRequest", ocrRequestId],
@@ -83,19 +82,6 @@ const OcrReviewPage = () => {
     enabled: !!ocrRequestId && !!user,
   });
 
-  useEffect(() => {
-    const loadPreview = async () => {
-      if (!invoiceMapping?.file_path) return;
-      const { data, error } = await supabase.storage
-        .from("ocr-files")
-        .createSignedUrl(invoiceMapping.file_path, 600);
-      if (!error && data?.signedUrl) {
-        setPreviewUrl(data.signedUrl);
-      }
-    };
-
-    loadPreview();
-  }, [invoiceMapping?.file_path]);
 
   const isLoading = isLoadingRequest || isLoadingMapping;
 
@@ -103,7 +89,8 @@ const OcrReviewPage = () => {
     fileName: ocrRequest?.file_name || "Document",
     uploadDate: ocrRequest?.created_at ? format(new Date(ocrRequest.created_at), "PPP") : "-",
     rawData: ocrRequest?.response || {},
-    imageUrl: previewUrl || "",
+    imageUrl: undefined, // <-- wichtig: NICHT direkt generieren
+    filePath: invoiceMapping?.file_path || "", // <-- das hier nutzen
     status: invoiceMapping?.status || "pending",
     invoiceNumber: invoiceMapping?.invoice_number || "-",
     invoiceDate: invoiceMapping?.invoice_date
@@ -160,7 +147,7 @@ const OcrReviewPage = () => {
               </CardHeader>
               <CardContent>
                 <OcrDocumentPreview
-                  imageUrl={documentMeta.imageUrl}
+                  filePath={documentMeta.filePath}
                   fileName={documentMeta.fileName}
                 />
               </CardContent>
