@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import OcrDocumentPreview from "@/components/ocr/OcrDocumentPreview";
 import { format } from "date-fns";
+import { mapOcrInvoiceMapping, mapOcrInvoiceLineItems } from "@/lib/ocr/OcrInvoiceMappings";
+
 
 interface OcrRequestData {
   id: string;
@@ -85,6 +87,10 @@ const OcrReviewPage = () => {
 
   const isLoading = isLoadingRequest || isLoadingMapping;
 
+  const mappedFallback = ocrRequest?.response
+  ? mapOcrInvoiceMapping(ocrRequest.response)
+  : null;
+
   const documentMeta = {
     fileName: ocrRequest?.file_name || "Document",
     uploadDate: ocrRequest?.created_at ? format(new Date(ocrRequest.created_at), "PPP") : "-",
@@ -141,72 +147,93 @@ const OcrReviewPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("ocr.document_preview")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <OcrDocumentPreview
-                  filePath={documentMeta.filePath}
-                  fileName={documentMeta.fileName}
-                />
-              </CardContent>
-            </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle>{t("ocr.document_preview")}</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <OcrDocumentPreview
+        filePath={documentMeta.filePath}
+        fileName={documentMeta.fileName}
+      />
+    </CardContent>
+  </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("ocr.document_details")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-2">{t("ocr.document_info")}</h3>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="text-muted-foreground">{t("ocr.file_name")}</div>
-                    <div>{documentMeta.fileName}</div>
-                    <div className="text-muted-foreground">{t("ocr.upload_date")}</div>
-                    <div>{documentMeta.uploadDate}</div>
-                    <div className="text-muted-foreground">{t("ocr.status")}</div>
-                    <div className="flex items-center">
-                      {documentMeta.status === "confirmed" ? (
-                        <Check className="h-4 w-4 text-green-500 mr-1" />
-                      ) : (
-                        <div className="h-2 w-2 rounded-full bg-amber-500 mr-2" />
-                      )}
-                      {documentMeta.status === "confirmed" ? t("ocr.confirmed") : t("ocr.pending")}
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h3 className="font-semibold mb-2">{t("ocr.invoice_details")}</h3>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="text-muted-foreground">{t("ocr.invoice_number")}</div>
-                    <div>{documentMeta.invoiceNumber}</div>
-                    <div className="text-muted-foreground">{t("ocr.invoice_date")}</div>
-                    <div>{documentMeta.invoiceDate}</div>
-                    <div className="text-muted-foreground">{t("ocr.total_amount")}</div>
-                    <div className="font-medium">{documentMeta.totalAmount}</div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h3 className="font-semibold mb-2">{t("ocr.supplier_info")}</h3>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="text-muted-foreground">{t("ocr.supplier_name")}</div>
-                    <div>{invoiceMapping?.supplier_name || "-"}</div>
-                    <div className="text-muted-foreground">{t("ocr.supplier_address")}</div>
-                    <div>{invoiceMapping?.supplier_address || "-"}</div>
-                    <div className="text-muted-foreground">{t("ocr.supplier_vat")}</div>
-                    <div>{invoiceMapping?.supplier_vat || "-"}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle>{t("ocr.document_details")}</CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div>
+        <h3 className="font-semibold mb-2">{t("ocr.document_info")}</h3>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="text-muted-foreground">{t("ocr.file_name")}</div>
+          <div>{documentMeta.fileName}</div>
+          <div className="text-muted-foreground">{t("ocr.upload_date")}</div>
+          <div>{documentMeta.uploadDate}</div>
+          <div className="text-muted-foreground">{t("ocr.status")}</div>
+          <div className="flex items-center">
+            {documentMeta.status === "confirmed" ? (
+              <Check className="h-4 w-4 text-green-500 mr-1" />
+            ) : (
+              <div className="h-2 w-2 rounded-full bg-amber-500 mr-2" />
+            )}
+            {documentMeta.status === "confirmed" ? t("ocr.confirmed")
+ : documentMeta.status === "error" ? t("ocr.error")
+ : t("ocr.pending")}
           </div>
+        </div>
+      </div>
+
+      <Separator />
+
+      <div>
+        <h3 className="font-semibold mb-2">{t("ocr.invoice_details")}</h3>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="text-muted-foreground">{t("ocr.invoice_number")}</div>
+          <div>{invoiceMapping?.invoice_number ?? mappedFallback?.invoice_number ?? "-"}</div>
+
+          <div className="text-muted-foreground">{t("ocr.invoice_date")}</div>
+          <div>
+            {invoiceMapping?.invoice_date
+              ? format(new Date(invoiceMapping.invoice_date), "PPP")
+              : (mappedFallback?.invoice_date &&
+  !isNaN(Date.parse(mappedFallback.invoice_date)))
+  ? format(new Date(mappedFallback.invoice_date), "PPP")
+  : "-"
+
+          </div>
+
+          <div className="text-muted-foreground">{t("ocr.total_amount")}</div>
+          <div className="font-medium">
+            {typeof (invoiceMapping?.total_amount ?? mappedFallback?.total_amount) === "number"
+  ? (invoiceMapping?.total_amount ?? mappedFallback?.total_amount).toFixed(2)
+  : "-"}{" "}
+{invoiceMapping?.currency || mappedFallback?.currency || "EUR"}
+
+          </div>
+        </div>
+      </div>
+
+      <Separator />
+
+      <div>
+        <h3 className="font-semibold mb-2">{t("ocr.supplier_info")}</h3>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="text-muted-foreground">{t("ocr.supplier_name")}</div>
+          <div>{invoiceMapping?.supplier_name ?? mappedFallback?.supplier_name ?? "-"}</div>
+
+          <div className="text-muted-foreground">{t("ocr.supplier_address")}</div>
+          <div>{invoiceMapping?.supplier_address ?? mappedFallback?.supplier_address_raw ?? "-"}</div>
+
+          <div className="text-muted-foreground">{t("ocr.supplier_vat")}</div>
+          <div>{invoiceMapping?.supplier_vat ?? mappedFallback?.supplier_vat ?? "-"}</div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+
         )}
       </div>
     </PageLayout>
