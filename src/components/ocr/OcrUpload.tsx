@@ -71,12 +71,13 @@ export const OcrUpload = ({
   };
 
 
-  const processOcrResult = async (result: any, requestId: string, safeFileName: string) => {
+const processOcrResult = async (result: any, requestId: string, safeFileName: string) => {
   if (!user) return;
   try {
     const mappedHeader = mapOcrInvoiceMapping(result);
     const mappedItems = mapOcrInvoiceLineItems(result);
 
+    // 1. Insert Mapping
     const { data: mappingData, error: mappingError } = await supabase
       .from("ocr_invoice_mappings")
       .insert({
@@ -85,12 +86,28 @@ export const OcrUpload = ({
         ...mappedHeader,
         file_path: `${user.id}/${safeFileName}`,
         status: "pending",
-        line_items: mappedItems,
       })
       .select("id")
       .single();
 
     if (mappingError) throw new Error(`Failed to create invoice mapping: ${mappingError.message}`);
+
+    // 2. Insert Items mit Referenz
+    if (mappedItems?.length && mappingData?.id) {
+      const itemsWithMapping = mappedItems.map((item) => ({
+        ...item,
+        mapping_id: mappingData.id,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("ocr_invoice_items")
+        .insert(itemsWithMapping);
+
+      if (itemsError) {
+        console.warn("❌ Fehler beim Speichern der line items:", itemsError.message);
+        // Optional: Mapping zurückrollen?
+      }
+    }
 
     return mappingData.id;
   } catch (err: any) {
@@ -98,6 +115,7 @@ export const OcrUpload = ({
     throw err;
   }
 };
+
 
   const sendToPdfPreviewServer = async (file: File) => {
     if (!file || !file.name.endsWith(".pdf")) return null;
