@@ -84,6 +84,20 @@ const OcrReviewPage = () => {
     enabled: !!ocrRequestId && !!user,
   });
 
+  const { data: lineItems, isLoading: isLoadingItems } = useQuery({
+  queryKey: ["invoiceLineItems", invoiceMapping?.id],
+  queryFn: async () => {
+    if (!invoiceMapping?.id) return [];
+    const { data, error } = await supabase
+      .from("ocr_invoice_items")
+      .select("*")
+      .eq("mapping_id", invoiceMapping.id)
+      .order("item_index", { ascending: true });
+    if (error) throw error;
+    return data;
+  },
+  enabled: !!invoiceMapping?.id,
+});
 
   const isLoading = isLoadingRequest || isLoadingMapping;
 
@@ -230,6 +244,47 @@ const OcrReviewPage = () => {
           <div>{invoiceMapping?.supplier_vat ?? mappedFallback?.supplier_vat ?? "-"}</div>
         </div>
       </div>
+      <Separator />
+
+<div>
+  <h3 className="font-semibold mb-2">{t("ocr.invoice_items")}</h3>
+  {isLoadingItems ? (
+    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+  ) : (!lineItems?.length ? (
+    <p className="text-sm text-muted-foreground">{t("ocr.no_items_found")}</p>
+  ) : (
+    <div className="grid grid-cols-6 gap-2 text-sm font-medium mb-1">
+      <div>{t("ocr.item_index")}</div>
+      <div className="col-span-2">{t("ocr.description")}</div>
+      <div>{t("ocr.quantity")}</div>
+      <div>{t("ocr.unit_price")}</div>
+      <div>{t("ocr.total_price")}</div>
+    </div>
+  ))}
+
+  {lineItems?.map((item, index) => (
+    <div
+      key={item.id}
+      className="grid grid-cols-6 gap-2 text-sm border-b py-1"
+    >
+      <div>{item.item_index ?? index + 1}</div>
+      <div className="col-span-2">{item.description ?? "-"}</div>
+      <div>{item.quantity ?? "-"}</div>
+      <div>
+        {typeof item.unit_price === "number"
+  ? item.unit_price.toFixed(2)
+  : "-"}
+
+      </div>
+      <div>
+        {item.total_price !== null
+          ? item.total_price.toFixed(2)
+          : "-"}
+      </div>
+    </div>
+  ))}
+</div>
+
     </CardContent>
   </Card>
 </div>
