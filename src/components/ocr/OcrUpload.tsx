@@ -289,7 +289,7 @@ if (selectedFile.type.startsWith("image/")) {
       formData.append("document", file);
 
 const mindeeKey = await getApiKey("mindee");
-console.log("🔍 API-Key geladen:", mindeeKey);
+//console.log("🔍 API-Key geladen:", mindeeKey);
 
 if (!mindeeKey) {
   console.warn("⚠️ getApiKey hat keinen Key zurückgegeben");
