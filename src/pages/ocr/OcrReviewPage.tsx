@@ -194,15 +194,15 @@ const OcrReviewPage = () => {
           <div>{invoiceMapping?.invoice_number ?? mappedFallback?.invoice_number ?? "-"}</div>
 
           <div className="text-muted-foreground">{t("ocr.invoice_date")}</div>
-          <div>
-            {invoiceMapping?.invoice_date
-              ? format(new Date(invoiceMapping.invoice_date), "PPP")
-              : (mappedFallback?.invoice_date &&
-  !isNaN(Date.parse(mappedFallback.invoice_date)))
-  ? format(new Date(mappedFallback.invoice_date), "PPP")
-  : "-"
+<div>
+  {invoiceMapping?.invoice_date
+    ? format(new Date(invoiceMapping.invoice_date), "PPP")
+    : (mappedFallback?.invoice_date &&
+        !isNaN(Date.parse(mappedFallback.invoice_date)))
+      ? format(new Date(mappedFallback.invoice_date), "PPP")
+      : "-"}
+</div>
 
-          </div>
 
           <div className="text-muted-foreground">{t("ocr.total_amount")}</div>
           <div className="font-medium">
