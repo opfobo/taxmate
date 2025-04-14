@@ -9,6 +9,8 @@ import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/context/AuthContext";
 import { PDF_PREVIEW_BASE_URL } from "@/constants/config";
 import { getApiKey } from "@/lib/supabase/helpers/getApiKey";
+import { mapOcrInvoiceMapping, mapOcrInvoiceLineItems} from "@/lib/ocr/OcrInvoiceMappings";
+
 
 const MINDEE_API_URL = "https://api.mindee.net/v1/products/mindee/invoices/v4/predict";
 
@@ -70,58 +72,32 @@ export const OcrUpload = ({
 
 
   const processOcrResult = async (result: any, requestId: string, safeFileName: string) => {
-    if (!user) return;
-    try {
-      const prediction = result.document.inference.prediction;
-      const invoiceNumber = prediction.invoice_number?.value || null;
-      const invoiceDate = prediction.date?.value || null;
-      const totalAmount = prediction.total_amount?.value || null;
-      const totalNet = prediction.total_net?.value || null;
-      const totalTax = prediction.total_tax?.value || null;
-      const supplierName = prediction.supplier_name?.value || null;
-      const supplierAddress = prediction.supplier_address?.value || null;
-      const customerName = prediction.customer_name?.value || null;
-      const customerAddress = prediction.customer_address?.value || null;
+  if (!user) return;
+  try {
+    const mappedHeader = mapOcrInvoiceMapping(result);
+    const mappedItems = mapOcrInvoiceLineItems(result);
 
-      const lineItems = prediction.line_items?.map((item: any, index: number) => ({
-        id: uuidv4(),
-        description: item.description || `Item ${index + 1}`,
-        quantity: item.quantity || 1,
-        unit_price: item.unit_price || 0,
-        total_amount: item.total_amount || 0
-      })) || [];
+    const { data: mappingData, error: mappingError } = await supabase
+      .from("ocr_invoice_mappings")
+      .insert({
+        user_id: user.id,
+        ocr_request_id: requestId,
+        ...mappedHeader,
+        file_path: `${user.id}/${safeFileName}`,
+        status: "pending",
+        line_items: mappedItems,
+      })
+      .select("id")
+      .single();
 
-      const { data: mappingData, error: mappingError } = await supabase
-        .from("ocr_invoice_mappings")
-        .insert({
-          user_id: user.id,
-          ocr_request_id: requestId,
-          invoice_number: invoiceNumber,
-          invoice_date: invoiceDate,
-          supplier_name: supplierName,
-          supplier_address: supplierAddress,
-          supplier_vat: null,
-          customer_name: customerName,
-          customer_address: customerAddress,
-          total_amount: totalAmount,
-          total_tax: totalTax,
-          total_net: totalNet,
-          currency: prediction.locale?.currency || "EUR",
-          line_items: lineItems,
-          file_path: `${user.id}/${safeFileName}`,
-          status: "pending"
-        })
-        .select("id")
-        .single();
+    if (mappingError) throw new Error(`Failed to create invoice mapping: ${mappingError.message}`);
 
-      if (mappingError) throw new Error(`Failed to create invoice mapping: ${mappingError.message}`);
-
-      return mappingData.id;
-    } catch (err: any) {
-      console.error("Error processing OCR result:", err);
-      throw err;
-    }
-  };
+    return mappingData.id;
+  } catch (err: any) {
+    console.error("Error processing OCR result:", err);
+    throw err;
+  }
+};
 
   const sendToPdfPreviewServer = async (file: File) => {
     if (!file || !file.name.endsWith(".pdf")) return null;
