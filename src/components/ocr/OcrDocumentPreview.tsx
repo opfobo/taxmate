@@ -61,22 +61,22 @@ const OcrDocumentPreview = ({ filePath, imageUrl, fileName }: OcrDocumentPreview
 
       {previewUrl ? (
         <div className="relative group overflow-hidden w-full h-auto">
-  <img
-    src={previewUrl}
-    alt="Preview"
-    className="w-full object-contain transition-transform duration-200 ease-in-out group-hover:scale-200"
-    style={{ transformOrigin: "top left" }}
-    onMouseMove={(e) => {
-      const container = e.currentTarget.parentElement;
-      const rect = container?.getBoundingClientRect();
-      if (!rect) return;
+<img
+  src={previewUrl}
+  alt="Preview"
+  className="w-full object-contain transition-transform duration-200 ease-in-out"
+  style={{ transform: "scale(2.25)", transformOrigin: "top left" }}
+  onMouseMove={(e) => {
+    const container = e.currentTarget.parentElement;
+    const rect = container?.getBoundingClientRect();
+    if (!rect) return;
 
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
 
-      e.currentTarget.style.transformOrigin = `${x}% ${y}%`;
-    }}
-  />
+    e.currentTarget.style.transformOrigin = `${x}% ${y}%`;
+  }}
+/>
 </div>
 
       ) : (
