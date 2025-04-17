@@ -64,7 +64,7 @@ const OcrDocumentPreview = ({ filePath, imageUrl, fileName }: OcrDocumentPreview
   <img
     src={previewUrl}
     alt="Preview"
-    className="w-full object-contain transition-transform duration-200 ease-in-out group-hover:scale-200"
+    className="w-full object-contain transition-transform duration-200 ease-in-out group-hover:scale-150"
     style={{ transformOrigin: "top left" }}
     onMouseMove={(e) => {
       const container = e.currentTarget.parentElement;
@@ -78,6 +78,7 @@ const OcrDocumentPreview = ({ filePath, imageUrl, fileName }: OcrDocumentPreview
     }}
   />
 </div>
+
       ) : (
         <div className="text-sm text-muted-foreground flex items-center space-x-2">
           <AlertCircle className="w-4 h-4" />
