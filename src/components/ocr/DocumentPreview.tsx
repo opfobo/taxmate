@@ -54,31 +54,37 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ url }) => {
   }
 
   return (
-    <div className="border rounded-md overflow-hidden w-full bg-muted flex flex-col items-center p-4">
-      {isPDF ? (
-        <>
-          <canvas ref={canvasRef} className="max-w-full max-h-[600px] mb-3" />
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-primary hover:underline"
-          >
-            PDF im neuen Tab öffnen
-          </a>
-        </>
-      ) : isImage ? (
-        <img
-          src={url}
-          alt="Dokumentenvorschau"
-          className="max-w-full max-h-[600px] object-contain"
-        />
-      ) : (
-        <div className="p-4 text-sm text-muted-foreground text-center">
-          Format nicht unterstützt: <code>{url}</code>
-        </div>
-      )}
+    <div className="group relative w-full max-w-2xl border rounded-md overflow-hidden">
+  {isPDF ? (
+    <>
+      <canvas
+        ref={canvasRef}
+        className="transition-transform duration-300 ease-in-out group-hover:scale-150"
+        style={{ maxWidth: "100%", maxHeight: "600px" }}
+      />
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute bottom-2 left-2 text-xs text-primary hover:underline bg-white/80 p-1 rounded"
+      >
+        PDF im neuen Tab öffnen
+      </a>
+    </>
+  ) : isImage ? (
+    <img
+      src={url}
+      alt="Dokumentenvorschau"
+      className="w-full transition-transform duration-300 ease-in-out group-hover:scale-150"
+      style={{ maxHeight: "600px", objectFit: "contain" }}
+    />
+  ) : (
+    <div className="p-4 text-sm text-muted-foreground text-center">
+      Format nicht unterstützt: <code>{url}</code>
     </div>
+  )}
+</div>
+
   );
 };
 
