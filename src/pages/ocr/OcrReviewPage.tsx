@@ -172,14 +172,17 @@ const handleLineItemChange = (index: number, field: string, value: any) => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("ocr.document_preview")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <OcrDocumentPreview filePath={invoiceMapping?.file_path ?? ""} fileName={ocrRequest?.file_name ?? ""} />
-              </CardContent>
-            </Card>
+<Card>
+  <CardHeader>
+    <CardTitle>{t("ocr.document_preview")}</CardTitle>
+  </CardHeader>
+  <CardContent className="sticky top-24">
+    <OcrDocumentPreview
+      filePath={invoiceMapping?.file_path ?? ""}
+      fileName={ocrRequest?.file_name ?? ""}
+    />
+  </CardContent>
+</Card>
 
             <Card>
               <CardHeader>
