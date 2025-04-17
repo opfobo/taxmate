@@ -53,7 +53,9 @@ const OcrReviewPage = () => {
       if (error) throw error;
       return data;
     },
-    useEffect(() => {
+  });
+
+useEffect(() => {
   if (invoiceMapping && Object.keys(invoiceMapping).length > 0) {
     setFormData(invoiceMapping);
   } else if (ocrRequest?.response) {
@@ -61,7 +63,6 @@ const OcrReviewPage = () => {
     setFormData(fallback);
   }
 }, [invoiceMapping, ocrRequest]);
-  });
 
   const { data: lineItems = [], isLoading: isLoadingItems } = useQuery({
     queryKey: ["invoiceLineItems", invoiceMapping?.id],
