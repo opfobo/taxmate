@@ -190,7 +190,7 @@ useEffect(() => {
                 <h3 className="font-semibold mb-2">{t("ocr.invoice_items")}</h3>
                 <div className="grid grid-cols-6 gap-2 text-sm font-medium mb-1">
                   <div>{t("ocr.item_index")}</div>
-                  <div className="col-span-2">{t("ocr.description")}</div>
+                  <div>{t("ocr.description")}</div>
                   <div>{t("ocr.quantity")}</div>
                   <div>{t("ocr.unit_price")}</div>
                   <div>{t("ocr.total_price")}</div>
