@@ -174,119 +174,163 @@ const OcrReviewPage = () => {
   </Card>
 
   <Card>
-    <CardHeader>
-      <CardTitle>{t("ocr.document_details")}</CardTitle>
-    </CardHeader>
-    <CardContent className="space-y-4">
-      <div>
-        <h3 className="font-semibold mb-2">{t("ocr.document_info")}</h3>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="text-muted-foreground">{t("ocr.file_name")}</div>
-          <div>{documentMeta.fileName}</div>
-          <div className="text-muted-foreground">{t("ocr.upload_date")}</div>
-          <div>{documentMeta.uploadDate}</div>
-          <div className="text-muted-foreground">{t("ocr.status")}</div>
-          <div className="flex items-center">
-            {documentMeta.status === "confirmed" ? (
-              <Check className="h-4 w-4 text-green-500 mr-1" />
-            ) : (
-              <div className="h-2 w-2 rounded-full bg-amber-500 mr-2" />
-            )}
-            {documentMeta.status === "confirmed" ? t("ocr.confirmed")
- : documentMeta.status === "error" ? t("ocr.error")
- : t("ocr.pending")}
-          </div>
+  <CardHeader>
+    <CardTitle>{t("ocr.document_details")}</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-4">
+    <div>
+      <h3 className="font-semibold mb-2">{t("ocr.document_info")}</h3>
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        <div className="text-muted-foreground">{t("ocr.file_name")}</div>
+        <div>{documentMeta.fileName}</div>
+        <div className="text-muted-foreground">{t("ocr.upload_date")}</div>
+        <div>{documentMeta.uploadDate}</div>
+        <div className="text-muted-foreground">{t("ocr.status")}</div>
+        <div className="flex items-center">
+          {documentMeta.status === "confirmed" ? (
+            <Check className="h-4 w-4 text-green-500 mr-1" />
+          ) : (
+            <div className="h-2 w-2 rounded-full bg-amber-500 mr-2" />
+          )}
+          {documentMeta.status === "confirmed"
+            ? t("ocr.confirmed")
+            : documentMeta.status === "error"
+            ? t("ocr.error")
+            : t("ocr.pending")}
         </div>
-      </div>
-
-      <Separator />
-
-      <div>
-        <h3 className="font-semibold mb-2">{t("ocr.invoice_details")}</h3>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="text-muted-foreground">{t("ocr.invoice_number")}</div>
-          <div>{invoiceMapping?.invoice_number ?? mappedFallback?.invoice_number ?? "-"}</div>
-
-          <div className="text-muted-foreground">{t("ocr.invoice_date")}</div>
-<div>
-  {invoiceMapping?.invoice_date
-    ? format(new Date(invoiceMapping.invoice_date), "PPP")
-    : (mappedFallback?.invoice_date &&
-        !isNaN(Date.parse(mappedFallback.invoice_date)))
-      ? format(new Date(mappedFallback.invoice_date), "PPP")
-      : "-"}
-</div>
-
-
-          <div className="text-muted-foreground">{t("ocr.total_amount")}</div>
-          <div className="font-medium">
-            {typeof (invoiceMapping?.total_amount ?? mappedFallback?.total_amount) === "number"
-  ? (invoiceMapping?.total_amount ?? mappedFallback?.total_amount).toFixed(2)
-  : "-"}{" "}
-{invoiceMapping?.currency || mappedFallback?.currency || "EUR"}
-
-          </div>
-        </div>
-      </div>
-
-      <Separator />
-
-      <div>
-        <h3 className="font-semibold mb-2">{t("ocr.supplier_info")}</h3>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="text-muted-foreground">{t("ocr.supplier_name")}</div>
-          <div>{invoiceMapping?.supplier_name ?? mappedFallback?.supplier_name ?? "-"}</div>
-
-          <div className="text-muted-foreground">{t("ocr.supplier_address")}</div>
-          <div>{invoiceMapping?.supplier_address ?? mappedFallback?.supplier_address_raw ?? "-"}</div>
-
-          <div className="text-muted-foreground">{t("ocr.supplier_vat")}</div>
-          <div>{invoiceMapping?.supplier_vat ?? mappedFallback?.supplier_vat ?? "-"}</div>
-        </div>
-      </div>
-      <Separator />
-
-<div>
-  <h3 className="font-semibold mb-2">{t("ocr.invoice_items")}</h3>
-  {isLoadingItems ? (
-    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-  ) : (!lineItems?.length ? (
-    <p className="text-sm text-muted-foreground">{t("ocr.no_items_found")}</p>
-  ) : (
-    <div className="grid grid-cols-6 gap-2 text-sm font-medium mb-1">
-      <div>{t("ocr.item_index")}</div>
-      <div className="col-span-2">{t("ocr.description")}</div>
-      <div>{t("ocr.quantity")}</div>
-      <div>{t("ocr.unit_price")}</div>
-      <div>{t("ocr.total_price")}</div>
-    </div>
-  ))}
-
-  {lineItems?.map((item, index) => (
-    <div
-      key={item.id}
-      className="grid grid-cols-6 gap-2 text-sm border-b py-1"
-    >
-      <div>{item.item_index ?? index + 1}</div>
-      <div className="col-span-2">{item.description ?? "-"}</div>
-      <div>{item.quantity ?? "-"}</div>
-      <div>
-        {typeof item.unit_price === "number"
-  ? item.unit_price.toFixed(2)
-  : "-"}
-
-      </div>
-      <div>
-        {item.total_price !== null
-          ? item.total_price.toFixed(2)
-          : "-"}
       </div>
     </div>
-  ))}
-</div>
 
-    </CardContent>
-  </Card>
+    <Separator />
+
+    <div>
+      <h3 className="font-semibold mb-2">{t("ocr.invoice_details")}</h3>
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        <div className="text-muted-foreground">{t("ocr.invoice_number")}</div>
+        <input
+          type="text"
+          className="input"
+          value={editableMapping?.invoice_number ?? ""}
+          onChange={(e) => setEditableMapping((prev) => prev ? { ...prev, invoice_number: e.target.value } : null)}
+        />
+
+        <div className="text-muted-foreground">{t("ocr.invoice_date")}</div>
+        <input
+          type="date"
+          className="input"
+          value={editableMapping?.invoice_date ?? ""}
+          onChange={(e) => setEditableMapping((prev) => prev ? { ...prev, invoice_date: e.target.value } : null)}
+        />
+
+        <div className="text-muted-foreground">{t("ocr.total_amount")}</div>
+        <input
+          type="number"
+          step="0.01"
+          className="input"
+          value={editableMapping?.total_amount ?? ""}
+          onChange={(e) => setEditableMapping((prev) => prev ? { ...prev, total_amount: parseFloat(e.target.value) } : null)}
+        />
+      </div>
+    </div>
+
+    <Separator />
+
+    <div>
+      <h3 className="font-semibold mb-2">{t("ocr.supplier_info")}</h3>
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        <div className="text-muted-foreground">{t("ocr.supplier_name")}</div>
+        <input
+          type="text"
+          className="input"
+          value={editableMapping?.supplier_name ?? ""}
+          onChange={(e) => setEditableMapping((prev) => prev ? { ...prev, supplier_name: e.target.value } : null)}
+        />
+
+        <div className="text-muted-foreground">{t("ocr.supplier_address")}</div>
+        <input
+          type="text"
+          className="input"
+          value={editableMapping?.supplier_address ?? ""}
+          onChange={(e) => setEditableMapping((prev) => prev ? { ...prev, supplier_address: e.target.value } : null)}
+        />
+
+        <div className="text-muted-foreground">{t("ocr.supplier_vat")}</div>
+        <input
+          type="text"
+          className="input"
+          value={editableMapping?.supplier_vat ?? ""}
+          onChange={(e) => setEditableMapping((prev) => prev ? { ...prev, supplier_vat: e.target.value } : null)}
+        />
+      </div>
+    </div>
+
+    <Separator />
+
+    <div>
+      <h3 className="font-semibold mb-2">{t("ocr.invoice_items")}</h3>
+      {isLoadingItems ? (
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      ) : (
+        <>
+          <div className="grid grid-cols-6 gap-2 text-sm font-medium mb-1">
+            <div>{t("ocr.item_index")}</div>
+            <div className="col-span-2">{t("ocr.description")}</div>
+            <div>{t("ocr.quantity")}</div>
+            <div>{t("ocr.unit_price")}</div>
+            <div>{t("ocr.total_price")}</div>
+          </div>
+          {editableItems?.map((item, index) => (
+            <div key={item.id || index} className="grid grid-cols-6 gap-2 text-sm border-b py-1">
+              <div>{index + 1}</div>
+              <input
+                type="text"
+                value={item.description ?? ""}
+                className="col-span-2 input"
+                onChange={(e) => {
+                  const updated = [...editableItems];
+                  updated[index].description = e.target.value;
+                  setEditableItems(updated);
+                }}
+              />
+              <input
+                type="number"
+                value={item.quantity ?? 1}
+                className="input"
+                onChange={(e) => {
+                  const updated = [...editableItems];
+                  updated[index].quantity = parseFloat(e.target.value);
+                  setEditableItems(updated);
+                }}
+              />
+              <input
+                type="number"
+                step="0.01"
+                value={item.unit_price ?? 0}
+                className="input"
+                onChange={(e) => {
+                  const updated = [...editableItems];
+                  updated[index].unit_price = parseFloat(e.target.value);
+                  setEditableItems(updated);
+                }}
+              />
+              <input
+                type="number"
+                step="0.01"
+                value={item.total_price ?? 0}
+                className="input"
+                onChange={(e) => {
+                  const updated = [...editableItems];
+                  updated[index].total_price = parseFloat(e.target.value);
+                  setEditableItems(updated);
+                }}
+              />
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  </CardContent>
+</Card>
 </div>
 
         )}
