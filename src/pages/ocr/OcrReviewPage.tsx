@@ -54,15 +54,16 @@ const OcrReviewPage = () => {
       return data;
     },
     enabled: !!ocrRequestId && !!user,
-    onSuccess: (data) => {
-      if (data && Object.keys(data).length > 0) {
-        setFormData(data);
-      } else if (ocrRequest?.response) {
-        const fallback = mapOcrInvoiceMapping(ocrRequest.response);
-        setFormData(fallback);
-      }
-    },
   });
+
+  useEffect(() => {
+    if (invoiceMapping && Object.keys(invoiceMapping).length > 0) {
+      setFormData(invoiceMapping);
+    } else if (ocrRequest?.response) {
+      const fallback = mapOcrInvoiceMapping(ocrRequest.response);
+      setFormData(fallback);
+    }
+  }, [invoiceMapping, ocrRequest]);
 
   const { data: lineItems = [], isLoading: isLoadingItems } = useQuery({
     queryKey: ["invoiceLineItems", invoiceMapping?.id],
@@ -76,23 +77,19 @@ const OcrReviewPage = () => {
       return data;
     },
     enabled: !!invoiceMapping?.id,
-    onSuccess: (data) => {
-      setEditedLineItems(data);
-    },
   });
+
+  useEffect(() => {
+    setEditedLineItems(lineItems);
+  }, [lineItems]);
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
-    if (field === "total_tax") {
-      setEditedLineItems((prevItems) =>
-        prevItems.map((item) => ({ ...item, tax_rate: value }))
-      );
-    }
   };
 
   const handleLineItemChange = (index: number, field: string, value: any) => {
-    setEditedLineItems((prevItems) => {
-      const updated = [...prevItems];
+    setEditedLineItems((prev) => {
+      const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
       return updated;
     });
@@ -101,7 +98,9 @@ const OcrReviewPage = () => {
   const handleSubmit = async () => {
     if (!invoiceMapping?.id) return;
     await supabase.from("ocr_invoice_mappings").update(formData).eq("id", invoiceMapping.id);
-    await supabase.from("ocr_invoice_items").upsert(editedLineItems);
+    await supabase.from("ocr_invoice_items").upsert(editedLineItems, {
+      onConflict: "id",
+    });
     toast({ title: "Changes saved", description: "Your changes have been saved." });
     setIsEditing(false);
   };
@@ -189,11 +188,21 @@ const OcrReviewPage = () => {
                 {editedLineItems.map((item, index) => (
                   <div key={item.id} className="grid grid-cols-6 gap-2 text-sm border-b py-1 items-center">
                     <div>{item.item_index ?? index + 1}</div>
-                    <EditableText value={item.description} onChange={(val) => handleLineItemChange(index, "description", val)} isEditing={isEditing} className="col-span-2" />
-                    <EditableText value={item.quantity} onChange={(val) => handleLineItemChange(index, "quantity", val)} isEditing={isEditing} />
-                    <EditableCurrency value={item.unit_price} onChange={(val) => handleLineItemChange(index, "unit_price", val)} isEditing={isEditing} />
-                    <EditableCurrency value={item.total_price} onChange={(val) => handleLineItemChange(index, "total_price", val)} isEditing={isEditing} />
-                    <TaxRateSelector value={item.tax_rate} onChange={(val) => handleLineItemChange(index, "tax_rate", val)} isEditing={isEditing} />
+                    <div className="col-span-2">
+                      <EditableText value={item.description} onChange={(val) => handleLineItemChange(index, "description", val)} isEditing={isEditing} />
+                    </div>
+                    <div>
+                      <EditableText value={item.quantity} onChange={(val) => handleLineItemChange(index, "quantity", val)} isEditing={isEditing} />
+                    </div>
+                    <div>
+                      <EditableCurrency value={item.unit_price} onChange={(val) => handleLineItemChange(index, "unit_price", val)} isEditing={isEditing} />
+                    </div>
+                    <div>
+                      <EditableCurrency value={item.total_price} onChange={(val) => handleLineItemChange(index, "total_price", val)} isEditing={isEditing} />
+                    </div>
+                    <div>
+                      <TaxRateSelector value={item.tax_rate} onChange={(val) => handleLineItemChange(index, "tax_rate", val)} isEditing={isEditing} />
+                    </div>
                   </div>
                 ))}
               </CardContent>
