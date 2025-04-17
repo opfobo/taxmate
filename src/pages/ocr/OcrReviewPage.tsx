@@ -197,14 +197,24 @@ useEffect(() => {
   <div className="col-span-2">{t("ocr.tax_rate")}</div>          {/* Tax Rate */}
 </div>
                 {editedLineItems.map((item, index) => (
-                  <div key={item.id} className="grid grid-cols-6 gap-2 text-sm border-b py-1 items-center">
-                    <div>{item.item_index ?? index + 1}</div>
-                    <EditableText value={item.description} onChange={(val) => handleLineItemChange(index, "description", val)} isEditing={isEditing} className="col-span-2" />
-                    <EditableText value={item.quantity} onChange={(val) => handleLineItemChange(index, "quantity", val)} isEditing={isEditing} />
-                    <EditableCurrency value={item.unit_price} onChange={(val) => handleLineItemChange(index, "unit_price", val)} isEditing={isEditing} />
-                    <EditableCurrency value={item.total_price} onChange={(val) => handleLineItemChange(index, "total_price", val)} isEditing={isEditing} />
-                    <TaxRateSelector value={item.tax_rate} onChange={(val) => handleLineItemChange(index, "tax_rate", val)} isEditing={isEditing} />
-                  </div>
+                  <div key={item.id} className="grid grid-cols-12 gap-2 text-sm border-b py-1 items-center">
+  <div className="col-span-1">{item.item_index ?? index + 1}</div>
+  <div className="col-span-1">
+    <EditableText value={item.quantity} onChange={(val) => handleLineItemChange(index, "quantity", val)} isEditing={isEditing} />
+  </div>
+  <div className="col-span-4">
+    <EditableText value={item.description} onChange={(val) => handleLineItemChange(index, "description", val)} isEditing={isEditing} />
+  </div>
+  <div className="col-span-2">
+    <EditableCurrency value={item.unit_price} onChange={(val) => handleLineItemChange(index, "unit_price", val)} isEditing={isEditing} />
+  </div>
+  <div className="col-span-2">
+    <EditableCurrency value={item.total_price} onChange={(val) => handleLineItemChange(index, "total_price", val)} isEditing={isEditing} />
+  </div>
+  <div className="col-span-2">
+    <TaxRateSelector value={item.tax_rate} onChange={(val) => handleLineItemChange(index, "tax_rate", val)} isEditing={isEditing} />
+  </div>
+</div>
                 ))}
               </CardContent>
             </Card>
