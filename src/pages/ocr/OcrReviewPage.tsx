@@ -81,6 +81,12 @@ useEffect(() => {
     },
   });
 
+  useEffect(() => {
+  if (lineItems.length > 0) {
+    setEditedLineItems(lineItems);
+  }
+}, [lineItems]);
+
   const handleChange = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
 
