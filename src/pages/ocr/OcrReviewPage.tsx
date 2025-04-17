@@ -53,15 +53,14 @@ const OcrReviewPage = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!ocrRequestId && !!user,
-    onSuccess: (data) => {
-      if (data && Object.keys(data).length > 0) {
-        setFormData(data);
-      } else if (ocrRequest?.response) {
-        const fallback = mapOcrInvoiceMapping(ocrRequest.response);
-        setFormData(fallback);
-      }
-    },
+    useEffect(() => {
+  if (invoiceMapping && Object.keys(invoiceMapping).length > 0) {
+    setFormData(invoiceMapping);
+  } else if (ocrRequest?.response) {
+    const fallback = mapOcrInvoiceMapping(ocrRequest.response);
+    setFormData(fallback);
+  }
+}, [invoiceMapping, ocrRequest]);
   });
 
   const { data: lineItems = [], isLoading: isLoadingItems } = useQuery({
