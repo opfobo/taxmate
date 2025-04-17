@@ -60,13 +60,24 @@ const OcrDocumentPreview = ({ filePath, imageUrl, fileName }: OcrDocumentPreview
       <h3 className="text-sm font-medium">{fileName ?? "ocr.document_preview"}</h3>
 
       {previewUrl ? (
-        <div className="border rounded-md overflow-hidden group">
-          <img
-            src={previewUrl}
-            alt="Preview"
-            className="w-full object-contain transition-transform duration-300 ease-in-out group-hover:scale-125"
-          />
-        </div>
+        <div className="relative group overflow-hidden w-full h-auto">
+  <img
+    src={previewUrl}
+    alt="Preview"
+    className="w-full object-contain transition-transform duration-200 ease-in-out group-hover:scale-150"
+    style={{ transformOrigin: "top left" }}
+    onMouseMove={(e) => {
+      const container = e.currentTarget.parentElement;
+      const rect = container?.getBoundingClientRect();
+      if (!rect) return;
+
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+      e.currentTarget.style.transformOrigin = `${x}% ${y}%`;
+    }}
+  />
+</div>
       ) : (
         <div className="text-sm text-muted-foreground flex items-center space-x-2">
           <AlertCircle className="w-4 h-4" />
