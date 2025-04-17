@@ -188,14 +188,14 @@ useEffect(() => {
                 <Separator />
 
                 <h3 className="font-semibold mb-2">{t("ocr.invoice_items")}</h3>
-                <div className="grid grid-cols-6 gap-2 text-sm font-medium mb-1">
-                  <div>{t("ocr.item_index")}</div>
-                  <div>{t("ocr.description")}</div>
-                  <div>{t("ocr.quantity")}</div>
-                  <div>{t("ocr.unit_price")}</div>
-                  <div>{t("ocr.total_price")}</div>
-                  <div>{t("ocr.tax_rate")}</div>
-                </div>
+                <div className="grid grid-cols-12 gap-2 text-sm font-medium mb-1">
+  <div className="col-span-1">{t("ocr.item_index")}</div>       {/* Pos */}
+  <div className="col-span-1">{t("ocr.quantity")}</div>          {/* Qty */}
+  <div className="col-span-4">{t("ocr.description")}</div>       {/* Description – größer */}
+  <div className="col-span-2">{t("ocr.unit_price")}</div>        {/* Unit Price */}
+  <div className="col-span-2">{t("ocr.total_price")}</div>       {/* Total Price */}
+  <div className="col-span-2">{t("ocr.tax_rate")}</div>          {/* Tax Rate */}
+</div>
                 {editedLineItems.map((item, index) => (
                   <div key={item.id} className="grid grid-cols-6 gap-2 text-sm border-b py-1 items-center">
                     <div>{item.item_index ?? index + 1}</div>
