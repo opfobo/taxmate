@@ -143,9 +143,17 @@ const handleLineItemChange = (index: number, field: string, value: any) => {
           <div className="space-x-2">
             {isEditing ? (
               <>
-                <Button variant="outline" onClick={() => setIsEditing(false)}>
-                  <X className="mr-2 h-4 w-4" /> {t("cancel")}
-                </Button>
+                <Button
+  variant="outline"
+  onClick={() => {
+    // Zurücksetzen der Eingaben auf ursprüngliche Werte
+    setFormData(invoiceMapping ?? {});
+    setEditedLineItems(lineItems ?? []);
+    setIsEditing(false);
+  }}
+>
+  <X className="mr-2 h-4 w-4" /> {t("cancel")}
+</Button>
                 <Button onClick={handleSubmit}>
                   <Save className="mr-2 h-4 w-4" /> {t("save")}
                 </Button>
