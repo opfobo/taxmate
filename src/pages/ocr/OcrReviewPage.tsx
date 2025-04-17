@@ -97,13 +97,33 @@ useEffect(() => {
     }
   };
 
-  const handleLineItemChange = (index: number, field: string, value: any) => {
-    setEditedLineItems((prevItems) => {
-      const updated = [...prevItems];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
-    });
-  };
+const handleLineItemChange = (index: number, field: string, value: any) => {
+  setEditedLineItems((prevItems) => {
+    const updated = [...prevItems];
+    const currentItem = { ...updated[index], [field]: value };
+
+    // Automatisch total_price neu berechnen, wenn quantity geändert wird
+    if (field === "quantity" && isEditing) {
+      const qty = parseFloat(value);
+      const unit = parseFloat(currentItem.unit_price);
+      if (!isNaN(qty) && !isNaN(unit)) {
+        currentItem.total_price = parseFloat((qty * unit).toFixed(2));
+      }
+    }
+
+    // Optional: auch andersherum bei Änderung von unit_price
+    if (field === "unit_price" && isEditing) {
+      const qty = parseFloat(currentItem.quantity);
+      const unit = parseFloat(value);
+      if (!isNaN(qty) && !isNaN(unit)) {
+        currentItem.total_price = parseFloat((qty * unit).toFixed(2));
+      }
+    }
+
+    updated[index] = currentItem;
+    return updated;
+  });
+};
 
   const handleSubmit = async () => {
     if (!invoiceMapping?.id) return;
