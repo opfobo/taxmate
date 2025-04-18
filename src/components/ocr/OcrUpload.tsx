@@ -342,7 +342,7 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
   return (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
     {/* LEFT: Upload Panel */}
-    <div className="space-y-3">
+    <div className="space-y-3 max-w-sm">
       {label && <p className="text-sm font-medium mb-1.5">{label}</p>}
       {tokens !== null && (
         <div className="text-xs text-muted-foreground mb-2">
@@ -415,40 +415,40 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
     </div>
 
     {/* RIGHT: Preview Panel */}
-    <div className="w-full flex flex-col items-center justify-start min-h-[400px] bg-muted rounded-md border p-4">
-      {previewUrl ? (
-        <div
-          className="relative overflow-hidden group w-full max-w-md aspect-video"
-          onMouseMove={(e) => {
-            const img = e.currentTarget.querySelector("img") as HTMLImageElement;
-            if (!img) return;
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = ((e.clientX - rect.left) / rect.width) * 100;
-            const y = ((e.clientY - rect.top) / rect.height) * 100;
-            img.style.transformOrigin = `${x}% ${y}%`;
-          }}
-        >
-          <img
-            src={previewUrl}
-            alt="Preview"
-            className="transition-transform duration-300 ease-in-out w-full object-contain group-hover:scale-[2.0]"
-            style={{ maxHeight: "800px" }}
-          />
-          <p className="text-xs text-center text-muted-foreground mt-2">
-            Vorschau – OCR wird erst nach Klick gestartet
-          </p>
-        </div>
-      ) : (
-        <div className="text-sm text-muted-foreground text-center">
-          Noch keine Vorschau verfügbar
-        </div>
-      )}
+<div className="w-full flex flex-col items-center justify-start min-h-[400px] bg-muted rounded-md border p-4">
+  {previewUrl ? (
+    <div
+      className="relative overflow-hidden group w-full max-w-[700px] aspect-video"
+      onMouseMove={(e) => {
+        const img = e.currentTarget.querySelector("img") as HTMLImageElement;
+        if (!img) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        img.style.transformOrigin = `${x}% ${y}%`;
+      }}
+    >
+      <img
+        src={previewUrl}
+        alt="Preview"
+        className="transition-transform duration-300 ease-in-out w-full object-contain group-hover:scale-[2.0]"
+        style={{ maxHeight: "900px" }}
+      />
+      <p className="text-xs text-center text-muted-foreground mt-2">
+        Vorschau – OCR wird erst nach Klick gestartet
+      </p>
+    </div>
+  ) : (
+    <div className="text-sm text-muted-foreground text-center">
+      Noch keine Vorschau verfügbar
+    </div>
+  )}
 
-      {previewUrl && !success && !isProcessing && (
-        <Button onClick={handleOcrStart} disabled={!tokens || tokens < 1} className="mt-4">
-          OCR starten
-        </Button>
-      )}
+  {previewUrl && !success && !isProcessing && (
+    <Button onClick={handleOcrStart} disabled={!tokens || tokens < 1} className="mt-4">
+      OCR starten
+    </Button>
+  )}
 
         {fileName && !previewUrl && (
           <div className="flex items-center space-x-2 p-2 bg-muted rounded">
