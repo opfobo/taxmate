@@ -148,11 +148,15 @@ export const OcrUpload = ({
             img.style.transformOrigin = `${x}% ${y}%`;
           }}>
             <img
-              src={previewUrl ?? ""}
-              alt="Preview"
-              className="object-contain w-full h-full transition-transform duration-300 ease-in-out scale-100 group-hover:scale-[2]"
-            />
-          </div>
+      src={previewUrl}
+      alt="Preview"
+      className="transition-transform duration-300 ease-in-out w-full object-contain group-hover:scale-[2.0]"
+      style={{ maxHeight: "800px" }}
+    />
+    <p className="text-xs text-center text-muted-foreground mt-2">
+      Vorschau – OCR wird erst nach Klick gestartet
+    </p>
+  </div>
         )}
 
         {file && !success && !isProcessing && (
