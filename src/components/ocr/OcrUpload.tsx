@@ -392,11 +392,15 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
   }}
 >
   <img
-    src={previewUrl ?? ""}
-    alt="Preview"
-    className="object-contain w-full h-full transition-transform duration-300 ease-in-out scale-100 group-hover:scale-[2]"
-  />
-</div>
+      src={previewUrl}
+      alt="Preview"
+      className="transition-transform duration-300 ease-in-out w-full object-contain group-hover:scale-[1.5]"
+      style={{ maxHeight: "600px" }}
+    />
+    <p className="text-xs text-center text-muted-foreground mt-2">
+      Vorschau – OCR wird erst nach Klick gestartet
+    </p>
+  </div>
 
         )}
 
