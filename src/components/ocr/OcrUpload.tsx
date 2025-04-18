@@ -340,75 +340,115 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
   };
 
   return (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+    {/* LEFT: Upload Panel */}
     <div className="space-y-3">
       {label && <p className="text-sm font-medium mb-1.5">{label}</p>}
       {tokens !== null && (
         <div className="text-xs text-muted-foreground mb-2">
-          Available OCR tokens: <span className={tokens < 3 ? "text-amber-500 font-medium" : ""}>{tokens}</span>
+          Available OCR tokens:{" "}
+          <span className={tokens < 3 ? "text-amber-500 font-medium" : ""}>{tokens}</span>
         </div>
       )}
 
-      <div className="flex flex-col items-center space-y-4">
-        {!isUploading && !isProcessing && !success && (
-          <div className="w-full">
-            <Input
-              type="file"
-              ref={fileInputRef}
-              accept={mimeTypes.join(",")}
-              onChange={handleFileChange}
-              disabled={isUploading || isProcessing || (tokens !== null && tokens < 1) || !user}
-              className={`cursor-pointer ${error ? "border-destructive" : ""}`}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Accepted formats: {mimeTypes.map(type => type.split('/')[1]).join(', ')} (Max {fileSizeLimitMB}MB)
-            </p>
+      {!isUploading && !isProcessing && !success && (
+        <div className="w-full">
+          <Input
+            type="file"
+            ref={fileInputRef}
+            accept={mimeTypes.join(",")}
+            onChange={handleFileChange}
+            disabled={isUploading || isProcessing || (tokens !== null && tokens < 1) || !user}
+            className={`cursor-pointer ${error ? "border-destructive" : ""}`}
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Accepted formats: {mimeTypes.map((type) => type.split("/")[1]).join(", ")} (Max{" "}
+            {fileSizeLimitMB}MB)
+          </p>
+        </div>
+      )}
+
+      {isUploading && (
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          <span className="text-sm">Uploading...</span>
+        </div>
+      )}
+
+      {isProcessing && (
+        <div className="flex flex-col items-center space-y-2">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span className="text-sm">Processing...</span>
+        </div>
+      )}
+
+      {fileName && !previewUrl && (
+        <div className="flex items-center space-x-2 p-2 bg-muted rounded">
+          {fileName.toLowerCase().endsWith(".pdf") ? (
+            <FileText className="h-5 w-5 text-muted-foreground" />
+          ) : (
+            <ImageIcon className="h-5 w-5 text-muted-foreground" />
+          )}
+          <span className="text-sm truncate max-w-[200px]">{fileName}</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="flex items-center space-x-2 text-destructive">
+          <AlertCircle className="h-4 w-4" />
+          <span className="text-sm">{error}</span>
+        </div>
+      )}
+
+      {success && (
+        <div className="flex flex-col items-center space-y-3">
+          <div className="flex items-center space-x-2 text-green-600">
+            <CheckCircle className="h-5 w-5" />
+            <span className="text-sm font-medium">OCR result received</span>
           </div>
-        )}
-
-        {isUploading && (
-          <div className="flex items-center space-x-2">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="text-sm">Uploading...</span>
-          </div>
-        )}
-
-        {isProcessing && (
-          <div className="flex flex-col items-center space-y-2">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span className="text-sm">Processing...</span>
-          </div>
-        )}
-
-        {previewUrl && (
-          <div
-  className="relative overflow-hidden rounded group w-full max-w-sm aspect-video"
-  onMouseMove={(e) => {
-    const img = e.currentTarget.querySelector("img") as HTMLImageElement;
-    if (!img) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    img.style.transformOrigin = `${x}% ${y}%`;
-  }}
->
-  <img
-      src={previewUrl}
-      alt="Preview"
-      className="transition-transform duration-300 ease-in-out w-full object-contain group-hover:scale-[2.0]"
-      style={{ maxHeight: "800px" }}
-    />
-    <p className="text-xs text-center text-muted-foreground mt-2">
-      Vorschau – OCR wird erst nach Klick gestartet
-    </p>
-  </div>
-
-        )}
-
-        {file && !success && !isProcessing && (
-          <Button onClick={handleOcrStart} disabled={!tokens || tokens < 1} className="mt-3">
-            OCR starten
+          <Button variant="outline" size="sm" onClick={resetStates}>
+            <Upload className="h-4 w-4 mr-2" />
+            Upload another document
           </Button>
-        )}
+        </div>
+      )}
+    </div>
+
+    {/* RIGHT: Preview Panel */}
+    <div className="w-full flex flex-col items-center justify-start min-h-[400px] bg-muted rounded-md border p-4">
+      {previewUrl ? (
+        <div
+          className="relative overflow-hidden group w-full max-w-md aspect-video"
+          onMouseMove={(e) => {
+            const img = e.currentTarget.querySelector("img") as HTMLImageElement;
+            if (!img) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+            img.style.transformOrigin = `${x}% ${y}%`;
+          }}
+        >
+          <img
+            src={previewUrl}
+            alt="Preview"
+            className="transition-transform duration-300 ease-in-out w-full object-contain group-hover:scale-[2.0]"
+            style={{ maxHeight: "800px" }}
+          />
+          <p className="text-xs text-center text-muted-foreground mt-2">
+            Vorschau – OCR wird erst nach Klick gestartet
+          </p>
+        </div>
+      ) : (
+        <div className="text-sm text-muted-foreground text-center">
+          Noch keine Vorschau verfügbar
+        </div>
+      )}
+
+      {previewUrl && !success && !isProcessing && (
+        <Button onClick={handleOcrStart} disabled={!tokens || tokens < 1} className="mt-4">
+          OCR starten
+        </Button>
+      )}
 
         {fileName && !previewUrl && (
           <div className="flex items-center space-x-2 p-2 bg-muted rounded">
