@@ -415,10 +415,10 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
     </div>
 
     {/* RIGHT: Preview Panel */}
-<div className="w-full flex flex-col items-center justify-start min-h-[400px] bg-muted rounded-md border p-4">
+<div className="w-full flex flex-col items-center justify-start bg-muted rounded-md border p-4 max-w-[900px]">
   {previewUrl ? (
     <div
-      className="relative overflow-hidden group w-full max-w-[700px] aspect-video"
+      className="relative overflow-hidden group w-full"
       onMouseMove={(e) => {
         const img = e.currentTarget.querySelector("img") as HTMLImageElement;
         if (!img) return;
@@ -431,15 +431,15 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
       <img
         src={previewUrl}
         alt="Preview"
-        className="transition-transform duration-300 ease-in-out w-full object-contain group-hover:scale-[2.0]"
-        style={{ maxHeight: "900px" }}
+        className="transition-transform duration-300 ease-in-out w-full object-contain group-hover:scale-[1.8]"
+        style={{ maxHeight: "1000px" }}
       />
       <p className="text-xs text-center text-muted-foreground mt-2">
         Vorschau – OCR wird erst nach Klick gestartet
       </p>
     </div>
   ) : (
-    <div className="text-sm text-muted-foreground text-center">
+    <div className="text-sm text-muted-foreground text-center min-h-[200px] flex items-center justify-center w-full">
       Noch keine Vorschau verfügbar
     </div>
   )}
