@@ -394,8 +394,8 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
   <img
       src={previewUrl}
       alt="Preview"
-      className="transition-transform duration-300 ease-in-out w-full object-contain group-hover:scale-[1.5]"
-      style={{ maxHeight: "600px" }}
+      className="transition-transform duration-300 ease-in-out w-full object-contain group-hover:scale-[2.0]"
+      style={{ maxHeight: "800px" }}
     />
     <p className="text-xs text-center text-muted-foreground mt-2">
       Vorschau – OCR wird erst nach Klick gestartet
