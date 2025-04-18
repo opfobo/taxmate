@@ -59,7 +59,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ url }) => {
     <>
       <canvas
         ref={canvasRef}
-        className="transition-transform duration-300 ease-in-out group-hover:scale-150"
+        className="transition-transform duration-300 ease-in-out group-hover:scale-[2]"
         style={{ maxWidth: "100%", maxHeight: "600px" }}
       />
       <a
