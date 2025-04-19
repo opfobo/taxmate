@@ -129,9 +129,11 @@ export default function AddressParserTestPage() {
       if (!parsed || parsed.error) throw new Error(parsed.error || "GPT returned nothing");
 
       const safeGet = (key: FieldKey) => parsed[key]?.trim?.() ?? "";
+      const removeSoftHardSigns = (text: string) =>
+  text.replace(/[ьъЬЪ]/g, "");
 
       for (const key of ALL_FIELDS) {
-        const raw = safeGet(key);
+        const raw = removeSoftHardSigns(safeGet(key));
         if (raw) {
           const isGuessed = raw.includes("(?)");
           const clean = raw.replace(/\(\?\)/g, "").trim();
