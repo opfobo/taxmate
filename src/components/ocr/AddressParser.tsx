@@ -70,8 +70,10 @@ export default function AddressParserTestPage() {
     text.replace(/\b\w+/g, w => w[0].toUpperCase() + w.slice(1));
 
   const addField = (key: FieldKey) => {
-    setFields(prev => [...prev, { key, value: "" }]);
-    const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
+  setFields(prev => [...prev, { key, value: "" }]);
+  const newAvailable = ALL_FIELDS.filter(k => ![...fields, { key, value: "" }].some(f => f.key === k));
+  setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
+};
 
 setFields(allFields); // ✅ FELDER setzen!
 setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
@@ -101,20 +103,17 @@ const updateField = (index: number, newValue: string) => {
     });
   };
 
-  const removeField = (index: number) => {
-    const field = fields[index];
-    if (MANDATORY_FIELDS.includes(field.key)) {
-      updateField(index, "");
-    } else {
-      const newFields = fields.filter((_, i) => i !== index);
-      setFields(newFields);
-      const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
-
-setFields(allFields); // ✅ FELDER setzen!
-setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
-setVisible(true);
-    }
-  };
+const removeField = (index: number) => {
+  const field = fields[index];
+  if (MANDATORY_FIELDS.includes(field.key)) {
+    updateField(index, "");
+  } else {
+    const newFields = fields.filter((_, i) => i !== index);
+    setFields(newFields);
+    const newAvailable = ALL_FIELDS.filter(key => !newFields.some(f => f.key === key));
+    setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
+  }
+};
 
   const handleSplit = async () => {
   let newFields: typeof fields = [];
@@ -165,6 +164,12 @@ setVisible(true);
   const isMissing = MANDATORY_FIELDS.includes(f.key) && f.value.trim() === "";
   return { ...f, isMissing };
 });
+
+setFields(allFields); // ✅ Jetzt korrekt!
+const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
+setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
+setVisible(true);
+
 
 
     const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
