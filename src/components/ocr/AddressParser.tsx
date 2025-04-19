@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/hooks/useTranslation";
 import { saveConsumerWithAddress } from "@/lib/supabase/consumerUtils";
-import { SUPABASE_URL } from "@/integrations/supabase/client";
+const SUPABASE_URL = "https://ibauptditdqcwtpfnqkb.supabase.co";
 
 const ALL_FIELDS = ["name", "street", "house_number", "block", "kv", "city", "postal_code", "country", "phone", "email", "birthday", "other"] as const;
 type FieldKey = typeof ALL_FIELDS[number];
