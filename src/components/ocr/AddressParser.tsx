@@ -75,51 +75,67 @@ export default function AddressParserTestPage() {
     }
   };
 
-  const handleSplit = async () => {
-    let newFields: typeof fields = [];
+  import { supabase } from "@/integrations/supabase/client"; // falls noch nicht importiert
+import { SUPABASE_URL } from "@/integrations/supabase/client";
 
-    try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/parse_address_with_gpt`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input }),
-      });
+const handleSplit = async () => {
+  let newFields: typeof fields = [];
 
-      const parsed = await response.json();
-      if (!parsed || parsed.error) throw new Error(parsed.error || "GPT returned nothing");
+  try {
+    // 🧠 Aktuelle Session holen
+    const sessionRes = await supabase.auth.getSession();
+    const accessToken = sessionRes.data.session?.access_token;
 
-      const safeGet = (key: FieldKey) => parsed[key]?.trim?.() ?? "";
-
-      for (const key of ALL_FIELDS) {
-        const value = safeGet(key);
-        if (value) {
-          newFields.push({
-            key,
-            value:
-              key === "country" || key === "city" || key === "street" || key === "name"
-                ? capitalizeAllWords(addSpacesBetweenWords(transliterate(value)))
-                : transliterate(value)
-          });
-        }
-      }
-
-      const existingKeys = newFields.map(f => f.key);
-      const mandatoryWithEmpty = MANDATORY_FIELDS.filter(m => !existingKeys.includes(m)).map(key => ({
-        key,
-        value: ""
-      }));
-
-      const allFields = [...mandatoryWithEmpty, ...newFields];
-      setFields(allFields);
-
-      const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
-      setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
-      setVisible(true);
-
-    } catch (e) {
-      console.error("❌ GPT Adressverarbeitung fehlgeschlagen:", e);
+    if (!accessToken) {
+      throw new Error("No valid session token found");
     }
-  };
+
+    // 📡 Anfrage an Edge Function mit Token
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/parse_address_with_gpt`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ input }),
+    });
+
+    const parsed = await response.json();
+    if (!parsed || parsed.error) throw new Error(parsed.error || "GPT returned nothing");
+
+    const safeGet = (key: FieldKey) => parsed[key]?.trim?.() ?? "";
+
+    for (const key of ALL_FIELDS) {
+      const value = safeGet(key);
+      if (value) {
+        newFields.push({
+          key,
+          value:
+            key === "country" || key === "city" || key === "street" || key === "name"
+              ? capitalizeAllWords(addSpacesBetweenWords(transliterate(value)))
+              : transliterate(value)
+        });
+      }
+    }
+
+    const existingKeys = newFields.map(f => f.key);
+    const mandatoryWithEmpty = MANDATORY_FIELDS.filter(m => !existingKeys.includes(m)).map(key => ({
+      key,
+      value: ""
+    }));
+
+    const allFields = [...mandatoryWithEmpty, ...newFields];
+    setFields(allFields);
+
+    const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
+    setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
+    setVisible(true);
+
+  } catch (e) {
+    console.error("❌ GPT Adressverarbeitung fehlgeschlagen:", e);
+  }
+};
+
 
   const availableFields = ALL_FIELDS.filter(key => !fields.some(f => f.key === key));
 
