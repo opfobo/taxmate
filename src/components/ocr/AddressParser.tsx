@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/hooks/useTranslation";
 import { saveConsumerWithAddress } from "@/lib/supabase/consumerUtils";
+import { SUPABASE_URL } from "@/integrations/supabase/client";
 
 const ALL_FIELDS = ["name", "street", "house_number", "block", "kv", "city", "postal_code", "country", "phone", "email", "birthday", "other"] as const;
 type FieldKey = typeof ALL_FIELDS[number];
@@ -78,7 +79,7 @@ export default function AddressParserTestPage() {
     let newFields: typeof fields = [];
 
     try {
-      const response = await fetch("/functions/v1/parse_address_with_gpt", {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/parse_address_with_gpt`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ input }),
