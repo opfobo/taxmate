@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/hooks/useTranslation";
 import { saveConsumerWithAddress } from "@/lib/supabase/consumerUtils";
-import { parseAddressWithGPT } from "@/lib/gpt/functions/parseAddressWithGPT";
 
 const ALL_FIELDS = ["name", "street", "house_number", "block", "kv", "city", "postal_code", "country", "phone", "email", "birthday", "other"] as const;
 type FieldKey = typeof ALL_FIELDS[number];
@@ -77,9 +76,16 @@ export default function AddressParserTestPage() {
 
   const handleSplit = async () => {
     let newFields: typeof fields = [];
+
     try {
-      const parsed = await parseAddressWithGPT(input);
-      if (!parsed) throw new Error("GPT returned no result");
+      const response = await fetch("/functions/v1/parse_address_with_gpt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input }),
+      });
+
+      const parsed = await response.json();
+      if (!parsed || parsed.error) throw new Error(parsed.error || "GPT returned nothing");
 
       const safeGet = (key: FieldKey) => parsed[key]?.trim?.() ?? "";
 
@@ -89,10 +95,7 @@ export default function AddressParserTestPage() {
           newFields.push({
             key,
             value:
-              key === "country" ||
-              key === "city" ||
-              key === "street" ||
-              key === "name"
+              key === "country" || key === "city" || key === "street" || key === "name"
                 ? capitalizeAllWords(addSpacesBetweenWords(transliterate(value)))
                 : transliterate(value)
           });
@@ -111,11 +114,6 @@ export default function AddressParserTestPage() {
       const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
       setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
       setVisible(true);
-
-      // Optional: Duplikatprüfung aktivieren
-      // if (parsed.phone || parsed.email) {
-      //   checkForDuplicates(parsed.phone, parsed.email);
-      // }
 
     } catch (e) {
       console.error("❌ GPT Adressverarbeitung fehlgeschlagen:", e);
