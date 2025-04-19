@@ -70,30 +70,26 @@ export default function AddressParserTestPage() {
     text.replace(/\b\w+/g, w => w[0].toUpperCase() + w.slice(1));
 
   const addField = (key: FieldKey) => {
-  setFields(prev => [...prev, { key, value: "" }]);
-  const newAvailable = ALL_FIELDS.filter(k => ![...fields, { key, value: "" }].some(f => f.key === k));
-  setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
-};
-
-setFields(allFields); // ✅ FELDER setzen!
-setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
-setVisible(true);
+    setFields(prev => {
+      const updated = [...prev, { key, value: "" }];
+      const available = ALL_FIELDS.filter(k => !updated.some(f => f.key === k));
+      setFieldToAdd(available.length > 0 ? available[0] : null);
+      return updated;
+    });
   };
 
-const updateField = (index: number, newValue: string) => {
-  setFields(prev => {
-    const copy = [...prev];
-    copy[index] = {
-      ...copy[index],
-      value: newValue,
-      isGuessed: false,
-      isMissing: false // ✅ wenn der Nutzer tippt, wird rot entfernt
-    };
-    return copy;
-  });
-};
-
-
+  const updateField = (index: number, newValue: string) => {
+    setFields(prev => {
+      const copy = [...prev];
+      copy[index] = {
+        ...copy[index],
+        value: newValue,
+        isGuessed: false,
+        isMissing: false
+      };
+      return copy;
+    });
+  };
 
   const changeKey = (index: number, newKey: FieldKey) => {
     setFields(prev => {
@@ -103,84 +99,67 @@ const updateField = (index: number, newValue: string) => {
     });
   };
 
-const removeField = (index: number) => {
-  const field = fields[index];
-  if (MANDATORY_FIELDS.includes(field.key)) {
-    updateField(index, "");
-  } else {
-    const newFields = fields.filter((_, i) => i !== index);
-    setFields(newFields);
-    const newAvailable = ALL_FIELDS.filter(key => !newFields.some(f => f.key === key));
-    setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
-  }
-};
+  const removeField = (index: number) => {
+    setFields(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+      const available = ALL_FIELDS.filter(k => !updated.some(f => f.key === k));
+      setFieldToAdd(available.length > 0 ? available[0] : null);
+      return updated;
+    });
+  };
 
   const handleSplit = async () => {
-  let newFields: typeof fields = [];
+    let newFields: typeof fields = [];
 
-  try {
-    const sessionRes = await supabase.auth.getSession();
-    const accessToken = sessionRes.data.session?.access_token;
+    try {
+      const sessionRes = await supabase.auth.getSession();
+      const accessToken = sessionRes.data.session?.access_token;
+      if (!accessToken) throw new Error("No valid session token found");
 
-    if (!accessToken) {
-      throw new Error("No valid session token found");
-    }
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/parse_address_with_gpt`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ input })
+      });
 
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/parse_address_with_gpt`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`
-      },
-      body: JSON.stringify({ input })
-    });
+      const parsed = await response.json();
+      if (!parsed || parsed.error) throw new Error(parsed.error || "GPT returned nothing");
 
-    const parsed = await response.json();
-    if (!parsed || parsed.error) throw new Error(parsed.error || "GPT returned nothing");
+      const safeGet = (key: FieldKey) => parsed[key]?.trim?.() ?? "";
 
-    const safeGet = (key: FieldKey) => parsed[key]?.trim?.() ?? "";
-
-    for (const key of ALL_FIELDS) {
-      const raw = safeGet(key);
-      if (raw) {
-        const isGuessed = raw.includes("(?)");
-        const clean = raw.replace(/\(\?\)/g, "").trim();
-        const final = key === "country" || key === "city" || key === "street" || key === "name"
-          ? capitalizeAllWords(addSpacesBetweenWords(transliterate(clean)))
-          : transliterate(clean);
-
-        newFields.push({ key, value: final, isGuessed });
+      for (const key of ALL_FIELDS) {
+        const raw = safeGet(key);
+        if (raw) {
+          const isGuessed = raw.includes("(?)");
+          const clean = raw.replace(/\(\?\)/g, "").trim();
+          const final = ["country", "city", "street", "name"].includes(key)
+            ? capitalizeAllWords(addSpacesBetweenWords(transliterate(clean)))
+            : transliterate(clean);
+          newFields.push({ key, value: final, isGuessed });
+        }
       }
+
+      const existingKeys = newFields.map(f => f.key);
+      const mandatoryWithEmpty = MANDATORY_FIELDS
+        .filter(m => !existingKeys.includes(m))
+        .map(key => ({ key, value: "", isGuessed: false }));
+
+      const allFields = [...mandatoryWithEmpty, ...newFields].map(f => ({
+        ...f,
+        isMissing: MANDATORY_FIELDS.includes(f.key) && f.value.trim() === ""
+      }));
+
+      const available = ALL_FIELDS.filter(k => !allFields.some(f => f.key === k));
+      setFields(allFields);
+      setFieldToAdd(available.length > 0 ? available[0] : null);
+      setVisible(true);
+    } catch (e) {
+      console.error("❌ GPT Adressverarbeitung fehlgeschlagen:", e);
     }
-
-    const existingKeys = newFields.map(f => f.key);
-    const mandatoryWithEmpty = MANDATORY_FIELDS.filter(m => !existingKeys.includes(m)).map(key => ({
-      key,
-      value: "",
-      isGuessed: false
-    }));
-
-    const allFields = [...mandatoryWithEmpty, ...newFields].map(f => {
-  const isMissing = MANDATORY_FIELDS.includes(f.key) && f.value.trim() === "";
-  return { ...f, isMissing };
-});
-
-setFields(allFields); // ✅ Jetzt korrekt!
-const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
-setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
-setVisible(true);
-
-
-
-    const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
-    setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
-    setVisible(true);
-
-  } catch (e) {
-    console.error("❌ GPT Adressverarbeitung fehlgeschlagen:", e);
-  }
-};
-
+  };
 
   const availableFields = ALL_FIELDS.filter(key => !fields.some(f => f.key === key));
 
@@ -221,11 +200,13 @@ setVisible(true);
                     ))}
                   </SelectContent>
                 </Select>
-<Input
-  value={f.value}
-  onChange={e => updateField(i, e.target.value)}
-  className={`flex-1 ${f.isGuessed ? "bg-yellow-50 border border-yellow-300" : ""} ${f.isMissing ? "bg-red-50 border border-red-300" : ""}`}
-/>
+                <Input
+                  value={f.value}
+                  onChange={e => updateField(i, e.target.value)}
+                  className={`flex-1 ${
+                    f.isGuessed ? "bg-yellow-50 border border-yellow-300" : ""
+                  } ${f.isMissing ? "bg-red-50 border border-red-300" : ""}`}
+                />
                 <Button size="icon" variant="ghost" className="text-destructive" onClick={() => removeField(i)}>
                   ✖
                 </Button>
