@@ -71,8 +71,11 @@ export default function AddressParserTestPage() {
 
   const addField = (key: FieldKey) => {
     setFields(prev => [...prev, { key, value: "" }]);
-    const newAvailable = ALL_FIELDS.filter(k => ![...fields, { key, value: "" }].some(f => f.key === k));
-    setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
+    const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
+
+setFields(allFields); // ✅ FELDER setzen!
+setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
+setVisible(true);
   };
 
 const updateField = (index: number, newValue: string) => {
@@ -105,8 +108,11 @@ const updateField = (index: number, newValue: string) => {
     } else {
       const newFields = fields.filter((_, i) => i !== index);
       setFields(newFields);
-      const newAvailable = ALL_FIELDS.filter(key => !newFields.some(f => f.key === key));
-      setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
+      const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
+
+setFields(allFields); // ✅ FELDER setzen!
+setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
+setVisible(true);
     }
   };
 
