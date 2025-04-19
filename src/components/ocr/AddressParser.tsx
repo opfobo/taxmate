@@ -6,15 +6,43 @@ import { Label } from "@/components/ui/label";
 import { transliterate } from "@/lib/parser/address/transliteration";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/hooks/useTranslation";
 import { saveConsumerWithAddress } from "@/lib/supabase/consumerUtils";
-const SUPABASE_URL = "https://ibauptditdqcwtpfnqkb.supabase.co";
+import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_URL } from "@/integrations/supabase/client";
 
-const ALL_FIELDS = ["name", "street", "house_number", "block", "kv", "city", "postal_code", "country", "phone", "email", "birthday", "other"] as const;
+const ALL_FIELDS = [
+  "name",
+  "street",
+  "house_number",
+  "block",
+  "kv",
+  "city",
+  "postal_code",
+  "country",
+  "phone",
+  "email",
+  "birthday",
+  "other"
+] as const;
 type FieldKey = typeof ALL_FIELDS[number];
-const MANDATORY_FIELDS: FieldKey[] = ["name", "street", "house_number", "city", "postal_code", "country", "phone"];
+const MANDATORY_FIELDS: FieldKey[] = [
+  "name",
+  "street",
+  "house_number",
+  "city",
+  "postal_code",
+  "country",
+  "phone"
+];
 
 export default function AddressParserTestPage() {
   const { t } = useTranslation();
@@ -75,67 +103,61 @@ export default function AddressParserTestPage() {
     }
   };
 
-  import { supabase } from "@/integrations/supabase/client"; // falls noch nicht importiert
-import { SUPABASE_URL } from "@/integrations/supabase/client";
+  const handleSplit = async () => {
+    let newFields: typeof fields = [];
 
-const handleSplit = async () => {
-  let newFields: typeof fields = [];
+    try {
+      const sessionRes = await supabase.auth.getSession();
+      const accessToken = sessionRes.data.session?.access_token;
 
-  try {
-    // 🧠 Aktuelle Session holen
-    const sessionRes = await supabase.auth.getSession();
-    const accessToken = sessionRes.data.session?.access_token;
-
-    if (!accessToken) {
-      throw new Error("No valid session token found");
-    }
-
-    // 📡 Anfrage an Edge Function mit Token
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/parse_address_with_gpt`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ input }),
-    });
-
-    const parsed = await response.json();
-    if (!parsed || parsed.error) throw new Error(parsed.error || "GPT returned nothing");
-
-    const safeGet = (key: FieldKey) => parsed[key]?.trim?.() ?? "";
-
-    for (const key of ALL_FIELDS) {
-      const value = safeGet(key);
-      if (value) {
-        newFields.push({
-          key,
-          value:
-            key === "country" || key === "city" || key === "street" || key === "name"
-              ? capitalizeAllWords(addSpacesBetweenWords(transliterate(value)))
-              : transliterate(value)
-        });
+      if (!accessToken) {
+        throw new Error("No valid session token found");
       }
+
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/parse_address_with_gpt`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ input })
+      });
+
+      const parsed = await response.json();
+      if (!parsed || parsed.error) throw new Error(parsed.error || "GPT returned nothing");
+
+      const safeGet = (key: FieldKey) => parsed[key]?.trim?.() ?? "";
+
+      for (const key of ALL_FIELDS) {
+        const value = safeGet(key);
+        if (value) {
+          newFields.push({
+            key,
+            value:
+              key === "country" || key === "city" || key === "street" || key === "name"
+                ? capitalizeAllWords(addSpacesBetweenWords(transliterate(value)))
+                : transliterate(value)
+          });
+        }
+      }
+
+      const existingKeys = newFields.map(f => f.key);
+      const mandatoryWithEmpty = MANDATORY_FIELDS.filter(m => !existingKeys.includes(m)).map(key => ({
+        key,
+        value: ""
+      }));
+
+      const allFields = [...mandatoryWithEmpty, ...newFields];
+      setFields(allFields);
+
+      const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
+      setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
+      setVisible(true);
+
+    } catch (e) {
+      console.error("❌ GPT Adressverarbeitung fehlgeschlagen:", e);
     }
-
-    const existingKeys = newFields.map(f => f.key);
-    const mandatoryWithEmpty = MANDATORY_FIELDS.filter(m => !existingKeys.includes(m)).map(key => ({
-      key,
-      value: ""
-    }));
-
-    const allFields = [...mandatoryWithEmpty, ...newFields];
-    setFields(allFields);
-
-    const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
-    setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
-    setVisible(true);
-
-  } catch (e) {
-    console.error("❌ GPT Adressverarbeitung fehlgeschlagen:", e);
-  }
-};
-
+  };
 
   const availableFields = ALL_FIELDS.filter(key => !fields.some(f => f.key === key));
 
