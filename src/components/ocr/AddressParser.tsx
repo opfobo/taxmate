@@ -48,7 +48,7 @@ export default function AddressParserTestPage() {
   const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [translitOutput, setTranslitOutput] = useState("");
-  const [fields, setFields] = useState<{ key: FieldKey; value: string; isGuessed?: boolean }[]>([]);
+  const [fields, setFields] = useState<{ key: FieldKey; value: string; isGuessed?: boolean; isMissing?: boolean }[]>([]);
   const [visible, setVisible] = useState(false);
   const [fieldToAdd, setFieldToAdd] = useState<FieldKey | null>(null);
 
@@ -78,10 +78,16 @@ export default function AddressParserTestPage() {
 const updateField = (index: number, newValue: string) => {
   setFields(prev => {
     const copy = [...prev];
-    copy[index] = { ...copy[index], value: newValue, isGuessed: false };
+    copy[index] = {
+      ...copy[index],
+      value: newValue,
+      isGuessed: false,
+      isMissing: false // ✅ wenn der Nutzer tippt, wird rot entfernt
+    };
     return copy;
   });
 };
+
 
 
   const changeKey = (index: number, newKey: FieldKey) => {
@@ -149,8 +155,11 @@ const updateField = (index: number, newValue: string) => {
       isGuessed: false
     }));
 
-    const allFields = [...mandatoryWithEmpty, ...newFields];
-    setFields(allFields);
+    const allFields = [...mandatoryWithEmpty, ...newFields].map(f => {
+  const isMissing = MANDATORY_FIELDS.includes(f.key) && f.value.trim() === "";
+  return { ...f, isMissing };
+});
+
 
     const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
     setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
@@ -204,7 +213,7 @@ const updateField = (index: number, newValue: string) => {
 <Input
   value={f.value}
   onChange={e => updateField(i, e.target.value)}
-  className={`flex-1 ${f.isGuessed ? "bg-yellow-50 border border-yellow-300" : ""}`}
+  className={`flex-1 ${f.isGuessed ? "bg-yellow-50 border border-yellow-300" : ""} ${f.isMissing ? "bg-red-50 border border-red-300" : ""}`}
 />
                 <Button size="icon" variant="ghost" className="text-destructive" onClick={() => removeField(i)}>
                   ✖
