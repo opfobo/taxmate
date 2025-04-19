@@ -113,6 +113,7 @@ export default function AddressParserTestPage() {
       if (!accessToken) {
         throw new Error("No valid session token found");
       }
+console.log("🧪 Token:", accessToken);
 
       const response = await fetch(`${SUPABASE_URL}/functions/v1/parse_address_with_gpt`, {
         method: "POST",
