@@ -48,7 +48,7 @@ export default function AddressParserTestPage() {
   const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [translitOutput, setTranslitOutput] = useState("");
-  const [fields, setFields] = useState<{ key: FieldKey; value: string }[]>([]);
+  const [fields, setFields] = useState<{ key: FieldKey; value: string; isGuessed?: boolean }[]>([]);
   const [visible, setVisible] = useState(false);
   const [fieldToAdd, setFieldToAdd] = useState<FieldKey | null>(null);
 
@@ -75,13 +75,14 @@ export default function AddressParserTestPage() {
     setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
   };
 
-  const updateField = (index: number, newValue: string) => {
-    setFields(prev => {
-      const copy = [...prev];
-      copy[index].value = newValue;
-      return copy;
-    });
-  };
+const updateField = (index: number, newValue: string) => {
+  setFields(prev => {
+    const copy = [...prev];
+    copy[index] = { ...copy[index], value: newValue, isGuessed: false };
+    return copy;
+  });
+};
+
 
   const changeKey = (index: number, newKey: FieldKey) => {
     setFields(prev => {
@@ -104,60 +105,62 @@ export default function AddressParserTestPage() {
   };
 
   const handleSplit = async () => {
-    let newFields: typeof fields = [];
+  let newFields: typeof fields = [];
 
-    try {
-      const sessionRes = await supabase.auth.getSession();
-      const accessToken = sessionRes.data.session?.access_token;
+  try {
+    const sessionRes = await supabase.auth.getSession();
+    const accessToken = sessionRes.data.session?.access_token;
 
-      if (!accessToken) {
-        throw new Error("No valid session token found");
-      }
-
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/parse_address_with_gpt`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({ input })
-      });
-
-      const parsed = await response.json();
-      if (!parsed || parsed.error) throw new Error(parsed.error || "GPT returned nothing");
-
-      const safeGet = (key: FieldKey) => parsed[key]?.trim?.() ?? "";
-
-      for (const key of ALL_FIELDS) {
-        const value = safeGet(key);
-        if (value) {
-          newFields.push({
-            key,
-            value:
-              key === "country" || key === "city" || key === "street" || key === "name"
-                ? capitalizeAllWords(addSpacesBetweenWords(transliterate(value)))
-                : transliterate(value)
-          });
-        }
-      }
-
-      const existingKeys = newFields.map(f => f.key);
-      const mandatoryWithEmpty = MANDATORY_FIELDS.filter(m => !existingKeys.includes(m)).map(key => ({
-        key,
-        value: ""
-      }));
-
-      const allFields = [...mandatoryWithEmpty, ...newFields];
-      setFields(allFields);
-
-      const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
-      setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
-      setVisible(true);
-
-    } catch (e) {
-      console.error("❌ GPT Adressverarbeitung fehlgeschlagen:", e);
+    if (!accessToken) {
+      throw new Error("No valid session token found");
     }
-  };
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/parse_address_with_gpt`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ input })
+    });
+
+    const parsed = await response.json();
+    if (!parsed || parsed.error) throw new Error(parsed.error || "GPT returned nothing");
+
+    const safeGet = (key: FieldKey) => parsed[key]?.trim?.() ?? "";
+
+    for (const key of ALL_FIELDS) {
+      const raw = safeGet(key);
+      if (raw) {
+        const isGuessed = raw.includes("(?)");
+        const clean = raw.replace(/\(\?\)/g, "").trim();
+        const final = key === "country" || key === "city" || key === "street" || key === "name"
+          ? capitalizeAllWords(addSpacesBetweenWords(transliterate(clean)))
+          : transliterate(clean);
+
+        newFields.push({ key, value: final, isGuessed });
+      }
+    }
+
+    const existingKeys = newFields.map(f => f.key);
+    const mandatoryWithEmpty = MANDATORY_FIELDS.filter(m => !existingKeys.includes(m)).map(key => ({
+      key,
+      value: "",
+      isGuessed: false
+    }));
+
+    const allFields = [...mandatoryWithEmpty, ...newFields];
+    setFields(allFields);
+
+    const newAvailable = ALL_FIELDS.filter(key => !allFields.some(f => f.key === key));
+    setFieldToAdd(newAvailable.length > 0 ? newAvailable[0] : null);
+    setVisible(true);
+
+  } catch (e) {
+    console.error("❌ GPT Adressverarbeitung fehlgeschlagen:", e);
+  }
+};
+
 
   const availableFields = ALL_FIELDS.filter(key => !fields.some(f => f.key === key));
 
@@ -198,7 +201,11 @@ export default function AddressParserTestPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Input value={f.value} onChange={e => updateField(i, e.target.value)} className="flex-1" />
+<Input
+  value={f.value}
+  onChange={e => updateField(i, e.target.value)}
+  className={`flex-1 ${f.isGuessed ? "bg-yellow-50 border border-yellow-300" : ""}`}
+/>
                 <Button size="icon" variant="ghost" className="text-destructive" onClick={() => removeField(i)}>
                   ✖
                 </Button>
