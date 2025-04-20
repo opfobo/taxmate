@@ -7,10 +7,11 @@ import { PageLayout } from "@/components/common/PageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save, Check, X, Edit } from "lucide-react";
+import { Loader2, Save, Check, X, Edit, PackageCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import OcrDocumentPreview from "@/components/ocr/OcrDocumentPreview";
+import { format } from "date-fns";
 import { mapOcrInvoiceMapping } from "@/lib/ocr/OcrInvoiceMappings";
 import {
   EditableText,
@@ -126,7 +127,7 @@ const OcrReviewPage = () => {
     if (!invoiceMapping?.id) return;
     await supabase.from("ocr_invoice_mappings").update(formData).eq("id", invoiceMapping.id);
     await supabase.from("ocr_invoice_items").upsert(editedLineItems);
-    toast({ title: "Changes saved", description: "Your changes have been saved." });
+    toast({ title: t("saved"), description: t("ocr.saved_confirmation") });
     setIsEditing(false);
   };
 
@@ -155,9 +156,14 @@ const OcrReviewPage = () => {
                 </Button>
               </>
             ) : (
-              <Button onClick={() => setIsEditing(true)}>
-                <Edit className="mr-2 h-4 w-4" /> {t("edit")}
-              </Button>
+              <>
+                <Button onClick={() => setIsEditing(true)}>
+                  <Edit className="mr-2 h-4 w-4" /> {t("edit")}
+                </Button>
+                <Button variant="secondary" onClick={() => console.log("👉 Übergabe ins Inventar")}>
+                  <PackageCheck className="mr-2 h-4 w-4" /> {t("ocr.move_to_inventory")}
+                </Button>
+              </>
             )}
           </div>
         </div>
