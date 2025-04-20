@@ -128,13 +128,12 @@ const OcrReviewPage = () => {
 const handleSubmit = async () => {
   if (!invoiceMapping?.id) return;
 
-  // Nur explizit erlaubte Felder updaten, um 400er zu vermeiden
+  // Nur erlaubte Felder, keine default_tax_rate (das Feld existiert nicht in DB)
   const allowedKeys = [
     "invoice_number",
     "invoice_date",
     "total_amount",
     "total_tax",
-    "default_tax_rate",
     "supplier_name",
     "supplier_address",
     "supplier_vat",
@@ -143,7 +142,7 @@ const handleSubmit = async () => {
 
   const cleanedFormData: Record<string, any> = {};
   allowedKeys.forEach((key) => {
-    if (formData[key] !== undefined) {
+    if (formData[key] !== undefined && formData[key] !== null) {
       cleanedFormData[key] = formData[key];
     }
   });
@@ -175,7 +174,11 @@ const handleSubmit = async () => {
     return;
   }
 
-  toast({ title: "Gespeichert", description: "Alle Änderungen wurden erfolgreich übernommen." });
+  toast({
+    title: "Gespeichert",
+    description: "Alle Änderungen wurden erfolgreich übernommen.",
+  });
+
   setIsEditing(false);
 };
 
