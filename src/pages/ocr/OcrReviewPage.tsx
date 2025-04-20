@@ -7,11 +7,10 @@ import { PageLayout } from "@/components/common/PageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save, Check, X, Edit, PackageCheck } from "lucide-react";
+import { Loader2, Save, Check, X, Edit, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import OcrDocumentPreview from "@/components/ocr/OcrDocumentPreview";
-import { format } from "date-fns";
 import { mapOcrInvoiceMapping } from "@/lib/ocr/OcrInvoiceMappings";
 import {
   EditableText,
@@ -127,8 +126,60 @@ const OcrReviewPage = () => {
     if (!invoiceMapping?.id) return;
     await supabase.from("ocr_invoice_mappings").update(formData).eq("id", invoiceMapping.id);
     await supabase.from("ocr_invoice_items").upsert(editedLineItems);
-    toast({ title: t("saved"), description: t("ocr.saved_confirmation") });
+    toast({ title: "Gespeichert", description: "Alle Änderungen wurden gespeichert." });
     setIsEditing(false);
+  };
+
+  const handleTransferToInventory = async () => {
+    if (!invoiceMapping?.id) return;
+
+    try {
+      const { data: lineItems, error } = await supabase
+        .from("ocr_invoice_items")
+        .select("*")
+        .eq("mapping_id", invoiceMapping.id);
+
+      if (error || !lineItems) throw error;
+
+      const itemsToInsert = lineItems.map((item: any) => ({
+        ocr_item_id: item.id,
+        ocr_mapping_id: invoiceMapping.id,
+        source_file: ocrRequest?.file_name ?? "",
+        invoice_date: formData.invoice_date,
+        supplier_name: formData.supplier_name,
+        supplier_vat: formData.supplier_vat,
+        item_index: item.item_index,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_price: item.total_price,
+        tax_rate: item.tax_rate,
+        comment: formData.comment ?? null,
+      }));
+
+      const { error: insertError } = await supabase
+        .from("inventory_items")
+        .insert(itemsToInsert);
+
+      if (insertError) throw insertError;
+
+      await supabase
+        .from("ocr_invoice_mappings")
+        .update({ status: "inventory_created" })
+        .eq("id", invoiceMapping.id);
+
+      toast({
+        title: "Inventar übernommen",
+        description: "Die OCR-Positionen wurden ins Inventar übertragen.",
+      });
+    } catch (err: any) {
+      console.error("Inventarübernahme fehlgeschlagen:", err);
+      toast({
+        title: "Fehler",
+        description: err?.message ?? "Unbekannter Fehler bei Inventarübernahme.",
+        variant: "destructive",
+      });
+    }
   };
 
   const isLoading = isLoadingRequest || isLoadingMapping;
@@ -137,33 +188,30 @@ const OcrReviewPage = () => {
     <PageLayout>
       <div className="container py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">{t("ocr.document_review")}</h1>
+          <h1 className="text-3xl font-bold">OCR Prüfung</h1>
           <div className="space-x-2">
+            {!isEditing && (
+              <Button variant="secondary" onClick={handleTransferToInventory}>
+                <Plus className="mr-2 h-4 w-4" /> In Inventar übernehmen
+              </Button>
+            )}
             {isEditing ? (
               <>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setFormData(invoiceMapping ?? {});
-                    setEditedLineItems(lineItems ?? []);
-                    setIsEditing(false);
-                  }}
-                >
-                  <X className="mr-2 h-4 w-4" /> {t("cancel")}
+                <Button variant="outline" onClick={() => {
+                  setFormData(invoiceMapping ?? {});
+                  setEditedLineItems(lineItems ?? []);
+                  setIsEditing(false);
+                }}>
+                  <X className="mr-2 h-4 w-4" /> Abbrechen
                 </Button>
                 <Button onClick={handleSubmit}>
-                  <Save className="mr-2 h-4 w-4" /> {t("save")}
+                  <Save className="mr-2 h-4 w-4" /> Speichern
                 </Button>
               </>
             ) : (
-              <>
-                <Button onClick={() => setIsEditing(true)}>
-                  <Edit className="mr-2 h-4 w-4" /> {t("edit")}
-                </Button>
-                <Button variant="secondary" onClick={() => console.log("👉 Übergabe ins Inventar")}>
-                  <PackageCheck className="mr-2 h-4 w-4" /> {t("ocr.move_to_inventory")}
-                </Button>
-              </>
+              <Button onClick={() => setIsEditing(true)}>
+                <Edit className="mr-2 h-4 w-4" /> Bearbeiten
+              </Button>
             )}
           </div>
         </div>
@@ -175,7 +223,7 @@ const OcrReviewPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
-              <CardContent className="sticky top-24">
+              <CardContent className="sticky top-24 pt-6">
                 <OcrDocumentPreview
                   filePath={invoiceMapping?.file_path ?? ""}
                   fileName={ocrRequest?.file_name ?? ""}
@@ -185,55 +233,50 @@ const OcrReviewPage = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>{t("ocr.document_details")}</CardTitle>
+                <CardTitle>Rechnungsdetails</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <h3 className="font-semibold mb-2">{t("ocr.invoice_details")}</h3>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="text-muted-foreground">{t("ocr.comment")}</div>
-                  <EditableText
-                    value={formData.comment}
-                    onChange={(val) => handleChange("comment", val)}
-                    isEditing={isEditing}
-                    placeholder={t("ocr.comment_placeholder")}
-                  />
+                  <div className="text-muted-foreground">Kommentar (optional)</div>
+                  <EditableText value={formData.comment} onChange={(val) => handleChange("comment", val)} isEditing={isEditing} />
 
-                  <div className="text-muted-foreground">{t("ocr.invoice_number")}</div>
+                  <div className="text-muted-foreground">Rechnungsnummer</div>
                   <EditableText value={formData.invoice_number} onChange={(val) => handleChange("invoice_number", val)} isEditing={isEditing} />
 
-                  <div className="text-muted-foreground">{t("ocr.invoice_date")}</div>
+                  <div className="text-muted-foreground">Rechnungsdatum</div>
                   <EditableText value={formData.invoice_date} onChange={(val) => handleChange("invoice_date", val)} isEditing={isEditing} />
 
-                  <div className="text-muted-foreground">{t("ocr.total_amount")}</div>
+                  <div className="text-muted-foreground">Gesamtbetrag</div>
                   <EditableCurrency value={formData.total_amount} onChange={(val) => handleChange("total_amount", val)} isEditing={isEditing} />
 
-                  <div className="text-muted-foreground">{t("ocr.total_tax_included")}</div>
+                  <div className="text-muted-foreground">USt. enthalten</div>
                   <EditableCurrency value={formData.total_tax} onChange={(val) => handleChange("total_tax", val)} isEditing={isEditing} />
 
-                  <div className="text-muted-foreground">{t("ocr.default_tax_rate")}</div>
+                  <div className="text-muted-foreground">USt.-Satz</div>
                   <TaxRateSelector value={formData.default_tax_rate} onChange={(val) => handleChange("default_tax_rate", val)} isEditing={isEditing} />
 
-                  <div className="text-muted-foreground">{t("ocr.supplier_name")}</div>
+                  <div className="text-muted-foreground">Lieferant</div>
                   <EditableText value={formData.supplier_name} onChange={(val) => handleChange("supplier_name", val)} isEditing={isEditing} />
 
-                  <div className="text-muted-foreground">{t("ocr.supplier_address")}</div>
+                  <div className="text-muted-foreground">Adresse</div>
                   <EditableText value={formData.supplier_address} onChange={(val) => handleChange("supplier_address", val)} isEditing={isEditing} />
 
-                  <div className="text-muted-foreground">{t("ocr.supplier_vat")}</div>
+                  <div className="text-muted-foreground">USt.-ID</div>
                   <EditableText value={formData.supplier_vat} onChange={(val) => handleChange("supplier_vat", val)} isEditing={isEditing} />
                 </div>
 
                 <Separator />
 
-                <h3 className="font-semibold mb-2">{t("ocr.invoice_items")}</h3>
+                <h3 className="font-semibold mb-2">Positionen</h3>
                 <div className="grid grid-cols-12 gap-2 text-sm font-medium mb-1">
-                  <div className="col-span-1">{t("ocr.item_index")}</div>
-                  <div className="col-span-1">{t("ocr.quantity")}</div>
-                  <div className="col-span-4">{t("ocr.description")}</div>
-                  <div className="col-span-2">{t("ocr.unit_price")}</div>
-                  <div className="col-span-2">{t("ocr.total_price")}</div>
-                  <div className="col-span-2">{t("ocr.tax_rate")}</div>
+                  <div className="col-span-1">#</div>
+                  <div className="col-span-1">Menge</div>
+                  <div className="col-span-4">Beschreibung</div>
+                  <div className="col-span-2">Einzelpreis</div>
+                  <div className="col-span-2">Gesamt</div>
+                  <div className="col-span-2">USt.</div>
                 </div>
+
                 {editedLineItems.map((item, index) => (
                   <div key={item.id} className="grid grid-cols-12 gap-2 text-sm border-b py-1 items-center">
                     <div className="col-span-1">{item.item_index ?? index + 1}</div>
