@@ -11,7 +11,6 @@ import { Loader2, Save, Check, X, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import OcrDocumentPreview from "@/components/ocr/OcrDocumentPreview";
-import { format } from "date-fns";
 import { mapOcrInvoiceMapping } from "@/lib/ocr/OcrInvoiceMappings";
 import {
   EditableText,
@@ -55,14 +54,14 @@ const OcrReviewPage = () => {
     },
   });
 
-useEffect(() => {
-  if (invoiceMapping && Object.keys(invoiceMapping).length > 0) {
-    setFormData(invoiceMapping);
-  } else if (ocrRequest?.response) {
-    const fallback = mapOcrInvoiceMapping(ocrRequest.response);
-    setFormData(fallback);
-  }
-}, [invoiceMapping, ocrRequest]);
+  useEffect(() => {
+    if (invoiceMapping && Object.keys(invoiceMapping).length > 0) {
+      setFormData(invoiceMapping);
+    } else if (ocrRequest?.response) {
+      const fallback = mapOcrInvoiceMapping(ocrRequest.response);
+      setFormData(fallback);
+    }
+  }, [invoiceMapping, ocrRequest]);
 
   const { data: lineItems = [], isLoading: isLoadingItems } = useQuery({
     queryKey: ["invoiceLineItems", invoiceMapping?.id],
@@ -82,10 +81,10 @@ useEffect(() => {
   });
 
   useEffect(() => {
-  if (lineItems.length > 0) {
-    setEditedLineItems(lineItems);
-  }
-}, [lineItems]);
+    if (lineItems.length > 0) {
+      setEditedLineItems(lineItems);
+    }
+  }, [lineItems]);
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
@@ -97,33 +96,31 @@ useEffect(() => {
     }
   };
 
-const handleLineItemChange = (index: number, field: string, value: any) => {
-  setEditedLineItems((prevItems) => {
-    const updated = [...prevItems];
-    const currentItem = { ...updated[index], [field]: value };
+  const handleLineItemChange = (index: number, field: string, value: any) => {
+    setEditedLineItems((prevItems) => {
+      const updated = [...prevItems];
+      const currentItem = { ...updated[index], [field]: value };
 
-    // Automatisch total_price neu berechnen, wenn quantity geändert wird
-    if (field === "quantity" && isEditing) {
-      const qty = parseFloat(value);
-      const unit = parseFloat(currentItem.unit_price);
-      if (!isNaN(qty) && !isNaN(unit)) {
-        currentItem.total_price = parseFloat((qty * unit).toFixed(2));
+      if (field === "quantity" && isEditing) {
+        const qty = parseFloat(value);
+        const unit = parseFloat(currentItem.unit_price);
+        if (!isNaN(qty) && !isNaN(unit)) {
+          currentItem.total_price = parseFloat((qty * unit).toFixed(2));
+        }
       }
-    }
 
-    // Optional: auch andersherum bei Änderung von unit_price
-    if (field === "unit_price" && isEditing) {
-      const qty = parseFloat(currentItem.quantity);
-      const unit = parseFloat(value);
-      if (!isNaN(qty) && !isNaN(unit)) {
-        currentItem.total_price = parseFloat((qty * unit).toFixed(2));
+      if (field === "unit_price" && isEditing) {
+        const qty = parseFloat(currentItem.quantity);
+        const unit = parseFloat(value);
+        if (!isNaN(qty) && !isNaN(unit)) {
+          currentItem.total_price = parseFloat((qty * unit).toFixed(2));
+        }
       }
-    }
 
-    updated[index] = currentItem;
-    return updated;
-  });
-};
+      updated[index] = currentItem;
+      return updated;
+    });
+  };
 
   const handleSubmit = async () => {
     if (!invoiceMapping?.id) return;
@@ -144,16 +141,15 @@ const handleLineItemChange = (index: number, field: string, value: any) => {
             {isEditing ? (
               <>
                 <Button
-  variant="outline"
-  onClick={() => {
-    // Zurücksetzen der Eingaben auf ursprüngliche Werte
-    setFormData(invoiceMapping ?? {});
-    setEditedLineItems(lineItems ?? []);
-    setIsEditing(false);
-  }}
->
-  <X className="mr-2 h-4 w-4" /> {t("cancel")}
-</Button>
+                  variant="outline"
+                  onClick={() => {
+                    setFormData(invoiceMapping ?? {});
+                    setEditedLineItems(lineItems ?? []);
+                    setIsEditing(false);
+                  }}
+                >
+                  <X className="mr-2 h-4 w-4" /> {t("cancel")}
+                </Button>
                 <Button onClick={handleSubmit}>
                   <Save className="mr-2 h-4 w-4" /> {t("save")}
                 </Button>
@@ -172,17 +168,14 @@ const handleLineItemChange = (index: number, field: string, value: any) => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-<Card>
-  <CardHeader>
-    <CardTitle>{t("ocr.document_preview")}</CardTitle>
-  </CardHeader>
-  <CardContent className="sticky top-24">
-    <OcrDocumentPreview
-      filePath={invoiceMapping?.file_path ?? ""}
-      fileName={ocrRequest?.file_name ?? ""}
-    />
-  </CardContent>
-</Card>
+            <Card>
+              <CardContent className="sticky top-24">
+                <OcrDocumentPreview
+                  filePath={invoiceMapping?.file_path ?? ""}
+                  fileName={ocrRequest?.file_name ?? ""}
+                />
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader>
@@ -191,6 +184,14 @@ const handleLineItemChange = (index: number, field: string, value: any) => {
               <CardContent className="space-y-4">
                 <h3 className="font-semibold mb-2">{t("ocr.invoice_details")}</h3>
                 <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="text-muted-foreground">{t("ocr.comment")}</div>
+                  <EditableText
+                    value={formData.comment}
+                    onChange={(val) => handleChange("comment", val)}
+                    isEditing={isEditing}
+                    placeholder={t("ocr.comment_placeholder")}
+                  />
+
                   <div className="text-muted-foreground">{t("ocr.invoice_number")}</div>
                   <EditableText value={formData.invoice_number} onChange={(val) => handleChange("invoice_number", val)} isEditing={isEditing} />
 
@@ -220,32 +221,32 @@ const handleLineItemChange = (index: number, field: string, value: any) => {
 
                 <h3 className="font-semibold mb-2">{t("ocr.invoice_items")}</h3>
                 <div className="grid grid-cols-12 gap-2 text-sm font-medium mb-1">
-  <div className="col-span-1">{t("ocr.item_index")}</div>       {/* Pos */}
-  <div className="col-span-1">{t("ocr.quantity")}</div>          {/* Qty */}
-  <div className="col-span-4">{t("ocr.description")}</div>       {/* Description – größer */}
-  <div className="col-span-2">{t("ocr.unit_price")}</div>        {/* Unit Price */}
-  <div className="col-span-2">{t("ocr.total_price")}</div>       {/* Total Price */}
-  <div className="col-span-2">{t("ocr.tax_rate")}</div>          {/* Tax Rate */}
-</div>
+                  <div className="col-span-1">{t("ocr.item_index")}</div>
+                  <div className="col-span-1">{t("ocr.quantity")}</div>
+                  <div className="col-span-4">{t("ocr.description")}</div>
+                  <div className="col-span-2">{t("ocr.unit_price")}</div>
+                  <div className="col-span-2">{t("ocr.total_price")}</div>
+                  <div className="col-span-2">{t("ocr.tax_rate")}</div>
+                </div>
                 {editedLineItems.map((item, index) => (
                   <div key={item.id} className="grid grid-cols-12 gap-2 text-sm border-b py-1 items-center">
-  <div className="col-span-1">{item.item_index ?? index + 1}</div>
-  <div className="col-span-1">
-    <EditableText value={item.quantity} onChange={(val) => handleLineItemChange(index, "quantity", val)} isEditing={isEditing} />
-  </div>
-  <div className="col-span-4">
-    <EditableText value={item.description} onChange={(val) => handleLineItemChange(index, "description", val)} isEditing={isEditing} />
-  </div>
-  <div className="col-span-2">
-    <EditableCurrency value={item.unit_price} onChange={(val) => handleLineItemChange(index, "unit_price", val)} isEditing={isEditing} />
-  </div>
-  <div className="col-span-2">
-    <EditableCurrency value={item.total_price} onChange={(val) => handleLineItemChange(index, "total_price", val)} isEditing={isEditing} />
-  </div>
-  <div className="col-span-2">
-    <TaxRateSelector value={item.tax_rate} onChange={(val) => handleLineItemChange(index, "tax_rate", val)} isEditing={isEditing} />
-  </div>
-</div>
+                    <div className="col-span-1">{item.item_index ?? index + 1}</div>
+                    <div className="col-span-1">
+                      <EditableText value={item.quantity} onChange={(val) => handleLineItemChange(index, "quantity", val)} isEditing={isEditing} />
+                    </div>
+                    <div className="col-span-4">
+                      <EditableText value={item.description} onChange={(val) => handleLineItemChange(index, "description", val)} isEditing={isEditing} />
+                    </div>
+                    <div className="col-span-2">
+                      <EditableCurrency value={item.unit_price} onChange={(val) => handleLineItemChange(index, "unit_price", val)} isEditing={isEditing} />
+                    </div>
+                    <div className="col-span-2">
+                      <EditableCurrency value={item.total_price} onChange={(val) => handleLineItemChange(index, "total_price", val)} isEditing={isEditing} />
+                    </div>
+                    <div className="col-span-2">
+                      <TaxRateSelector value={item.tax_rate} onChange={(val) => handleLineItemChange(index, "tax_rate", val)} isEditing={isEditing} />
+                    </div>
+                  </div>
                 ))}
               </CardContent>
             </Card>
