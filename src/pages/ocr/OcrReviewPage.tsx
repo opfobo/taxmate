@@ -130,7 +130,6 @@ const OcrReviewPage = () => {
 const handleSubmit = async () => {
   if (!invoiceMapping?.id) return;
 
-  // Nur erlaubte Felder speichern
   const allowedKeys = [
     "invoice_number", "invoice_date", "total_amount", "total_tax",
     "default_tax_rate", "supplier_name", "supplier_address", "supplier_vat",
@@ -138,10 +137,23 @@ const handleSubmit = async () => {
   ];
 
   const cleanFormData: Record<string, any> = {};
+
   for (const key of allowedKeys) {
-    if (formData[key] !== undefined) {
-      cleanFormData[key] = formData[key];
+    let value = formData[key];
+
+    if (typeof value === "string") {
+      value = value.trim();
+
+      if (["total_amount", "total_tax"].includes(key)) {
+        value = parseFloat(value.replace(",", "."));
+      }
+
+      if (key === "default_tax_rate" && value.endsWith("%")) {
+        value = parseInt(value.replace("%", "").trim(), 10);
+      }
     }
+
+    cleanFormData[key] = value === undefined ? null : value;
   }
 
   const { error: updateError } = await supabase
@@ -163,6 +175,7 @@ const handleSubmit = async () => {
   toast({ title: "Gespeichert", description: "Alle Änderungen wurden gespeichert." });
   setIsEditing(false);
 };
+
 
 const handleTransferToInventory = async () => {
   if (!invoiceMapping?.id || isInventorized) return;
