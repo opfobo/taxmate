@@ -125,13 +125,60 @@ const OcrReviewPage = () => {
     });
   };
 
-  const handleSubmit = async () => {
-    if (!invoiceMapping?.id) return;
-    await supabase.from("ocr_invoice_mappings").update(formData).eq("id", invoiceMapping.id);
-    await supabase.from("ocr_invoice_items").upsert(editedLineItems);
-    toast({ title: "Gespeichert", description: "Alle Änderungen wurden gespeichert." });
-    setIsEditing(false);
-  };
+const handleSubmit = async () => {
+  if (!invoiceMapping?.id) return;
+
+  // Nur explizit erlaubte Felder updaten, um 400er zu vermeiden
+  const allowedKeys = [
+    "invoice_number",
+    "invoice_date",
+    "total_amount",
+    "total_tax",
+    "default_tax_rate",
+    "supplier_name",
+    "supplier_address",
+    "supplier_vat",
+    "comment"
+  ];
+
+  const cleanedFormData: Record<string, any> = {};
+  allowedKeys.forEach((key) => {
+    if (formData[key] !== undefined) {
+      cleanedFormData[key] = formData[key];
+    }
+  });
+
+  const { error: updateError } = await supabase
+    .from("ocr_invoice_mappings")
+    .update(cleanedFormData)
+    .eq("id", invoiceMapping.id);
+
+  if (updateError) {
+    toast({
+      title: "Fehler beim Speichern",
+      description: updateError.message,
+      variant: "destructive",
+    });
+    return;
+  }
+
+  const { error: itemError } = await supabase
+    .from("ocr_invoice_items")
+    .upsert(editedLineItems);
+
+  if (itemError) {
+    toast({
+      title: "Fehler bei Positionen",
+      description: itemError.message,
+      variant: "destructive",
+    });
+    return;
+  }
+
+  toast({ title: "Gespeichert", description: "Alle Änderungen wurden erfolgreich übernommen." });
+  setIsEditing(false);
+};
+
 
   const handleTransferToInventory = async () => {
     if (!invoiceMapping?.id || isInventorized) return;
