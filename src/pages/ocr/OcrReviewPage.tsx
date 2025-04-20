@@ -125,67 +125,99 @@ const OcrReviewPage = () => {
     });
   };
 
-  const handleSubmit = async () => {
-    if (!invoiceMapping?.id) return;
-    await supabase.from("ocr_invoice_mappings").update(formData).eq("id", invoiceMapping.id);
-    await supabase.from("ocr_invoice_items").upsert(editedLineItems);
-    toast({ title: "Gespeichert", description: "Alle Änderungen wurden gespeichert." });
-    setIsEditing(false);
-  };
+  // Am Anfang der Datei bleibt alles unverändert…
 
-  const handleTransferToInventory = async () => {
-    if (!invoiceMapping?.id || isInventorized) return;
+const handleSubmit = async () => {
+  if (!invoiceMapping?.id) return;
 
-    try {
-      const { data: lineItems, error } = await supabase
-        .from("ocr_invoice_items")
-        .select("*")
-        .eq("mapping_id", invoiceMapping.id);
+  // Nur erlaubte Felder speichern
+  const allowedKeys = [
+    "invoice_number", "invoice_date", "total_amount", "total_tax",
+    "default_tax_rate", "supplier_name", "supplier_address", "supplier_vat",
+    "comment"
+  ];
 
-      if (error || !lineItems) throw error;
-
-      const itemsToInsert = lineItems.map((item: any) => ({
-        ocr_item_id: item.id,
-        ocr_mapping_id: invoiceMapping.id,
-        source_file: ocrRequest?.file_name ?? "",
-        invoice_date: formData.invoice_date,
-        supplier_name: formData.supplier_name,
-        supplier_vat: formData.supplier_vat,
-        item_index: item.item_index,
-        description: item.description,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_price: item.total_price,
-        tax_rate: item.tax_rate,
-        comment: formData.comment ?? null,
-      }));
-
-      const { error: insertError } = await supabase
-        .from("inventory_items")
-        .insert(itemsToInsert);
-
-      if (insertError) throw insertError;
-
-      await supabase
-        .from("ocr_invoice_mappings")
-        .update({ status: "inventory_created" })
-        .eq("id", invoiceMapping.id);
-
-      toast({
-        title: "Inventar übernommen",
-        description: "Die OCR-Positionen wurden ins Inventar übertragen.",
-      });
-
-      setIsInventorized(true);
-    } catch (err: any) {
-      console.error("Inventarübernahme fehlgeschlagen:", err);
-      toast({
-        title: "Fehler",
-        description: err?.message ?? "Unbekannter Fehler bei Inventarübernahme.",
-        variant: "destructive",
-      });
+  const cleanFormData: Record<string, any> = {};
+  for (const key of allowedKeys) {
+    if (formData[key] !== undefined) {
+      cleanFormData[key] = formData[key];
     }
-  };
+  }
+
+  const { error: updateError } = await supabase
+    .from("ocr_invoice_mappings")
+    .update(cleanFormData)
+    .eq("id", invoiceMapping.id);
+
+  if (updateError) {
+    toast({
+      title: "Fehler beim Speichern",
+      description: updateError.message,
+      variant: "destructive",
+    });
+    return;
+  }
+
+  await supabase.from("ocr_invoice_items").upsert(editedLineItems);
+
+  toast({ title: "Gespeichert", description: "Alle Änderungen wurden gespeichert." });
+  setIsEditing(false);
+};
+
+const handleTransferToInventory = async () => {
+  if (!invoiceMapping?.id || isInventorized) return;
+
+  try {
+    const { data: lineItems, error } = await supabase
+      .from("ocr_invoice_items")
+      .select("*")
+      .eq("mapping_id", invoiceMapping.id);
+
+    if (error || !lineItems) throw error;
+
+    const itemsToInsert = lineItems.map((item: any) => ({
+      ocr_item_id: item.id,
+      ocr_mapping_id: invoiceMapping.id,
+      source_file: ocrRequest?.file_name ?? "",
+      invoice_date: formData.invoice_date,
+      supplier_name: formData.supplier_name,
+      supplier_vat: formData.supplier_vat,
+      item_index: item.item_index,
+      description: item.description,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      total_price: item.total_price,
+      tax_rate: item.tax_rate,
+      comment: formData.comment ?? null,
+    }));
+
+    const { error: insertError } = await supabase
+      .from("inventory_items")
+      .insert(itemsToInsert);
+
+    if (insertError) throw insertError;
+
+    await supabase
+      .from("ocr_invoice_mappings")
+      .update({ status: "inventory_created" })
+      .eq("id", invoiceMapping.id);
+
+    toast({
+      title: "In Inventar übernommen",
+      description: "Die Positionen wurden ins Inventar eingetragen.",
+    });
+
+    setIsInventorized(true);
+  } catch (err: any) {
+    console.error("Fehler bei Inventarübernahme:", err);
+    toast({
+      title: "Fehler",
+      description: err?.message ?? "Unbekannter Fehler bei Inventarübernahme.",
+      variant: "destructive",
+    });
+  }
+};
+
 
   const isLoading = isLoadingRequest || isLoadingMapping;
 
@@ -195,30 +227,31 @@ const OcrReviewPage = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">OCR Prüfung</h1>
           <div className="space-x-2">
-            {!isEditing && !isInventorized && (
-              <Button variant="secondary" onClick={handleTransferToInventory}>
-                <Plus className="mr-2 h-4 w-4" /> In Inventar übernehmen
-              </Button>
-            )}
-            {isEditing ? (
-              <>
-                <Button variant="outline" onClick={() => {
-                  setFormData(invoiceMapping ?? {});
-                  setEditedLineItems(lineItems ?? []);
-                  setIsEditing(false);
-                }}>
-                  <X className="mr-2 h-4 w-4" /> Abbrechen
-                </Button>
-                <Button onClick={handleSubmit}>
-                  <Save className="mr-2 h-4 w-4" /> Speichern
-                </Button>
-              </>
-            ) : (
-              <Button onClick={() => setIsEditing(true)}>
-                <Edit className="mr-2 h-4 w-4" /> Bearbeiten
-              </Button>
-            )}
-          </div>
+  {!isEditing && !isInventorized && (
+    <Button variant="secondary" onClick={handleTransferToInventory}>
+      <Plus className="mr-2 h-4 w-4" /> In Inventar übernehmen
+    </Button>
+  )}
+  {isEditing ? (
+    <>
+      <Button variant="outline" onClick={() => {
+        setFormData(invoiceMapping ?? {});
+        setEditedLineItems(lineItems ?? []);
+        setIsEditing(false);
+      }}>
+        <X className="mr-2 h-4 w-4" /> Abbrechen
+      </Button>
+      <Button onClick={handleSubmit}>
+        <Save className="mr-2 h-4 w-4" /> Speichern
+      </Button>
+    </>
+  ) : (
+    <Button onClick={() => setIsEditing(true)}>
+      <Edit className="mr-2 h-4 w-4" /> Bearbeiten
+    </Button>
+  )}
+</div>
+
         </div>
 
         {isLoading ? (
