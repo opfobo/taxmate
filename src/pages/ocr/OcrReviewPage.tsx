@@ -26,6 +26,7 @@ const OcrReviewPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [editedLineItems, setEditedLineItems] = useState<any[]>([]);
+  const [isInventorized, setIsInventorized] = useState(false);
 
   const { data: ocrRequest, isLoading: isLoadingRequest } = useQuery({
     queryKey: ["ocrRequest", ocrRequestId],
@@ -51,6 +52,9 @@ const OcrReviewPage = () => {
         .single();
       if (error) throw error;
       return data;
+    },
+    onSuccess: (data) => {
+      if (data?.status === "inventory_created") setIsInventorized(true);
     },
   });
 
@@ -88,7 +92,6 @@ const OcrReviewPage = () => {
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
-
     if (field === "default_tax_rate") {
       setEditedLineItems((prevItems) =>
         prevItems.map((item) => ({ ...item, tax_rate: value }))
@@ -131,7 +134,7 @@ const OcrReviewPage = () => {
   };
 
   const handleTransferToInventory = async () => {
-    if (!invoiceMapping?.id) return;
+    if (!invoiceMapping?.id || isInventorized) return;
 
     try {
       const { data: lineItems, error } = await supabase
@@ -172,6 +175,8 @@ const OcrReviewPage = () => {
         title: "Inventar übernommen",
         description: "Die OCR-Positionen wurden ins Inventar übertragen.",
       });
+
+      setIsInventorized(true);
     } catch (err: any) {
       console.error("Inventarübernahme fehlgeschlagen:", err);
       toast({
@@ -190,7 +195,7 @@ const OcrReviewPage = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">OCR Prüfung</h1>
           <div className="space-x-2">
-            {!isEditing && (
+            {!isEditing && !isInventorized && (
               <Button variant="secondary" onClick={handleTransferToInventory}>
                 <Plus className="mr-2 h-4 w-4" /> In Inventar übernehmen
               </Button>
