@@ -169,6 +169,7 @@ const processOcrResult = async (result: any, requestId: string, safeFileName: st
   };
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    setDuplicateInfo(null);
     const inputElement = e.target as HTMLInputElement;
     if (!inputElement.files || inputElement.files.length === 0) return;
     const selectedFile = inputElement.files[0];
@@ -182,13 +183,6 @@ const { data: duplicates } = await supabase
   .order("created_at", { ascending: false });
 
     console.log("🔎 OCR-Duplikate gefunden:", duplicates); // ⬅️ HIER!
-
-if (duplicates && duplicates.length > 0) {
-  toast({
-    title: "Duplikat erkannt",
-    description: `Eine Datei mit identischem Namen wurde bereits verarbeitet.`,
-    variant: "warning",
-  });
 
   // ✅ Hier richtig eingebettet!
   const { data: mappings, error: mappingError } = await supabase
@@ -425,6 +419,17 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
       )}
 
       {console.log("👀 duplicateInfo Inhalt:", duplicateInfo)}
+
+      {duplicateInfo?.original_file_name &&  (
+     <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm space-y-1 mb-4">
+     <div className="font-semibold text-yellow-800">Achtung: Duplikat erkannt</div>
+     <div className="text-muted-foreground text-xs">Vergleiche bitte visuell mit der rechten Vorschau</div>
+     <div><strong>Dateiname:</strong> {duplicateInfo.original_file_name ?? "Unbekannt"}</div>
+     {duplicateInfo.supplier_name && <div><strong>Shop:</strong> {duplicateInfo.supplier_name}</div>}
+     {duplicateInfo.invoice_number && <div><strong>Rechnungsnummer:</strong> {duplicateInfo.invoice_number}</div>}
+     {duplicateInfo.invoice_date && (
+       <div><strong>Rechnungsdatum:</strong> {new Date(duplicateInfo.invoice_date).toLocaleDateString()}</div>
+     )}
 
   </div>
 )}
