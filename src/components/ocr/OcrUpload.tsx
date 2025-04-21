@@ -52,8 +52,23 @@ export const OcrUpload = ({
     if (!error) setTokens(data?.tokens || 0);
   };
 
+  const [recentOcrFiles, setRecentOcrFiles] = useState<any[]>([]);
+const [ocrFetchLimit, setOcrFetchLimit] = useState(5);
+const fetchRecentOcrFiles = async () => {
+  if (!user) return;
+  const { data, error } = await supabase
+    .from("ocr_invoice_mappings")
+    .select("file_path, invoice_number, invoice_date, status, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(ocrFetchLimit);
+
+  if (!error) setRecentOcrFiles(data || []);
+};
+
   useEffect(() => {
     fetchTokens();
+    fetchRecentOcrFiles(); // << hinzufügen
   }, [user]);
 
   const resetStates = () => {
@@ -140,6 +155,22 @@ const processOcrResult = async (result: any, requestId: string, safeFileName: st
     const inputElement = e.target as HTMLInputElement;
     if (!inputElement.files || inputElement.files.length === 0) return;
     const selectedFile = inputElement.files[0];
+    // Dateinamen-Duplikate prüfen
+const fileBaseName = selectedFile.name;
+const { data: duplicates } = await supabase
+  .from("ocr_requests")
+  .select("id, created_at")
+  .eq("user_id", user.id)
+  .ilike("file_name", `%${fileBaseName}%`);
+
+if (duplicates && duplicates.length > 0) {
+  toast({
+    title: "Ähnliche Datei erkannt",
+    description: `Eine Datei mit ähnlichem Namen wurde bereits hochgeladen (${duplicates.length}x).`,
+    variant: "warning",
+  });
+}
+
 
     resetStates();
     setIsUploading(true);
@@ -439,9 +470,39 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
       </p>
     </div>
   ) : (
-    <div className="text-sm text-muted-foreground text-center min-h-[200px] flex items-center justify-center w-full">
-      Noch keine Vorschau verfügbar
-    </div>
+<div className="w-full space-y-3">
+    <p className="text-sm font-medium text-muted-foreground">Zuletzt hochgeladene Rechnungen:</p>
+    <ul className="space-y-2">
+      {recentOcrFiles.map((entry, index) => (
+        <li
+          key={index}
+          className={`flex justify-between items-center p-2 rounded-md text-sm ${
+            entry.status === "success"
+              ? "bg-green-50 text-green-800"
+              : entry.status === "pending"
+              ? "bg-yellow-50 text-yellow-800"
+              : "bg-muted"
+          }`}
+        >
+          <div className="truncate max-w-[60%]">{entry.file_path?.split("/").pop()}</div>
+          <div className="text-xs text-right">
+            {entry.invoice_number && <div>Nr: {entry.invoice_number}</div>}
+            {entry.invoice_date && <div>{new Date(entry.invoice_date).toLocaleDateString()}</div>}
+          </div>
+        </li>
+      ))}
+    </ul>
+    {recentOcrFiles.length >= ocrFetchLimit && (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setOcrFetchLimit((prev) => prev + 5)}
+        className="text-xs"
+      >
+        Weitere anzeigen
+      </Button>
+    )}
+  </div>
   )}
 
   {previewUrl && !success && !isProcessing && (
