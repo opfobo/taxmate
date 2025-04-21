@@ -204,8 +204,6 @@ const { data: duplicates } = await supabase
   setDuplicateInfo(null);
 }
 
-}
-
     setIsUploading(true);
     setFile(selectedFile);
 
