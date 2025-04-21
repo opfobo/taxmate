@@ -193,7 +193,7 @@ if (duplicates && duplicates.length > 0) {
   // ✅ Hier richtig eingebettet!
   const { data: mappings, error: mappingError } = await supabase
     .from("ocr_invoice_mappings")
-    .select("file_path, invoice_number, invoice_date, supplier_name, ocr_request_id")
+    .select("file_path, original_file_name, invoice_number, invoice_date, supplier_name, ocr_request_id")
     .eq("user_id", user.id)
     .eq("original_file_name", selectedFile.name)
     .in("status", ["pending", "inventory_created"])
