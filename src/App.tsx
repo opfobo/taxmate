@@ -1,4 +1,3 @@
-
 import {
   BrowserRouter as Router,
   Route,
@@ -23,6 +22,9 @@ import ConsumerOcrTab from "@/components/ocr/ConsumerOcrTab";
 import OcrReviewPage from "@/pages/ocr/OcrReviewPage";
 import OcrTestPage from "@/pages/ocr/OcrTestPage";
 import OcrInvoiceReviewPage from "@/pages/ocr/OcrInvoiceReviewPage";
+
+// ✅ Hier importieren
+import { Toaster } from "@/components/ui/toaster";
 
 function App() {
   const { user, session, loading } = useAuth();
@@ -62,69 +64,31 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={
-            user ? (
-              <Navigate to="/dashboard" />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
+          element={user ? <Navigate to="/dashboard" /> : <Navigate to="/login" />}
         />
         <Route
           path="/login"
-          element={
-            !user ? (
-              <LoginPage />
-            ) : (
-              <Navigate to="/dashboard" />
-            )
-          }
+          element={!user ? <LoginPage /> : <Navigate to="/dashboard" />}
         />
         <Route
           path="/dashboard"
-          element={
-            user ? (
-              <DashboardPage />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
+          element={user ? <DashboardPage /> : <Navigate to="/login" />}
         />
         <Route
           path="/profile"
-          element={
-            user ? (
-              <ProfilePage />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
+          element={user ? <ProfilePage /> : <Navigate to="/login" />}
         />
         <Route
           path="/dashboard/ocr/review/:ocrRequestId"
-          element={
-            user ? <OcrReviewPage /> : <Navigate to="/login" />
-          }
+          element={user ? <OcrReviewPage /> : <Navigate to="/login" />}
         />
         <Route
           path="/settings"
-          element={
-            user ? (
-              <SettingsPage />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
+          element={user ? <SettingsPage /> : <Navigate to="/login" />}
         />
         <Route
           path="/dashboard/transactions"
-          element={
-            user ? (
-              <TransactionsPage />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
+          element={user ? <TransactionsPage /> : <Navigate to="/login" />}
         />
         <Route
           path="/dashboard/ocr/test"
@@ -132,34 +96,25 @@ function App() {
         />
         <Route
           path="/dashboard/orders"
-          element={
-            user ? (
-              <OrdersLayout />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
+          element={user ? <OrdersLayout /> : <Navigate to="/login" />}
         >
           <Route path="sales" element={<SalesOrdersPage />} />
           <Route path="purchases" element={<PurchasesOrdersPage />} />
           <Route path="consumers" element={<ConsumersPage />} />
         </Route>
-        
+
         <Route
           path="/dashboard/ocr"
-          element={
-            user ? (
-              <OcrLayout />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
+          element={user ? <OcrLayout /> : <Navigate to="/login" />}
         >
           <Route path="" element={<InvoiceOcrTab />} />
           <Route path="invoice" element={<InvoiceOcrTab />} />
           <Route path="consumer" element={<ConsumerOcrTab />} />
         </Route>
       </Routes>
+
+      {/* ✅ Globaler Toast-Provider ganz am Ende */}
+      <Toaster />
     </Router>
   );
 }
