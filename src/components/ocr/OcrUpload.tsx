@@ -189,25 +189,26 @@ if (duplicates && duplicates.length > 0) {
     variant: "warning",
   });
 
-  const { data: mappings, error: mappingError } = await supabase
-    .from("ocr_invoice_mappings")
-    .select("file_path, invoice_number, invoice_date, supplier_name, ocr_request_id")
-    .eq("ocr_request_id", duplicates[0].id)
-    .limit(1);
+// Neue Duplikatsprüfung direkt auf ocr_invoice_mappings
+const { data: mappings, error: mappingError } = await supabase
+  .from("ocr_invoice_mappings")
+  .select("file_path, invoice_number, invoice_date, supplier_name, ocr_request_id")
+  .eq("user_id", user.id)
+  .eq("original_file_name", selectedFile.name)
+  .in("status", ["pending", "inventory_created"])
+  .order("created_at", { ascending: false })
+  .limit(1); // oder mehrere wenn du eine Liste anzeigen willst
 
-  if (mappingError) {
-    console.warn("❌ Fehler beim Laden der Mapping-Daten:", mappingError.message);
-  }
-  console.log("📎 Duplikat-Mapping geladen:", mappings); // ⬅️ HIER!
-
-  if (mappings?.length > 0) {
-    setDuplicateInfo(mappings[0]); // ✅ Zeige links Vergleich an
-  }
-
-} else {
-      setDuplicateInfo(null); // ❗️damit bei späteren Uploads das Panel verschwindet
+if (mappingError) {
+  console.warn("❌ Fehler beim Laden der Mapping-Daten:", mappingError.message);
 }
 
+if (mappings?.length > 0) {
+  console.log("📎 Duplikat-Mapping geladen:", mappings);
+  setDuplicateInfo(mappings[0]);
+} else {
+  setDuplicateInfo(null);
+}
 
     setIsUploading(true);
     setFile(selectedFile);
