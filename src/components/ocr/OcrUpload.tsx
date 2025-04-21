@@ -25,20 +25,26 @@ const OcrUpload = ({ onComplete, mode = "invoice" }: OcrUploadProps) => {
   const abortController = useRef<AbortController | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: recentFiles = [] } = useQuery({
-    queryKey: ["recent-files", mode],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("ocr_requests")
-        .select("*")
-        .eq("type", mode)
-        .order("created_at", { ascending: false })
-        .limit(5);
+interface OcrRequest {
+  id: string;
+  filename?: string;
+  // weitere Felder falls nötig
+}
 
-      if (error) throw error;
-      return data;
-    },
-  });
+const { data: recentFiles = [] } = useQuery<OcrRequest[]>({
+  queryKey: ["recent-files", mode],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("ocr_requests")
+      .select("*")
+      .eq("type", mode)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    if (error) throw error;
+    return data as OcrRequest[];
+  },
+});
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
