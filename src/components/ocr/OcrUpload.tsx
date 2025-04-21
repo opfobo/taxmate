@@ -85,6 +85,21 @@ const fetchRecentOcrFiles = async () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+        const getStatusClass = (status: string) => {
+  switch (status) {
+    case "inventory_created":
+      return "bg-green-50 hover:bg-green-100 text-green-800";
+    case "pending":
+      return "bg-yellow-50 hover:bg-yellow-100 text-yellow-800";
+    case "success":
+      return "bg-yellow-50 hover:bg-yellow-100 text-yellow-800";
+    case "error":
+      return "bg-red-50 hover:bg-red-100 text-red-800";
+    default:
+      return "bg-red-50 hover:bg-red-100 text-red-800";
+  }
+};
+
 
 const processOcrResult = async (result: any, requestId: string, safeFileName: string) => {
   if (!user) return;
@@ -320,20 +335,7 @@ if (selectedFile.type.startsWith("image/")) {
       const formData = new FormData();
       formData.append("document", file);
 
-      const getStatusClass = (status: string) => {
-  switch (status) {
-    case "inventory_created":
-      return "bg-green-50 hover:bg-green-100 text-green-800";
-    case "pending":
-      return "bg-yellow-50 hover:bg-yellow-100 text-yellow-800";
-    case "success":
-      return "bg-yellow-50 hover:bg-yellow-100 text-yellow-800";
-    case "error":
-      return "bg-red-50 hover:bg-red-100 text-red-800";
-    default:
-      return "bg-red-50 hover:bg-red-100 text-red-800";
-  }
-};
+
       
 const mindeeKey = await getApiKey("mindee");
 //console.log("🔍 API-Key geladen:", mindeeKey);
