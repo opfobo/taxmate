@@ -418,6 +418,19 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
         </div>
       )}
 
+      {duplicateInfo && (
+  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm space-y-1 mb-4">
+    <div className="font-semibold text-yellow-800">Achtung: Duplikat erkannt</div>
+    <div className="text-muted-foreground text-xs">Vergleiche bitte visuell mit der rechten Vorschau</div>
+    <div><strong>Dateiname:</strong> {duplicateInfo.file_path?.split("/").pop()}</div>
+    {duplicateInfo.supplier_name && <div><strong>Shop:</strong> {duplicateInfo.supplier_name}</div>}
+    {duplicateInfo.invoice_number && <div><strong>Rechnungsnummer:</strong> {duplicateInfo.invoice_number}</div>}
+    {duplicateInfo.invoice_date && (
+      <div><strong>Rechnungsdatum:</strong> {new Date(duplicateInfo.invoice_date).toLocaleDateString()}</div>
+    )}
+  </div>
+)}
+
       {!isUploading && !isProcessing && !success && (
         <div className="w-full">
           <Input
@@ -436,16 +449,7 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
   Lade hier deine Rechnung hoch, um automatisch alle steuerrelevanten Felder per OCR zu extrahieren.
   Du kannst PDF- oder Bilddateien hochladen. Die Erkennung erfolgt durch Mindee + Nachbearbeitung.
 </p>
-          {duplicateInfo && (
-  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm space-y-1">
-    <div className="font-semibold text-yellow-800">Achtung: Duplikat erkannt</div>
-    <div className="text-muted-foreground text-xs">Vergleiche bitte visuell mit der rechten Vorschau</div>
-    <div><strong>Dateiname:</strong> {duplicateInfo.file_path?.split("/").pop()}</div>
-    {duplicateInfo.supplier_name && <div><strong>Shop:</strong> {duplicateInfo.supplier_name}</div>}
-    {duplicateInfo.invoice_number && <div><strong>Rechnungsnummer:</strong> {duplicateInfo.invoice_number}</div>}
-    {duplicateInfo.invoice_date && (
-      <div><strong>Rechnungsdatum:</strong> {new Date(duplicateInfo.invoice_date).toLocaleDateString()}</div>
-    )}
+          
   </div>
 )}
 
