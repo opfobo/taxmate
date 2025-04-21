@@ -172,35 +172,47 @@ const processOcrResult = async (result: any, requestId: string, safeFileName: st
     const inputElement = e.target as HTMLInputElement;
     if (!inputElement.files || inputElement.files.length === 0) return;
     const selectedFile = inputElement.files[0];
-    setIsUploading(true);
 
-// Duplikatsprüfung nur anhand der MAPPINGS-Tabelle
-const { data: mappings, error: mappingError } = await supabase
-  .from("ocr_invoice_mappings")
-  .select("file_path, original_file_name, invoice_number, invoice_date, supplier_name, ocr_request_id")
+// Duplikatsprüfung
+const { data: duplicates } = await supabase
+  .from("ocr_requests")
+  .select("id, file_name, original_file_name, created_at")
   .eq("user_id", user.id)
   .eq("original_file_name", selectedFile.name)
-  .in("status", ["pending", "inventory_created"])
-  .order("created_at", { ascending: false })
-  .limit(1);
+  .order("created_at", { ascending: false });
 
-if (mappingError) {
-  console.warn("❌ Fehler beim Laden der Mapping-Daten:", mappingError.message);
-}
+    console.log("🔎 OCR-Duplikate gefunden:", duplicates); // ⬅️ HIER!
 
-if (Array.isArray(mappings) && mappings.length > 0 && mappings[0]?.original_file_name) {
-  setDuplicateInfo(mappings[0]);
-
+if (duplicates && duplicates.length > 0) {
   toast({
     title: "Duplikat erkannt",
     description: `Eine Datei mit identischem Namen wurde bereits verarbeitet.`,
     variant: "warning",
   });
-} else {
-  setDuplicateInfo(null);
-}
+
+  // ✅ Hier richtig eingebettet!
+  const { data: mappings, error: mappingError } = await supabase
+    .from("ocr_invoice_mappings")
+    .select("file_path, original_file_name, invoice_number, invoice_date, supplier_name, ocr_request_id")
+    .eq("user_id", user.id)
+    .eq("original_file_name", selectedFile.name)
+    .in("status", ["pending", "inventory_created"])
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (mappingError) {
+    console.warn("❌ Fehler beim Laden der Mapping-Daten:", mappingError.message);
+  }
+
+  if (mappings?.length > 0) {
+    console.log("📎 Duplikat-Mapping geladen:", mappings);
+    setDuplicateInfo(mappings[0]);
+  } else {
+    setDuplicateInfo(null);
+  }
 }
 
+    setIsUploading(true);
     setFile(selectedFile);
 
     if (!user) {
@@ -414,7 +426,7 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
 
       {console.log("👀 duplicateInfo Inhalt:", duplicateInfo)}
 
-      {duplicateInfo?.original_file_name &&  (
+      {duplicateInfo && (
   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm space-y-1 mb-4">
     <div className="font-semibold text-yellow-800">Achtung: Duplikat erkannt</div>
     <div className="text-muted-foreground text-xs">Vergleiche bitte visuell mit der rechten Vorschau</div>
