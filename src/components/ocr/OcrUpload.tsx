@@ -116,6 +116,7 @@ const processOcrResult = async (result: any, requestId: string, safeFileName: st
         ocr_request_id: requestId,
         ...mappedHeader,
         file_path: `${user.id}/${safeFileName}`,
+        original_file_name: fileName, // ✅ HINZUGEFÜGT
         status: "pending",
       })
       .select("id")
