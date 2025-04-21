@@ -1,4 +1,3 @@
-
 // src/lib/gpt/prompts/address.ts
 
 export const SYSTEM_PROMPT_ADDRESS = `
@@ -27,13 +26,3 @@ If characters are not translatable (e.g., soft sign "ь", hard sign "ъ", or oth
 Do not include question marks, emojis, or formatting symbols in the output.
 Keep the formatting clean, compact, and standardized.
 `;
-
-// Add the getAddressPrompt function that was missing
-export const getAddressPrompt = (addressText: string): string => {
-  return `${SYSTEM_PROMPT_ADDRESS}
-
-Parse the following address:
-"${addressText}"
-
-Respond with a structured JSON object only.`;
-};

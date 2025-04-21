@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -55,15 +54,14 @@ const OcrReviewPage = () => {
       if (error) throw error;
       return data;
     },
+    onSuccess: (data) => {
+      if (data?.status === "inventory_created") setIsInventorized(true);
+    },
   });
 
-  // Effect to update state when invoice mapping data changes
   useEffect(() => {
     if (invoiceMapping && Object.keys(invoiceMapping).length > 0) {
       setFormData(invoiceMapping);
-      if (invoiceMapping?.status === "inventory_created") {
-        setIsInventorized(true);
-      }
     } else if (ocrRequest?.response) {
       const fallback = mapOcrInvoiceMapping(ocrRequest.response);
       setFormData(fallback);
@@ -82,9 +80,11 @@ const OcrReviewPage = () => {
       return data;
     },
     enabled: !!invoiceMapping?.id,
+    onSuccess: (data) => {
+      setEditedLineItems(data);
+    },
   });
 
-  // Effect to update line items state when data changes
   useEffect(() => {
     if (lineItems.length > 0) {
       setEditedLineItems(lineItems);

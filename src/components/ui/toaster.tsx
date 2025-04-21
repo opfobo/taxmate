@@ -1,4 +1,3 @@
-
 import { useToast } from "@/hooks/use-toast"
 import {
   Toast,
@@ -16,7 +15,7 @@ export function Toaster() {
   return (
     <ToastProvider duration={3000}>
       {toasts.map(function ({ id, title, description, action, variant = "default", ...props }) {
-        // Dynamically set classes and icons based on type
+        // Dynamisch Klassen und Icons je nach Typ setzen
         let style = {
           className: "bg-teal-50 border-l-4 border-teal-400 text-teal-900",
           Icon: CheckCircle,
