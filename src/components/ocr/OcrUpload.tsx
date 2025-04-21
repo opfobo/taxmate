@@ -180,6 +180,8 @@ const { data: duplicates } = await supabase
   .eq("original_file_name", selectedFile.name)
   .order("created_at", { ascending: false });
 
+    console.log("🔎 OCR-Duplikate gefunden:", duplicates); // ⬅️ HIER!
+
 if (duplicates && duplicates.length > 0) {
   toast({
     title: "Duplikat erkannt",
@@ -196,6 +198,7 @@ if (duplicates && duplicates.length > 0) {
   if (mappingError) {
     console.warn("❌ Fehler beim Laden der Mapping-Daten:", mappingError.message);
   }
+  console.log("📎 Duplikat-Mapping geladen:", mappings); // ⬅️ HIER!
 
   if (mappings?.length > 0) {
     setDuplicateInfo(mappings[0]); // ✅ Zeige links Vergleich an
@@ -417,6 +420,8 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
           <span className={tokens < 3 ? "text-amber-500 font-medium" : ""}>{tokens}</span>
         </div>
       )}
+
+      {console.log("👀 duplicateInfo Inhalt:", duplicateInfo)}
 
       {duplicateInfo && (
   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm space-y-1 mb-4">
