@@ -174,18 +174,27 @@ const processOcrResult = async (result: any, requestId: string, safeFileName: st
 
 // Duplikatsprüfung
 const { data: duplicates } = await supabase
-  .from("ocr_invoice_mappings")
-  .select("file_path, invoice_number, invoice_date, supplier_name, ocr_request_id")
+  .from("ocr_requests")
+  .select("id, file_name, original_file_name, created_at")
   .eq("user_id", user.id)
-  .like("file_path", `%${selectedFile.name}`); // Dateiname am Ende prüfen
+  .eq("original_file_name", selectedFile.name)
+  .order("created_at", { ascending: false });
 
 if (duplicates && duplicates.length > 0) {
   toast({
     title: "Duplikat erkannt",
-    description: `Eine ähnliche Datei wurde bereits verarbeitet.`,
+    description: `Eine Datei mit identischem Namen wurde bereits verarbeitet.`,
     variant: "warning",
   });
-  setDuplicateInfo(duplicates[0]);
+
+  // OPTIONAL: Hole zugehörige Mapping-Daten aus ocr_invoice_mappings
+  const { data: mapping } = await supabase
+    .from("ocr_invoice_mappings")
+    .select("file_path, invoice_number, invoice_date, supplier_name, ocr_request_id")
+    .eq("ocr_request_id", duplicates[0].id)
+    .single();
+
+  setDuplicateInfo(mapping || null);
 } else {
   setDuplicateInfo(null);
 }
