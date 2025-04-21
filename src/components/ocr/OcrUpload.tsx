@@ -189,25 +189,26 @@ if (duplicates && duplicates.length > 0) {
     variant: "warning",
   });
 
-// Neue Duplikatsprüfung direkt auf ocr_invoice_mappings
-const { data: mappings, error: mappingError } = await supabase
-  .from("ocr_invoice_mappings")
-  .select("file_path, invoice_number, invoice_date, supplier_name, ocr_request_id")
-  .eq("user_id", user.id)
-  .eq("original_file_name", selectedFile.name)
-  .in("status", ["pending", "inventory_created"])
-  .order("created_at", { ascending: false })
-  .limit(1); // oder mehrere wenn du eine Liste anzeigen willst
+  // ✅ Hier richtig eingebettet!
+  const { data: mappings, error: mappingError } = await supabase
+    .from("ocr_invoice_mappings")
+    .select("file_path, invoice_number, invoice_date, supplier_name, ocr_request_id")
+    .eq("user_id", user.id)
+    .eq("original_file_name", selectedFile.name)
+    .in("status", ["pending", "inventory_created"])
+    .order("created_at", { ascending: false })
+    .limit(1);
 
-if (mappingError) {
-  console.warn("❌ Fehler beim Laden der Mapping-Daten:", mappingError.message);
-}
+  if (mappingError) {
+    console.warn("❌ Fehler beim Laden der Mapping-Daten:", mappingError.message);
+  }
 
-if (mappings?.length > 0) {
-  console.log("📎 Duplikat-Mapping geladen:", mappings);
-  setDuplicateInfo(mappings[0]);
-} else {
-  setDuplicateInfo(null);
+  if (mappings?.length > 0) {
+    console.log("📎 Duplikat-Mapping geladen:", mappings);
+    setDuplicateInfo(mappings[0]);
+  } else {
+    setDuplicateInfo(null);
+  }
 }
 
     setIsUploading(true);
@@ -617,5 +618,5 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
     </div>
   );
 };
-
+  
 export default OcrUpload;
