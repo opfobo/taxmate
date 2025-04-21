@@ -41,6 +41,7 @@ export const OcrUpload = ({
   const [safeFileName, setSafeFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
+  const [duplicateInfo, setDuplicateInfo] = useState<any | null>(null);
 
   const fetchTokens = async () => {
     if (!user) return;
@@ -173,19 +174,21 @@ const processOcrResult = async (result: any, requestId: string, safeFileName: st
     // Dateinamen-Duplikate prüfen
 const fileBaseName = selectedFile.name;
 const { data: duplicates } = await supabase
-  .from("ocr_requests")
-  .select("id, created_at")
+  .from("ocr_invoice_mappings")
+  .select("file_path, invoice_number, invoice_date, supplier_name, ocr_request_id")
   .eq("user_id", user.id)
-  .eq("original_file_name", selectedFile.name); // exakte Prüfung auf ursprünglichen Namen
+  .like("file_path", `%${selectedFile.name}`) // Dateiname am Ende prüfen
 
 if (duplicates && duplicates.length > 0) {
   toast({
-    title: "Ähnliche Datei erkannt",
-    description: `Eine Datei mit ähnlichem Namen wurde bereits hochgeladen (${duplicates.length}x).`,
+    title: "Duplikat erkannt",
+    description: `Eine ähnliche Datei wurde bereits verarbeitet.`,
     variant: "warning",
   });
+  setDuplicateInfo(duplicates[0]); // Nur den ersten Treffer anzeigen
+} else {
+  setDuplicateInfo(null);
 }
-
 
     resetStates();
     setIsUploading(true);
@@ -418,6 +421,19 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
   Lade hier deine Rechnung hoch, um automatisch alle steuerrelevanten Felder per OCR zu extrahieren.
   Du kannst PDF- oder Bilddateien hochladen. Die Erkennung erfolgt durch Mindee + Nachbearbeitung.
 </p>
+          {duplicateInfo && (
+  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm space-y-1">
+    <div className="font-semibold text-yellow-800">Achtung: Duplikat erkannt</div>
+    <div className="text-muted-foreground text-xs">Vergleiche bitte visuell mit der rechten Vorschau</div>
+    <div><strong>Dateiname:</strong> {duplicateInfo.file_path?.split("/").pop()}</div>
+    {duplicateInfo.supplier_name && <div><strong>Shop:</strong> {duplicateInfo.supplier_name}</div>}
+    {duplicateInfo.invoice_number && <div><strong>Rechnungsnummer:</strong> {duplicateInfo.invoice_number}</div>}
+    {duplicateInfo.invoice_date && (
+      <div><strong>Rechnungsdatum:</strong> {new Date(duplicateInfo.invoice_date).toLocaleDateString()}</div>
+    )}
+  </div>
+)}
+
         </div>
       )}
 
