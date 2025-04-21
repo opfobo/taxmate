@@ -23,7 +23,7 @@ export interface OcrUploadProps {
 
 export const OcrUpload = ({
   onOcrResult,
-  label = "Upload document for OCR",
+  label = t("ocr_upload.label"),
   mimeTypes = ["application/pdf", "image/jpeg", "image/png"],
   fileSizeLimitMB = 10,
 }: OcrUploadProps) => {
@@ -209,13 +209,13 @@ const { data: duplicates } = await supabase
 
     if (!user) {
       setError("You must be logged in.");
-      toast({ title: "Login required", variant: "destructive" });
+      toast({ title: t("ocr_upload.login_required"), variant: "destructive" });
       return;
     }
 
     if (tokens !== null && tokens < 1) {
       setError("No tokens left.");
-      toast({ title: "OCR quota exceeded", variant: "destructive" });
+      toast({ title: t("ocr_upload.quota_exceeded"), variant: "destructive" });
       return;
     }
 
@@ -225,12 +225,12 @@ const { data: duplicates } = await supabase
         : selectedFile.type;
 
     if (!mimeTypes.includes(normalizedType)) {
-      setError("Invalid file type");
+      setError(t("ocr_upload.invalid_filetype"));
       return;
     }
 
     if (selectedFile.size / (1024 * 1024) > fileSizeLimitMB) {
-      setError("File too large");
+      setError(t("ocr_upload.file_too_large"));
       return;
     }
 
@@ -324,7 +324,7 @@ if (selectedFile.type.startsWith("image/")) {
       .single();
 
     if (requestError) {
-      setError("Failed to create OCR request");
+      setError(t("ocr_upload.create_request_failed"));
       return;
     }
 
@@ -339,7 +339,7 @@ if (selectedFile.type.startsWith("image/")) {
       .upload(securePath, selectedFile, { upsert: true });
 
     if (uploadError) {
-      setError("File upload failed");
+      setError(t("ocr_upload.upload_failed"));
     }
   };
 
@@ -360,8 +360,8 @@ if (!mindeeKey) {
   console.warn("⚠️ getApiKey hat keinen Key zurückgegeben");
   setError("Kein gültiger Mindee-API-Key gefunden.");
   toast({
-    title: "Fehlender API-Key",
-    description: "Bitte überprüfe die Konfiguration für OCR.",
+    title: t("ocr_upload.api_key_missing_title"),
+    description: t("ocr_upload.api_key_missing_desc"),
     variant: "destructive",
   });
   return;
@@ -394,11 +394,11 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
 
       onOcrResult(result);
       setSuccess(true);
-      toast({ title: "OCR completed", description: "Document processed successfully." });
+      toast({ title: t("ocr_upload.success_title"), description: t("ocr_upload.success_desc") });
       navigate(`/dashboard/ocr/review/${requestId}`);
     } catch (err: any) {
       setError(err.message);
-      toast({ title: "OCR failed", description: err.message, variant: "destructive" });
+      toast({ title: t("ocr_upload.failed_title"), description: err.message, variant: "destructive" });
     } finally {
       setIsProcessing(false);
     }
@@ -425,7 +425,7 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
      {duplicateInfo.supplier_name && <div><strong>Shop:</strong> {duplicateInfo.supplier_name}</div>}
      {duplicateInfo.invoice_number && <div><strong>Rechnungsnummer:</strong> {duplicateInfo.invoice_number}</div>}
      {duplicateInfo.invoice_date && (<div><strong>Rechnungsdatum:</strong> {new Date(duplicateInfo.invoice_date).toLocaleDateString()}</div>)}
-     <div><strong>Dateiname:</strong> {duplicateInfo.original_file_name ?? "Unbekannt"}</div>
+     <div><strong>Dateiname:</strong> {duplicateInfo.original_file_name ?? t("ocr_upload.unknown")}</div>
 
   </div>
 )}
