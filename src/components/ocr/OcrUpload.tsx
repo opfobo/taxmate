@@ -161,7 +161,7 @@ const { data: duplicates } = await supabase
   .from("ocr_requests")
   .select("id, created_at")
   .eq("user_id", user.id)
-  .ilike("file_name", `%${fileBaseName}%`);
+  .eq("original_file_name", selectedFile.name); // exakte Prüfung auf ursprünglichen Namen
 
 if (duplicates && duplicates.length > 0) {
   toast({
@@ -286,6 +286,7 @@ if (selectedFile.type.startsWith("image/")) {
       .insert({
         user_id: user.id,
         file_name: generatedSafeFileName,
+        original_file_name: selectedFile.name, // << NEU HINZUGEFÜGT
         status: 'pending'
       })
       .select('id')
