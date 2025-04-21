@@ -188,16 +188,19 @@ if (duplicates && duplicates.length > 0) {
   });
 
   // OPTIONAL: Hole zugehörige Mapping-Daten aus ocr_invoice_mappings
-  const { data: mapping } = await supabase
-    .from("ocr_invoice_mappings")
-    .select("file_path, invoice_number, invoice_date, supplier_name, ocr_request_id")
-    .eq("ocr_request_id", duplicates[0].id)
-    .single();
+  const { data: mappings, error: mappingError } = await supabase
+  .from("ocr_invoice_mappings")
+  .select("file_path, invoice_number, invoice_date, supplier_name, ocr_request_id")
+  .eq("ocr_request_id", duplicates[0].id)
+  .limit(1);
 
-  setDuplicateInfo(mapping || null);
+if (mappingError) console.warn("❌ Fehler beim Laden der Mapping-Daten:", mappingError.message);
+if (mappings && mappings.length > 0) {
+  setDuplicateInfo(mappings[0]);
 } else {
   setDuplicateInfo(null);
 }
+
 
 resetStates(); // ✅ Jetzt OK, da duplicateInfo schon gesetzt ist
 
