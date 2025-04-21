@@ -52,13 +52,11 @@ const OcrTestPage = () => {
           </CardHeader>
           <CardContent>
             <OcrUpload
-              onOcrResult={(result) => {
+              onComplete={(result) => {
                 console.log("OCR result:", result);
                 setOcrResult(result);
               }}
-              label="Upload invoice or document for OCR processing"
-              mimeTypes={["application/pdf", "image/jpeg", "image/png"]}
-              fileSizeLimitMB={5}
+              mode="invoice"
             />
           </CardContent>
         </Card>

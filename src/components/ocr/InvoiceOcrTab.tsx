@@ -10,12 +10,12 @@ const InvoiceOcrTab = () => {
   return (
     <div className="space-y-4">
       <OcrUpload 
-        onOcrResult={(result) => {
+        onComplete={(result) => {
           if (result?.id) {
             navigate(`/dashboard/ocr/review/${result.id}`);
           }
         }}
-        label={t("ocr.invoice_placeholder_title")}
+        mode="invoice"
       />
     </div>
   );
