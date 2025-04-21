@@ -66,7 +66,7 @@ const OcrUpload = ({ onComplete, mode = "invoice" }: OcrUploadProps) => {
         toast({
           title: t('ocr_upload.duplicate_detected'),
           description: t('ocr_upload.duplicate_warning'),
-          variant: "destructive", // Changed from "warning" to "destructive" to match allowed variants
+          variant: "destructive", // Using "destructive" instead of "warning"
         });
       } else {
         toast({
