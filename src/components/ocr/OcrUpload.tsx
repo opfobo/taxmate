@@ -204,12 +204,12 @@ if (duplicates && duplicates.length > 0) {
     console.warn("❌ Fehler beim Laden der Mapping-Daten:", mappingError.message);
   }
 
-  if (mappings?.length > 0) {
-    console.log("📎 Duplikat-Mapping geladen:", mappings);
-    setDuplicateInfo(mappings[0]);
-  } else {
-    setDuplicateInfo(null);
-  }
+  if (Array.isArray(mappings) && mappings.length > 0 && mappings[0]?.original_file_name) {
+  setDuplicateInfo(mappings[0]);
+} else {
+  setDuplicateInfo(null);
+}
+
 }
 
     setIsUploading(true);
@@ -426,7 +426,7 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
 
       {console.log("👀 duplicateInfo Inhalt:", duplicateInfo)}
 
-      {duplicateInfo && (
+      {duplicateInfo?.original_file_name &&  (
   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm space-y-1 mb-4">
     <div className="font-semibold text-yellow-800">Achtung: Duplikat erkannt</div>
     <div className="text-muted-foreground text-xs">Vergleiche bitte visuell mit der rechten Vorschau</div>
