@@ -1,3 +1,4 @@
+// Zeilen 1–68
 import { useState, useRef, ChangeEvent, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +10,8 @@ import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/context/AuthContext";
 import { PDF_PREVIEW_BASE_URL } from "@/constants/config";
 import { getApiKey } from "@/lib/supabase/helpers/getApiKey";
-import { mapOcrInvoiceMapping, mapOcrInvoiceLineItems} from "@/lib/ocr/OcrInvoiceMappings";
-
+import { mapOcrInvoiceMapping, mapOcrInvoiceLineItems } from "@/lib/ocr/OcrInvoiceMappings";
+import { useTranslation } from "@/hooks/useTranslation"; // < NEU
 
 const MINDEE_API_URL = "https://api.mindee.net/v1/products/mindee/invoices/v4/predict";
 
@@ -23,10 +24,11 @@ export interface OcrUploadProps {
 
 export const OcrUpload = ({
   onOcrResult,
-  label = "Upload document for OCR",
+  label,
   mimeTypes = ["application/pdf", "image/jpeg", "image/png"],
   fileSizeLimitMB = 10,
 }: OcrUploadProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -53,23 +55,32 @@ export const OcrUpload = ({
     if (!error) setTokens(data?.tokens || 0);
   };
 
-  const [recentOcrFiles, setRecentOcrFiles] = useState<any[]>([]);
-const [ocrFetchLimit, setOcrFetchLimit] = useState(5);
-const fetchRecentOcrFiles = async () => {
-  if (!user) return;
-  const { data, error } = await supabase
-    .from("ocr_invoice_mappings")
-    .select("file_path, invoice_number, invoice_date, supplier_name, status, created_at, ocr_request_id")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(ocrFetchLimit);
+    const fetchTokens = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("ocr_tokens")
+      .select("tokens")
+      .eq("user_id", user.id)
+      .single();
+    if (!error) setTokens(data?.tokens || 0);
+  };
 
-  if (!error) setRecentOcrFiles(data || []);
-};
+  const [recentOcrFiles, setRecentOcrFiles] = useState<any[]>([]);
+  const [ocrFetchLimit, setOcrFetchLimit] = useState(5);
+  const fetchRecentOcrFiles = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("ocr_invoice_mappings")
+      .select("file_path, invoice_number, invoice_date, supplier_name, status, created_at, ocr_request_id")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(ocrFetchLimit);
+    if (!error) setRecentOcrFiles(data || []);
+  };
 
   useEffect(() => {
     fetchTokens();
-    fetchRecentOcrFiles(); // << hinzufügen
+    fetchRecentOcrFiles();
   }, [user]);
 
   const resetStates = () => {
@@ -86,68 +97,63 @@ const fetchRecentOcrFiles = async () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-        const getStatusClass = (status: string) => {
-  switch (status) {
-    case "inventory_created":
-      return "bg-green-50 hover:bg-green-100 text-green-800";
-    case "pending":
-      return "bg-yellow-50 hover:bg-yellow-100 text-yellow-800";
-    case "success":
-      return "bg-yellow-50 hover:bg-yellow-100 text-yellow-800";
-    case "error":
-      return "bg-red-50 hover:bg-red-100 text-red-800";
-    default:
-      return "bg-red-50 hover:bg-red-100 text-red-800";
-  }
-};
-
-
-const processOcrResult = async (result: any, requestId: string, safeFileName: string) => {
-  if (!user) return;
-  try {
-    const mappedHeader = mapOcrInvoiceMapping(result);
-    const mappedItems = mapOcrInvoiceLineItems(result);
-
-    // 1. Insert Mapping
-    const { data: mappingData, error: mappingError } = await supabase
-      .from("ocr_invoice_mappings")
-      .insert({
-        user_id: user.id,
-        ocr_request_id: requestId,
-        ...mappedHeader,
-        file_path: `${user.id}/${safeFileName}`,
-        original_file_name: fileName, // ✅ HINZUGEFÜGT
-        status: "pending",
-      })
-      .select("id")
-      .single();
-
-    if (mappingError) throw new Error(`Failed to create invoice mapping: ${mappingError.message}`);
-
-    // 2. Insert Items mit Referenz
-    if (mappedItems?.length && mappingData?.id) {
-      const itemsWithMapping = mappedItems.map((item) => ({
-        ...item,
-        mapping_id: mappingData.id,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from("ocr_invoice_items")
-        .insert(itemsWithMapping);
-
-      if (itemsError) {
-        console.warn("❌ Fehler beim Speichern der line items:", itemsError.message);
-        // Optional: Mapping zurückrollen?
-      }
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case "inventory_created":
+        return "bg-green-50 hover:bg-green-100 text-green-800";
+      case "pending":
+      case "success":
+        return "bg-yellow-50 hover:bg-yellow-100 text-yellow-800";
+      case "error":
+      default:
+        return "bg-red-50 hover:bg-red-100 text-red-800";
     }
+  };
 
-    return mappingData.id;
-  } catch (err: any) {
-    console.error("Error processing OCR result:", err);
-    throw err;
-  }
-};
 
+
+  const processOcrResult = async (result: any, requestId: string, safeFileName: string) => {
+    if (!user) return;
+    try {
+      const mappedHeader = mapOcrInvoiceMapping(result);
+      const mappedItems = mapOcrInvoiceLineItems(result);
+
+      const { data: mappingData, error: mappingError } = await supabase
+        .from("ocr_invoice_mappings")
+        .insert({
+          user_id: user.id,
+          ocr_request_id: requestId,
+          ...mappedHeader,
+          file_path: `${user.id}/${safeFileName}`,
+          original_file_name: fileName,
+          status: "pending",
+        })
+        .select("id")
+        .single();
+
+      if (mappingError) throw new Error(`Failed to create invoice mapping: ${mappingError.message}`);
+
+      if (mappedItems?.length && mappingData?.id) {
+        const itemsWithMapping = mappedItems.map((item) => ({
+          ...item,
+          mapping_id: mappingData.id,
+        }));
+
+        const { error: itemsError } = await supabase
+          .from("ocr_invoice_items")
+          .insert(itemsWithMapping);
+
+        if (itemsError) {
+          console.warn("❌ Line items error:", itemsError.message);
+        }
+      }
+
+      return mappingData.id;
+    } catch (err: any) {
+      console.error("Error processing OCR result:", err);
+      throw err;
+    }
+  };
 
   const sendToPdfPreviewServer = async (file: File) => {
     if (!file || !file.name.endsWith(".pdf")) return null;
@@ -160,13 +166,13 @@ const processOcrResult = async (result: any, requestId: string, safeFileName: st
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Preview conversion failed");
-      console.log("📷 Preview conversion result:", json);
       return json;
     } catch (err) {
-      console.warn("❌ PDF Preview server error:", err);
+      console.warn("❌ PDF Preview error:", err);
       return null;
     }
   };
+
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     setDuplicateInfo(null);
