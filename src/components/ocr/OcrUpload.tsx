@@ -426,16 +426,6 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
 
       {console.log("👀 duplicateInfo Inhalt:", duplicateInfo)}
 
-      {duplicateInfo?.original_file_name &&  (
-  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm space-y-1 mb-4">
-    <div className="font-semibold text-yellow-800">Achtung: Duplikat erkannt</div>
-    <div className="text-muted-foreground text-xs">Vergleiche bitte visuell mit der rechten Vorschau</div>
-    <div><strong>Dateiname:</strong> {duplicateInfo.original_file_name ?? "Unbekannt"}</div>
-    {duplicateInfo.supplier_name && <div><strong>Shop:</strong> {duplicateInfo.supplier_name}</div>}
-    {duplicateInfo.invoice_number && <div><strong>Rechnungsnummer:</strong> {duplicateInfo.invoice_number}</div>}
-    {duplicateInfo.invoice_date && (
-      <div><strong>Rechnungsdatum:</strong> {new Date(duplicateInfo.invoice_date).toLocaleDateString()}</div>
-    )}
   </div>
 )}
 
