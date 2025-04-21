@@ -171,13 +171,13 @@ const processOcrResult = async (result: any, requestId: string, safeFileName: st
     const inputElement = e.target as HTMLInputElement;
     if (!inputElement.files || inputElement.files.length === 0) return;
     const selectedFile = inputElement.files[0];
-    // Dateinamen-Duplikate prüfen
-const fileBaseName = selectedFile.name;
+
+// Duplikatsprüfung
 const { data: duplicates } = await supabase
   .from("ocr_invoice_mappings")
   .select("file_path, invoice_number, invoice_date, supplier_name, ocr_request_id")
   .eq("user_id", user.id)
-  .like("file_path", `%${selectedFile.name}`) // Dateiname am Ende prüfen
+  .like("file_path", `%${selectedFile.name}`); // Dateiname am Ende prüfen
 
 if (duplicates && duplicates.length > 0) {
   toast({
@@ -185,12 +185,13 @@ if (duplicates && duplicates.length > 0) {
     description: `Eine ähnliche Datei wurde bereits verarbeitet.`,
     variant: "warning",
   });
-  setDuplicateInfo(duplicates[0]); // Nur den ersten Treffer anzeigen
+  setDuplicateInfo(duplicates[0]);
 } else {
   setDuplicateInfo(null);
 }
 
-    resetStates();
+resetStates(); // ✅ Jetzt OK, da duplicateInfo schon gesetzt ist
+
     setIsUploading(true);
     setFile(selectedFile);
 
