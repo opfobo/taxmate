@@ -173,42 +173,32 @@ const processOcrResult = async (result: any, requestId: string, safeFileName: st
     if (!inputElement.files || inputElement.files.length === 0) return;
     const selectedFile = inputElement.files[0];
 
-// Duplikatsprüfung
-const { data: duplicates } = await supabase
-  .from("ocr_requests")
-  .select("id, file_name, original_file_name, created_at")
+// Duplikatsprüfung nur anhand der MAPPINGS-Tabelle
+const { data: mappings, error: mappingError } = await supabase
+  .from("ocr_invoice_mappings")
+  .select("file_path, original_file_name, invoice_number, invoice_date, supplier_name, ocr_request_id")
   .eq("user_id", user.id)
   .eq("original_file_name", selectedFile.name)
-  .order("created_at", { ascending: false });
+  .in("status", ["pending", "inventory_created"])
+  .order("created_at", { ascending: false })
+  .limit(1);
 
-    console.log("🔎 OCR-Duplikate gefunden:", duplicates); // ⬅️ HIER!
+if (mappingError) {
+  console.warn("❌ Fehler beim Laden der Mapping-Daten:", mappingError.message);
+}
 
-if (duplicates && duplicates.length > 0) {
+if (Array.isArray(mappings) && mappings.length > 0 && mappings[0]?.original_file_name) {
+  setDuplicateInfo(mappings[0]);
+
   toast({
     title: "Duplikat erkannt",
     description: `Eine Datei mit identischem Namen wurde bereits verarbeitet.`,
     variant: "warning",
   });
-
-  // ✅ Hier richtig eingebettet!
-  const { data: mappings, error: mappingError } = await supabase
-    .from("ocr_invoice_mappings")
-    .select("file_path, original_file_name, invoice_number, invoice_date, supplier_name, ocr_request_id")
-    .eq("user_id", user.id)
-    .eq("original_file_name", selectedFile.name)
-    .in("status", ["pending", "inventory_created"])
-    .order("created_at", { ascending: false })
-    .limit(1);
-
-  if (mappingError) {
-    console.warn("❌ Fehler beim Laden der Mapping-Daten:", mappingError.message);
-  }
-
-  if (Array.isArray(mappings) && mappings.length > 0 && mappings[0]?.original_file_name) {
-  setDuplicateInfo(mappings[0]);
 } else {
   setDuplicateInfo(null);
 }
+
 
 }
 
