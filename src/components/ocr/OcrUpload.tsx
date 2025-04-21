@@ -193,15 +193,14 @@ if (duplicates && duplicates.length > 0) {
     .eq("ocr_request_id", duplicates[0].id)
     .limit(1);
 
-  if (mappingError) console.warn("❌ Fehler beim Laden der Mapping-Daten:", mappingError.message);
-  if (mappings?.length > 0) {
-    setDuplicateInfo(mappings[0]);
-  } else {
-    setDuplicateInfo(null);
+  if (mappingError) {
+    console.warn("❌ Fehler beim Laden der Mapping-Daten:", mappingError.message);
   }
 
-  // Upload an dieser Stelle ABBRECHEN
-  return;
+  if (mappings?.length > 0) {
+    setDuplicateInfo(mappings[0]); // ✅ Zeige links Vergleich an
+  }
+
 } else {
   setDuplicateInfo(null);
 }
