@@ -172,6 +172,7 @@ const processOcrResult = async (result: any, requestId: string, safeFileName: st
     const inputElement = e.target as HTMLInputElement;
     if (!inputElement.files || inputElement.files.length === 0) return;
     const selectedFile = inputElement.files[0];
+    setIsUploading(true);
 
 // Duplikatsprüfung nur anhand der MAPPINGS-Tabelle
 const { data: mappings, error: mappingError } = await supabase
@@ -198,11 +199,8 @@ if (Array.isArray(mappings) && mappings.length > 0 && mappings[0]?.original_file
 } else {
   setDuplicateInfo(null);
 }
-
-
 }
 
-    setIsUploading(true);
     setFile(selectedFile);
 
     if (!user) {
