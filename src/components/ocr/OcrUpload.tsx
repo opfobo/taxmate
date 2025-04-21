@@ -175,7 +175,7 @@ const processOcrResult = async (result: any, requestId: string, safeFileName: st
 
 // Duplikatsprüfung
 const { data: duplicates } = await supabase
-  .from("ocr_invoice_mappings")
+  .from("ocr_invoice_items")
   .select("id, file_name, original_file_name, created_at")
   .eq("user_id", user.id)
   .eq("original_file_name", selectedFile.name)
@@ -192,7 +192,7 @@ if (duplicates && duplicates.length > 0) {
 
   // ✅ Hier richtig eingebettet!
   const { data: mappings, error: mappingError } = await supabase
-    .from("ocr_invoice_mappings")
+    .from("ocr_invoice_items")
     .select("file_path, invoice_number, invoice_date, supplier_name, ocr_request_id")
     .eq("user_id", user.id)
     .eq("original_file_name", selectedFile.name)
