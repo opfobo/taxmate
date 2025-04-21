@@ -199,7 +199,6 @@ if (duplicates && duplicates.length > 0) {
 
   if (mappings?.length > 0) {
     setDuplicateInfo(mappings[0]); // ✅ Zeige links Vergleich an
-    setPreviewUrl(null); // erzwingt re-render bei neuem Upload
   }
 
 } else {
