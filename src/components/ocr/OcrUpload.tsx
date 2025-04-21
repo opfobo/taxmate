@@ -58,7 +58,7 @@ const fetchRecentOcrFiles = async () => {
   if (!user) return;
   const { data, error } = await supabase
     .from("ocr_invoice_mappings")
-    .select("file_path, invoice_number, invoice_date, status, created_at")
+    .select("file_path, invoice_number, invoice_date, supplier_name, status, created_at, ocr_request_id")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(ocrFetchLimit);
@@ -397,6 +397,10 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
             Accepted formats: {mimeTypes.map((type) => type.split("/")[1]).join(", ")} (Max{" "}
             {fileSizeLimitMB}MB)
           </p>
+          <p className="text-xs text-muted-foreground mt-2">
+  Lade hier deine Rechnung hoch, um automatisch alle steuerrelevanten Felder per OCR zu extrahieren.
+  Du kannst PDF- oder Bilddateien hochladen. Die Erkennung erfolgt durch Mindee + Nachbearbeitung.
+</p>
         </div>
       )}
 
@@ -473,26 +477,43 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
   ) : (
 <div className="w-full space-y-3">
     <p className="text-sm font-medium text-muted-foreground">Zuletzt hochgeladene Rechnungen:</p>
-    <ul className="space-y-2">
-      {recentOcrFiles.map((entry, index) => (
-        <li
-          key={index}
-          className={`flex justify-between items-center p-2 rounded-md text-sm ${
-            entry.status === "success"
-              ? "bg-green-50 text-green-800"
-              : entry.status === "pending"
-              ? "bg-yellow-50 text-yellow-800"
-              : "bg-muted"
-          }`}
-        >
-          <div className="truncate max-w-[60%]">{entry.file_path?.split("/").pop()}</div>
-          <div className="text-xs text-right">
-            {entry.invoice_number && <div>Nr: {entry.invoice_number}</div>}
-            {entry.invoice_date && <div>{new Date(entry.invoice_date).toLocaleDateString()}</div>}
-          </div>
-        </li>
-      ))}
-    </ul>
+    <ul className="space-y-2 w-full">
+  {recentOcrFiles.map((entry, index) => {
+    const filename = entry.file_path?.split("/").pop();
+    const date = entry.invoice_date
+      ? new Date(entry.invoice_date).toLocaleDateString()
+      : null;
+
+    const colorClasses =
+      entry.status === "inventorized"
+        ? "bg-green-50 hover:bg-green-100 text-green-800"
+        : entry.status === "success"
+        ? "bg-yellow-50 hover:bg-yellow-100 text-yellow-800"
+        : "bg-red-50 hover:bg-red-100 text-red-800";
+
+    return (
+      <li
+        key={index}
+        onClick={() => navigate(`/dashboard/ocr/review/${entry.ocr_request_id}`)}
+        className={`flex justify-between items-center p-3 rounded-md text-sm cursor-pointer transition-colors duration-150 ${colorClasses}`}
+      >
+        <div className="flex flex-col truncate max-w-[60%]">
+          <span className="font-medium truncate">{filename}</span>
+          {entry.supplier_name && (
+            <span className="text-xs text-muted-foreground truncate">
+              {entry.supplier_name}
+            </span>
+          )}
+        </div>
+        <div className="text-xs text-right space-y-0.5">
+          {entry.invoice_number && <div>Nr: {entry.invoice_number}</div>}
+          {date && <div>{date}</div>}
+        </div>
+      </li>
+    );
+  })}
+</ul>
+
     {recentOcrFiles.length >= ocrFetchLimit && (
       <Button
         variant="ghost"
