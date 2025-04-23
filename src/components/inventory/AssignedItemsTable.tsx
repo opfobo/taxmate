@@ -42,23 +42,7 @@ export const AssignedItemsTable = ({ orderId }: AssignedItemsTableProps) => {
       setLoading(true);
       try {
         const { data, error } = await supabase
-          .from("order_inventory_items")
-          .select(`
-            id,
-            assigned_quantity,
-            created_at,
-            inventory_item:ocr_item_id(
-              id,
-              description,
-              unit_price,
-              mapping:mapping_id(
-                invoice_date,
-                supplier_name
-              )
-            )
-          `)
-          .eq("order_id", orderId)
-          .order("created_at", { ascending: false });
+          .rpc('get_order_inventory_items', { p_order_id: orderId });
 
         if (error) throw error;
         setItems(data as AssignedItem[]);

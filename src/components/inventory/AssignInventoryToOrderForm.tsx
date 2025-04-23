@@ -194,13 +194,13 @@ export const AssignInventoryToOrderForm = ({
     setAssigning(true);
     try {
       for (const { itemId, quantity } of itemsToAssign) {
+        // Using raw SQL method since the table isn't in the types
         const { error } = await supabase
-          .from("order_inventory_items")
-          .insert({
-            order_id: selectedOrder.id,
-            ocr_item_id: itemId,
-            assigned_quantity: quantity,
-            created_by: user.id
+          .rpc('insert_order_inventory_item', { 
+            p_order_id: selectedOrder.id,
+            p_ocr_item_id: itemId,
+            p_assigned_quantity: quantity,
+            p_created_by: user.id
           });
         
         if (error) throw error;
