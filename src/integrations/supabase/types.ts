@@ -19,8 +19,6 @@ export type Database = {
           country: string
           county: string | null
           created_at: string | null
-          entity_id: string | null
-          entity_type: string | null
           house_number: string | null
           id: string
           kv: string | null
@@ -41,8 +39,6 @@ export type Database = {
           country: string
           county?: string | null
           created_at?: string | null
-          entity_id?: string | null
-          entity_type?: string | null
           house_number?: string | null
           id?: string
           kv?: string | null
@@ -63,8 +59,6 @@ export type Database = {
           country?: string
           county?: string | null
           created_at?: string | null
-          entity_id?: string | null
-          entity_type?: string | null
           house_number?: string | null
           id?: string
           kv?: string | null
@@ -244,229 +238,65 @@ export type Database = {
         }
         Relationships: []
       }
-      inventory_items: {
-        Row: {
-          comment: string | null
-          created_at: string | null
-          description: string | null
-          id: string
-          invoice_date: string | null
-          item_index: number | null
-          ocr_item_id: string | null
-          ocr_mapping_id: string | null
-          quantity: number | null
-          source_file: string | null
-          status: string | null
-          supplier_name: string | null
-          supplier_vat: string | null
-          tax_rate: number | null
-          total_price: number | null
-          unit_price: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          comment?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          invoice_date?: string | null
-          item_index?: number | null
-          ocr_item_id?: string | null
-          ocr_mapping_id?: string | null
-          quantity?: number | null
-          source_file?: string | null
-          status?: string | null
-          supplier_name?: string | null
-          supplier_vat?: string | null
-          tax_rate?: number | null
-          total_price?: number | null
-          unit_price?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          comment?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          invoice_date?: string | null
-          item_index?: number | null
-          ocr_item_id?: string | null
-          ocr_mapping_id?: string | null
-          quantity?: number | null
-          source_file?: string | null
-          status?: string | null
-          supplier_name?: string | null
-          supplier_vat?: string | null
-          tax_rate?: number | null
-          total_price?: number | null
-          unit_price?: number | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "inventory_items_ocr_item_id_fkey"
-            columns: ["ocr_item_id"]
-            isOneToOne: false
-            referencedRelation: "ocr_invoice_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "inventory_items_ocr_mapping_id_fkey"
-            columns: ["ocr_mapping_id"]
-            isOneToOne: false
-            referencedRelation: "ocr_invoice_mappings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ocr_invoice_items: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          item_index: number | null
-          mapping_id: string
-          product_code: string | null
-          quantity: number | null
-          tax_rate: number | null
-          total_price: number | null
-          unit_price: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          item_index?: number | null
-          mapping_id: string
-          product_code?: string | null
-          quantity?: number | null
-          tax_rate?: number | null
-          total_price?: number | null
-          unit_price?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          item_index?: number | null
-          mapping_id?: string
-          product_code?: string | null
-          quantity?: number | null
-          tax_rate?: number | null
-          total_price?: number | null
-          unit_price?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ocr_invoice_items_mapping_id_fkey"
-            columns: ["mapping_id"]
-            isOneToOne: false
-            referencedRelation: "ocr_invoice_mappings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       ocr_invoice_mappings: {
         Row: {
-          comment: string | null
           confirmed_at: string | null
           created_at: string | null
           currency: string | null
           customer_address: string | null
-          customer_address_id: string | null
           customer_name: string | null
-          customer_vat: string | null
-          delivery_date: string | null
-          due_date: string | null
           file_path: string | null
-          iban: string | null
           id: string
           invoice_date: string | null
           invoice_number: string | null
           line_items: Json | null
           ocr_request_id: string
-          original_file_name: string | null
-          payment_date: string | null
-          po_number: string | null
-          reference_number: string | null
           status: string | null
           supplier_address: string | null
-          supplier_address_id: string | null
-          supplier_email: string | null
           supplier_name: string | null
-          supplier_phone: string | null
           supplier_vat: string | null
-          swift: string | null
           total_amount: number | null
           total_net: number | null
           total_tax: number | null
           user_id: string
         }
         Insert: {
-          comment?: string | null
           confirmed_at?: string | null
           created_at?: string | null
           currency?: string | null
           customer_address?: string | null
-          customer_address_id?: string | null
           customer_name?: string | null
-          customer_vat?: string | null
-          delivery_date?: string | null
-          due_date?: string | null
           file_path?: string | null
-          iban?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
           line_items?: Json | null
           ocr_request_id: string
-          original_file_name?: string | null
-          payment_date?: string | null
-          po_number?: string | null
-          reference_number?: string | null
           status?: string | null
           supplier_address?: string | null
-          supplier_address_id?: string | null
-          supplier_email?: string | null
           supplier_name?: string | null
-          supplier_phone?: string | null
           supplier_vat?: string | null
-          swift?: string | null
           total_amount?: number | null
           total_net?: number | null
           total_tax?: number | null
           user_id: string
         }
         Update: {
-          comment?: string | null
           confirmed_at?: string | null
           created_at?: string | null
           currency?: string | null
           customer_address?: string | null
-          customer_address_id?: string | null
           customer_name?: string | null
-          customer_vat?: string | null
-          delivery_date?: string | null
-          due_date?: string | null
           file_path?: string | null
-          iban?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
           line_items?: Json | null
           ocr_request_id?: string
-          original_file_name?: string | null
-          payment_date?: string | null
-          po_number?: string | null
-          reference_number?: string | null
           status?: string | null
           supplier_address?: string | null
-          supplier_address_id?: string | null
-          supplier_email?: string | null
           supplier_name?: string | null
-          supplier_phone?: string | null
           supplier_vat?: string | null
-          swift?: string | null
           total_amount?: number | null
           total_net?: number | null
           total_tax?: number | null
@@ -474,24 +304,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ocr_invoice_mappings_customer_address_id_fkey"
-            columns: ["customer_address_id"]
-            isOneToOne: false
-            referencedRelation: "addresses"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "ocr_invoice_mappings_ocr_request_id_fkey"
             columns: ["ocr_request_id"]
             isOneToOne: false
             referencedRelation: "ocr_requests"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ocr_invoice_mappings_supplier_address_id_fkey"
-            columns: ["supplier_address_id"]
-            isOneToOne: false
-            referencedRelation: "addresses"
             referencedColumns: ["id"]
           },
         ]
@@ -499,10 +315,8 @@ export type Database = {
       ocr_requests: {
         Row: {
           created_at: string | null
-          error_message: string | null
           file_name: string
           id: string
-          original_file_name: string | null
           processed_at: string | null
           response: Json | null
           status: string | null
@@ -510,10 +324,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          error_message?: string | null
           file_name: string
           id?: string
-          original_file_name?: string | null
           processed_at?: string | null
           response?: Json | null
           status?: string | null
@@ -521,10 +333,8 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          error_message?: string | null
           file_name?: string
           id?: string
-          original_file_name?: string | null
           processed_at?: string | null
           response?: Json | null
           status?: string | null
