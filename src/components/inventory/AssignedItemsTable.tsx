@@ -45,7 +45,8 @@ export const AssignedItemsTable = ({ orderId }: AssignedItemsTableProps) => {
           .rpc('get_order_inventory_items', { p_order_id: orderId });
 
         if (error) throw error;
-        setItems(data as AssignedItem[]);
+        // Convert JSON strings to AssignedItem objects
+        setItems(data ? (data as unknown as AssignedItem[]) : []);
       } catch (error) {
         console.error("Error fetching assigned items:", error);
         toast({

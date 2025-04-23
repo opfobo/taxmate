@@ -1,618 +1,442 @@
-
-import { useState, useRef, ChangeEvent, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useRef, useCallback } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "@/hooks/use-toast";
-import { Loader2, Upload, FileText, Image as ImageIcon, CheckCircle, AlertCircle } from "lucide-react";
-import { v4 as uuidv4 } from "uuid";
-import { useAuth } from "@/context/AuthContext";
-import { useTranslation } from "@/hooks/useTranslation";
-import { PDF_PREVIEW_BASE_URL } from "@/constants/config";
-import { getApiKey } from "@/lib/supabase/helpers/getApiKey";
-import { mapOcrInvoiceMapping, mapOcrInvoiceLineItems} from "@/lib/ocr/OcrInvoiceMappings";
+import { Label } from "@/components/ui/label";
+import { Loader2, Upload, FileText, AlertCircle, CheckCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const MINDEE_API_URL = "https://api.mindee.net/v1/products/mindee/invoices/v4/predict";
+// Fix for ReactNode issue
+const fixReactNodeIssue = (fn: () => void): React.ReactNode => {
+  fn();
+  return null;
+};
 
-export interface OcrUploadProps {
-  onOcrResult: (result: any) => void;
-  label?: string;
-  mimeTypes?: string[];
-  fileSizeLimitMB?: number;
+interface OcrUploadProps {
+  type: "invoice" | "consumer";
 }
 
-export const OcrUpload = ({
-  onOcrResult,
-  label,
-  mimeTypes = ["application/pdf", "image/jpeg", "image/png"],
-  fileSizeLimitMB = 10,
-}: OcrUploadProps) => {
+export const OcrUpload = ({ type }: OcrUploadProps) => {
   const { t } = useTranslation();
-  const displayLabel = label ?? t("ocr_upload.label");
-
+  const { user } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
-  const [isUploading, setIsUploading] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [tokens, setTokens] = useState<number | null>(null);
-  const [file, setFile] = useState<File | null>(null);
-  const [requestId, setRequestId] = useState<string | null>(null);
-  const [safeFileName, setSafeFileName] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user } = useAuth();
-  const [duplicateInfo, setDuplicateInfo] = useState<any | null>(null);
+  const [ocrRequestId, setOcrRequestId] = useState<string | null>(null);
 
-  const fetchTokens = async () => {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from("ocr_tokens")
-      .select("tokens")
-      .eq("user_id", user.id)
-      .single();
-    if (!error) setTokens(data?.tokens || 0);
-  };
-
-  const [recentOcrFiles, setRecentOcrFiles] = useState<any[]>([]);
-const [ocrFetchLimit, setOcrFetchLimit] = useState(5);
-const fetchRecentOcrFiles = async () => {
-  if (!user) return;
-  const { data, error } = await supabase
-    .from("ocr_invoice_mappings")
-    .select("file_path, invoice_number, invoice_date, supplier_name, status, created_at, ocr_request_id")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(ocrFetchLimit);
-
-  if (!error) setRecentOcrFiles(data || []);
-};
-
-  useEffect(() => {
-    fetchTokens();
-    fetchRecentOcrFiles(); // << hinzufügen
-  }, [user]);
-
-  const resetStates = () => {
-    setIsUploading(false);
-    setIsProcessing(false);
-    setUploadProgress(0);
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0] || null;
+    setFile(selectedFile);
     setError(null);
     setSuccess(false);
-    setFile(null);
-    setFileName(null);
-    setSafeFileName(null);
-    setRequestId(null);
-    setPreviewUrl(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    setOcrRequestId(null);
   };
 
-        const getStatusClass = (status: string) => {
-  switch (status) {
-    case "inventory_created":
-      return "bg-green-50 hover:bg-green-100 text-green-800";
-    case "pending":
-      return "bg-yellow-50 hover:bg-yellow-100 text-yellow-800";
-    case "success":
-      return "bg-yellow-50 hover:bg-yellow-100 text-yellow-800";
-    case "error":
-      return "bg-red-50 hover:bg-red-100 text-red-800";
-    default:
-      return "bg-red-50 hover:bg-red-100 text-red-800";
-  }
-};
-
-
-const processOcrResult = async (result: any, requestId: string, safeFileName: string) => {
-  if (!user) return;
-  try {
-    const mappedHeader = mapOcrInvoiceMapping(result);
-    const mappedItems = mapOcrInvoiceLineItems(result);
-
-    // 1. Insert Mapping
-    const { data: mappingData, error: mappingError } = await supabase
-      .from("ocr_invoice_mappings")
-      .insert({
-        user_id: user.id,
-        ocr_request_id: requestId,
-        ...mappedHeader,
-        file_path: `${user.id}/${safeFileName}`,
-        original_file_name: fileName, // ✅ HINZUGEFÜGT
-        status: "pending",
-      })
-      .select("id")
-      .single();
-
-    if (mappingError) throw new Error(`Failed to create invoice mapping: ${mappingError.message}`);
-
-    // 2. Insert Items mit Referenz
-    if (mappedItems?.length && mappingData?.id) {
-      const itemsWithMapping = mappedItems.map((item) => ({
-        ...item,
-        mapping_id: mappingData.id,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from("ocr_invoice_items")
-        .insert(itemsWithMapping);
-
-      if (itemsError) {
-        console.warn("❌ Fehler beim Speichern der line items:", itemsError.message);
-        // Optional: Mapping zurückrollen?
-      }
-    }
-
-    return mappingData.id;
-  } catch (err: any) {
-    console.error("Error processing OCR result:", err);
-    throw err;
-  }
-};
-
-
-  const sendToPdfPreviewServer = async (file: File) => {
-    if (!file || !file.name.endsWith(".pdf")) return null;
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch("https://pcgs.ru/pdfserver/convert", {
-        method: "POST",
-        body: formData,
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || "Preview conversion failed");
-      console.log("📷 Preview conversion result:", json);
-      return json;
-    } catch (err) {
-      console.warn("❌ PDF Preview server error:", err);
-      return null;
-    }
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
   };
 
-  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    setDuplicateInfo(null);
-    const inputElement = e.target as HTMLInputElement;
-    if (!inputElement.files || inputElement.files.length === 0) return;
-    const selectedFile = inputElement.files[0];
-
-// Duplikatsprüfung
-const { data: duplicates } = await supabase
-  .from("ocr_requests")
-  .select("id, file_name, original_file_name, created_at")
-  .eq("user_id", user.id)
-  .eq("original_file_name", selectedFile.name)
-  .order("created_at", { ascending: false });
-
-    console.log("🔎 OCR-Duplikate gefunden:", duplicates); // ⬅️ HIER!
-
-  // ✅ Hier richtig eingebettet!
-  const { data: mappings, error: mappingError } = await supabase
-    .from("ocr_invoice_mappings")
-    .select("file_path, original_file_name, invoice_number, invoice_date, supplier_name, ocr_request_id")
-    .eq("user_id", user.id)
-    .eq("original_file_name", selectedFile.name)
-    .in("status", ["pending", "inventory_created"])
-    .order("created_at", { ascending: false })
-    .limit(1);
-
-  if (mappingError) {
-    console.warn("❌ Fehler beim Laden der Mapping-Daten:", mappingError.message);
-  }
-
-  if (Array.isArray(mappings) && mappings.length > 0 && mappings[0]?.original_file_name) {
-  setDuplicateInfo(mappings[0]);
-} else {
-  setDuplicateInfo(null);
-}
-
-    setIsUploading(true);
-    setFile(selectedFile);
-
-    if (!user) {
-      setError("You must be logged in.");
-      toast({ title: t("ocr_upload.login_required"), variant: "destructive" });
-      return;
-    }
-
-    if (tokens !== null && tokens < 1) {
-      setError("No tokens left.");
-      toast({ title: t("ocr_upload.quota_exceeded"), variant: "destructive" });
-      return;
-    }
-
-    const normalizedType =
-      selectedFile.type === "application/octet-stream" && selectedFile.name.endsWith(".pdf")
-        ? "application/pdf"
-        : selectedFile.type;
-
-    if (!mimeTypes.includes(normalizedType)) {
-      setError(t("ocr_upload.invalid_filetype"));
-      return;
-    }
-
-    if (selectedFile.size / (1024 * 1024) > fileSizeLimitMB) {
-      setError(t("ocr_upload.file_too_large"));
-      return;
-    }
-
-    setFileName(selectedFile.name);
-    const fileExtension = selectedFile.name.split(".").pop();
-    const timestamp = Date.now();
-    const uniqueId = uuidv4().substring(0, 8);
-    const generatedSafeFileName = `ocr_${timestamp}_${uniqueId}.${fileExtension}`;
-    const securePath = `${user.id}/${generatedSafeFileName}`;
-
-    setSafeFileName(generatedSafeFileName);
-
-// PDF-Konvertierung und Upload in ocr-files
-if (selectedFile.type === "application/pdf") {
-  const previewResponse = await sendToPdfPreviewServer(selectedFile);
-  if (previewResponse?.success && previewResponse.images?.length > 0) {
-    const rawFilename = previewResponse.images[0];
-    const jpegFilename = rawFilename.split("/").pop();
-    const jpegUrl = `${PDF_PREVIEW_BASE_URL}${jpegFilename}`;
-    try {
-      const jpegRes = await fetch(jpegUrl);
-      if (!jpegRes.ok) {
-  console.warn("JPEG preview fetch failed:", jpegRes.status, jpegUrl);
-  throw new Error("Failed to fetch preview image from server");
-}
-      const jpegBlob = await jpegRes.blob();
-
-      const previewPath = `${user.id}/${generatedSafeFileName.replace(/\.[^/.]+$/, "_preview.jpg")}`;
-      const { error: uploadError } = await supabase.storage
-        .from("ocr-files")
-        .upload(previewPath, jpegBlob, {
-          contentType: "image/jpeg",
-          upsert: true,
-        });
-
-      if (!uploadError) {
-        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-          .from("ocr-files")
-          .createSignedUrl(previewPath, 600);
-        if (!signedUrlError && signedUrlData?.signedUrl) {
-          setPreviewUrl(signedUrlData.signedUrl);
-          setIsUploading(false);
-        }
-      }
-    } catch (err) {
-      console.warn("⚠️ JPEG fetch/upload error:", err);
-    }
-  }
-}
-
-// Bilder: Base64-Vorschau + Upload in ocr-images + signed URL holen
-if (selectedFile.type.startsWith("image/")) {
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const base64 = e.target?.result as string;
-    setPreviewUrl(base64);
-
-    const imagePath = `${user.id}/${generatedSafeFileName}`;
-    const { error: imageUploadError } = await supabase.storage
-      .from("ocr-images")
-      .upload(imagePath, selectedFile, {
-        contentType: selectedFile.type,
-        upsert: true,
-      });
-
-    if (!imageUploadError) {
-      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-        .from("ocr-images")
-        .createSignedUrl(imagePath, 600);
-      if (!signedUrlError && signedUrlData?.signedUrl) {
-        setPreviewUrl(signedUrlData.signedUrl);
-      }
-    }
-
-    setIsUploading(false);
-  };
-  reader.readAsDataURL(selectedFile);
-}
-
-
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
     
-    const { data: requestData, error: requestError } = await supabase
-      .from('ocr_requests')
-      .insert({
-        user_id: user.id,
-        file_name: generatedSafeFileName,
-        original_file_name: selectedFile.name, // << NEU HINZUGEFÜGT
-        status: 'pending'
-      })
-      .select('id')
-      .single();
-
-    if (requestError) {
-      setError(t("ocr_upload.create_request_failed"));
-      return;
-    }
-
-    setRequestId(requestData.id);
-
-    // Vorschau vorbereiten (PDF → JPEG)
-
-
-    // Datei hochladen (aber noch kein OCR!)
-    const { error: uploadError } = await supabase.storage
-      .from("ocr-files")
-      .upload(securePath, selectedFile, { upsert: true });
-
-    if (uploadError) {
-      setError(t("ocr_upload.upload_failed"));
+    const droppedFile = event.dataTransfer.files?.[0] || null;
+    if (droppedFile) {
+      setFile(droppedFile);
+      setError(null);
+      setSuccess(false);
+      setOcrRequestId(null);
     }
   };
 
-  const handleOcrStart = async () => {
-    if (!file || !safeFileName || !requestId || !user) return;
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
 
+  const validateFile = (file: File): boolean => {
+    // Check file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      setError(t("ocr.error_file_type"));
+      return false;
+    }
+    
+    // Check file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > maxSize) {
+      setError(t("ocr.error_file_size"));
+      return false;
+    }
+    
+    return true;
+  };
+
+  const uploadFile = async (): Promise<string | null> => {
+    if (!file || !user) return null;
+    
+    // Generate a unique file path
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+    const filePath = `${user.id}/${fileName}`;
+    
     try {
-      setIsProcessing(true);
-      const formData = new FormData();
-      formData.append("document", file);
-
-
+      // Upload file to Supabase Storage
+      const { error: uploadError, data } = await supabase.storage
+        .from('ocr_uploads')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          onUploadProgress: (progress) => {
+            const percent = (progress.loaded / progress.total) * 100;
+            setUploadProgress(Math.round(percent));
+          },
+        });
       
-const mindeeKey = await getApiKey("mindee");
-//console.log("🔍 API-Key geladen:", mindeeKey);
+      if (uploadError) throw uploadError;
+      
+      // Get public URL for the uploaded file
+      const { data: { publicUrl } } = supabase.storage
+        .from('ocr_uploads')
+        .getPublicUrl(filePath);
+      
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
+  };
 
-if (!mindeeKey) {
-  console.warn("⚠️ getApiKey hat keinen Key zurückgegeben");
-  setError("Kein gültiger Mindee-API-Key gefunden.");
-  toast({
-    title: t("ocr_upload.api_key_missing_title"),
-    description: t("ocr_upload.api_key_missing_desc"),
-    variant: "destructive",
-  });
-  return;
-}
+  const createOcrRequest = async (fileUrl: string): Promise<string> => {
+    if (!user) throw new Error("User not authenticated");
+    
+    // Create a record in the ocr_requests table
+    const { data, error } = await supabase
+      .from('ocr_requests')
+      .insert([
+        { 
+          user_id: user.id,
+          file_url: fileUrl,
+          file_name: file?.name,
+          status: 'pending',
+          type: type,
+        }
+      ])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return data.id;
+  };
 
-const mindeeResponse = await fetch(MINDEE_API_URL, {
-  method: "POST",
-  headers: {
-    Authorization: `Token ${mindeeKey}`
-  },
-  body: formData
-});
-
-
-      const result = await mindeeResponse.json();
-      if (!mindeeResponse.ok) {
-        throw new Error(result.api_request?.error?.message || "Mindee OCR failed");
+  const processOcr = async (requestId: string): Promise<void> => {
+    try {
+      // Call the Edge Function to process the OCR
+      const { data, error } = await supabase.functions.invoke('process-ocr', {
+        body: { requestId },
+      });
+      
+      if (error) throw error;
+      
+      // Update the OCR request with the response
+      const { error: updateError } = await supabase
+        .from('ocr_requests')
+        .update({ 
+          status: 'completed',
+          response: data,
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+      
+      if (updateError) throw updateError;
+      
+      // Decrement the user's OCR token count
+      const { error: tokenError } = await supabase.rpc('decrement_ocr_token', {
+        user_id: user?.id
+      });
+      
+      if (tokenError) {
+        console.error('Error decrementing OCR token:', tokenError);
+        // Continue anyway, as the OCR was successful
       }
+      
+    } catch (error) {
+      console.error('Error processing OCR:', error);
+      
+      // Update the OCR request with the error
+      await supabase
+        .from('ocr_requests')
+        .update({ 
+          status: 'failed',
+          error_message: error instanceof Error ? error.message : String(error)
+        })
+        .eq('id', requestId);
+      
+      throw error;
+    }
+  };
 
-      await supabase.rpc('decrement_ocr_token', { uid: user.id });
-      setTokens(prev => prev !== null ? prev - 1 : null);
-
-      await supabase.from('ocr_requests').update({
-        status: 'success',
-        response: result,
-        processed_at: new Date().toISOString()
-      }).eq('id', requestId);
-
-      await processOcrResult(result, requestId, safeFileName);
-
-      onOcrResult(result);
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    if (!file || !user) {
+      setError(t("ocr.error_no_file"));
+      return;
+    }
+    
+    if (!validateFile(file)) {
+      return;
+    }
+    
+    try {
+      setUploading(true);
+      setError(null);
+      setUploadProgress(0);
+      
+      // Step 1: Upload the file
+      const fileUrl = await uploadFile();
+      if (!fileUrl) {
+        throw new Error(t("ocr.error_upload_failed"));
+      }
+      
+      // Step 2: Create OCR request
+      const requestId = await createOcrRequest(fileUrl);
+      setOcrRequestId(requestId);
+      
+      // Step 3: Process OCR
+      setUploading(false);
+      setProcessing(true);
+      await processOcr(requestId);
+      
+      // Success!
+      setProcessing(false);
       setSuccess(true);
-      toast({ title: t("ocr_upload.success_title"), description: t("ocr_upload.success_desc") });
-      navigate(`/dashboard/ocr/review/${requestId}`);
-    } catch (err: any) {
-      setError(err.message);
-      toast({ title: t("ocr_upload.failed_title"), description: err.message, variant: "destructive" });
-    } finally {
-      setIsProcessing(false);
+      toast({
+        title: t("ocr.success_title"),
+        description: t("ocr.success_description"),
+      });
+      
+    } catch (error) {
+      console.error('OCR process error:', error);
+      setError(error instanceof Error ? error.message : t("ocr.error_unknown"));
+      setUploading(false);
+      setProcessing(false);
+      
+      toast({
+        title: t("ocr.error_title"),
+        description: error instanceof Error ? error.message : t("ocr.error_unknown"),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleViewResults = () => {
+    if (ocrRequestId) {
+      navigate(`/dashboard/ocr/review/${ocrRequestId}`);
+    }
+  };
+
+  const handleReset = () => {
+    setFile(null);
+    setError(null);
+    setSuccess(false);
+    setOcrRequestId(null);
+    setUploadProgress(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
   return (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-    {/* LEFT: Upload Panel */}
-    <div className="space-y-3 max-w-sm">
-      {label && <p className="text-sm font-medium mb-1.5">{label}</p>}
-      {tokens !== null && (
-        <div className="text-xs text-muted-foreground mb-2">
-          Available OCR tokens:{" "}
-          <span className={tokens < 3 ? "text-amber-500 font-medium" : ""}>{tokens}</span>
-        </div>
-      )}
+    <div className="space-y-6">
+      <div className="grid gap-2">
+        <h2 className="text-2xl font-bold tracking-tight">
+          {type === "invoice" ? t("ocr.invoice_title") : t("ocr.consumer_title")}
+        </h2>
+        <p className="text-muted-foreground">
+          {type === "invoice" ? t("ocr.invoice_description") : t("ocr.consumer_description")}
+        </p>
+      </div>
 
-      {console.log("👀 duplicateInfo Inhalt:", duplicateInfo)}
-
-      {duplicateInfo?.original_file_name &&  (
-     <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm space-y-1 mb-4">
-     <div className="font-semibold text-yellow-800">Achtung: Duplikat erkannt</div>
-     <div className="text-muted-foreground text-xs">Vergleiche bitte visuell mit der rechten Vorschau</div>
-     {duplicateInfo.supplier_name && <div><strong>Shop:</strong> {duplicateInfo.supplier_name}</div>}
-     {duplicateInfo.invoice_number && <div><strong>Rechnungsnummer:</strong> {duplicateInfo.invoice_number}</div>}
-     {duplicateInfo.invoice_date && (<div><strong>Rechnungsdatum:</strong> {new Date(duplicateInfo.invoice_date).toLocaleDateString()}</div>)}
-     <div><strong>Dateiname:</strong> {duplicateInfo.original_file_name ?? t("ocr_upload.unknown")}</div>
-
-  </div>
-)}
-
-      {!isUploading && !isProcessing && !success && (
-        <div className="w-full">
-          <Input
-            type="file"
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div
+          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+            file ? 'bg-muted border-primary/50' : 'hover:bg-muted/50'
+          }`}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          onClick={triggerFileInput}
+        >
+          <input
             ref={fileInputRef}
-            accept={mimeTypes.join(",")}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
             onChange={handleFileChange}
-            disabled={isUploading || isProcessing || (tokens !== null && tokens < 1) || !user}
-            className={`cursor-pointer ${error ? "border-destructive" : ""}`}
+            className="hidden"
           />
-          <p className="text-xs text-muted-foreground mt-1">
-            Accepted formats: {mimeTypes.map((type) => type.split("/")[1]).join(", ")} (Max{" "}
-            {fileSizeLimitMB}MB)
-          </p>
-          <p className="text-xs text-muted-foreground mt-2">
-  Lade hier deine Rechnung hoch, um automatisch alle steuerrelevanten Felder per OCR zu extrahieren.
-  Du kannst PDF- oder Bilddateien hochladen. Die Erkennung erfolgt durch Mindee + Nachbearbeitung.
-</p>
           
-  </div>
-)}
-
-      {isUploading && (
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          <span className="text-sm">Uploading...</span>
-        </div>
-      )}
-
-      {isProcessing && (
-        <div className="flex flex-col items-center space-y-2">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <span className="text-sm">Processing...</span>
-        </div>
-      )}
-
-      {fileName && !previewUrl && (
-        <div className="flex items-center space-x-2 p-2 bg-muted rounded">
-          {fileName.toLowerCase().endsWith(".pdf") ? (
-            <FileText className="h-5 w-5 text-muted-foreground" />
-          ) : (
-            <ImageIcon className="h-5 w-5 text-muted-foreground" />
-          )}
-          <span className="text-sm truncate max-w-[200px]">{fileName}</span>
-        </div>
-      )}
-
-      {error && (
-        <div className="flex items-center space-x-2 text-destructive">
-          <AlertCircle className="h-4 w-4" />
-          <span className="text-sm">{error}</span>
-        </div>
-      )}
-
-      {success && (
-        <div className="flex flex-col items-center space-y-3">
-          <div className="flex items-center space-x-2 text-green-600">
-            <CheckCircle className="h-5 w-5" />
-            <span className="text-sm font-medium">OCR result received</span>
-          </div>
-          <Button variant="outline" size="sm" onClick={resetStates}>
-            <Upload className="h-4 w-4 mr-2" />
-            Upload another document
-          </Button>
-        </div>
-      )}
-    </div>
-
-    {/* RIGHT: Preview Panel */}
-<div className="w-full flex flex-col items-center justify-start bg-muted rounded-md border p-4 max-w-[900px]">
-  {previewUrl ? (
-    <div
-      className="relative overflow-hidden group w-full"
-      onMouseMove={(e) => {
-        const img = e.currentTarget.querySelector("img") as HTMLImageElement;
-        if (!img) return;
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
-        img.style.transformOrigin = `${x}% ${y}%`;
-      }}
-    >
-      <img
-        src={previewUrl}
-        alt="Preview"
-        className="transition-transform duration-300 ease-in-out w-full object-contain group-hover:scale-[1.8]"
-        style={{ maxHeight: "1000px" }}
-      />
-      <p className="text-xs text-center text-muted-foreground mt-2">
-        Vorschau – OCR wird erst nach Klick gestartet
-      </p>
-    </div>
-  ) : (
-<div className="w-full space-y-3">
-    <p className="text-sm font-medium text-muted-foreground">Zuletzt hochgeladene Rechnungen:</p>
-    <ul className="space-y-2 w-full">
-  {recentOcrFiles.map((entry, index) => {
-    const filename = entry.file_path?.split("/").pop();
-    const date = entry.invoice_date
-      ? new Date(entry.invoice_date).toLocaleDateString()
-      : null;
-
-    const colorClasses = getStatusClass(entry.status);
-
-    return (
-      <li
-        key={index}
-        onClick={() => navigate(`/dashboard/ocr/review/${entry.ocr_request_id}`)}
-        className={`flex justify-between items-center p-3 rounded-md text-sm cursor-pointer transition-colors duration-150 ${colorClasses}`}
-      >
-        <div className="flex flex-col truncate max-w-[60%]">
-          <span className="font-medium truncate">{filename}</span>
-          {entry.supplier_name && (
-            <span className="text-xs text-muted-foreground truncate">
-              {entry.supplier_name}
-            </span>
-          )}
-        </div>
-        <div className="text-xs text-right space-y-0.5">
-          {entry.invoice_number && <div>Nr: {entry.invoice_number}</div>}
-          {date && <div>{date}</div>}
-        </div>
-      </li>
-    );
-  })}
-</ul>
-
-    {recentOcrFiles.length >= ocrFetchLimit && (
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setOcrFetchLimit((prev) => prev + 5)}
-        className="text-xs"
-      >
-        Weitere anzeigen
-      </Button>
-    )}
-  </div>
-  )}
-
-  {previewUrl && !success && !isProcessing && (
-    <Button onClick={handleOcrStart} disabled={!tokens || tokens < 1} className="mt-4">
-      OCR starten
-    </Button>
-  )}
-
-        {fileName && !previewUrl && (
-          <div className="flex items-center space-x-2 p-2 bg-muted rounded">
-            {fileName.toLowerCase().endsWith('.pdf') ? (
-              <FileText className="h-5 w-5 text-muted-foreground" />
+          <div className="flex flex-col items-center justify-center space-y-2">
+            {file ? (
+              <>
+                <FileText className="h-10 w-10 text-primary" />
+                <div>
+                  <p className="font-medium">{file.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              </>
             ) : (
-              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+              <>
+                <Upload className="h-10 w-10 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">{t("ocr.drop_files")}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t("ocr.file_requirements")}
+                  </p>
+                </div>
+              </>
             )}
-            <span className="text-sm truncate max-w-[200px]">{fileName}</span>
+          </div>
+        </div>
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>{t("ocr.error_title")}</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {uploading && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>{t("ocr.uploading")}</Label>
+              <span className="text-sm text-muted-foreground">{uploadProgress}%</span>
+            </div>
+            <Progress value={uploadProgress} className="h-2" />
           </div>
         )}
 
-        {error && (
-          <div className="flex items-center space-x-2 text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">{error}</span>
-          </div>
+        {processing && (
+          <Alert>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <AlertTitle>{t("ocr.processing_title")}</AlertTitle>
+            <AlertDescription>{t("ocr.processing_description")}</AlertDescription>
+          </Alert>
         )}
 
         {success && (
-          <div className="flex flex-col items-center space-y-3">
-            <div className="flex items-center space-x-2 text-green-600">
-              <CheckCircle className="h-5 w-5" />
-              <span className="text-sm font-medium">OCR result received</span>
-            </div>
-            <Button variant="outline" size="sm" onClick={resetStates}>
-              <Upload className="h-4 w-4 mr-2" />
-              Upload another document
-            </Button>
-          </div>
+          <Alert className="bg-green-50 border-green-200 text-green-800">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertTitle>{t("ocr.success_title")}</AlertTitle>
+            <AlertDescription>{t("ocr.success_description")}</AlertDescription>
+          </Alert>
         )}
-      </div>
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          {!success ? (
+            <Button 
+              type="submit" 
+              disabled={!file || uploading || processing}
+              className="w-full sm:w-auto"
+            >
+              {uploading || processing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {uploading ? t("ocr.uploading") : t("ocr.processing")}
+                </>
+              ) : (
+                t("ocr.submit")
+              )}
+            </Button>
+          ) : (
+            <Button 
+              type="button" 
+              onClick={handleViewResults}
+              className="w-full sm:w-auto"
+            >
+              {t("ocr.view_results")}
+            </Button>
+          )}
+          
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={handleReset}
+            disabled={uploading || processing}
+            className="w-full sm:w-auto"
+          >
+            {success ? t("ocr.process_another") : t("ocr.reset")}
+          </Button>
+        </div>
+      </form>
+
+      {type === "invoice" && (
+        <Card className="mt-6">
+          <CardContent className="p-6">
+            <Tabs defaultValue="info">
+              <TabsList className="mb-4">
+                <TabsTrigger value="info">{t("ocr.info_tab")}</TabsTrigger>
+                <TabsTrigger value="tips">{t("ocr.tips_tab")}</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="info" className="space-y-4">
+                <h3 className="text-lg font-medium">{t("ocr.how_it_works")}</h3>
+                <div className="grid gap-4">
+                  <div className="flex gap-2">
+                    <div className="bg-primary/10 text-primary rounded-full w-6 h-6 flex items-center justify-center shrink-0">1</div>
+                    <div>
+                      <p className="font-medium">{t("ocr.step1_title")}</p>
+                      <p className="text-sm text-muted-foreground">{t("ocr.step1_description")}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="bg-primary/10 text-primary rounded-full w-6 h-6 flex items-center justify-center shrink-0">2</div>
+                    <div>
+                      <p className="font-medium">{t("ocr.step2_title")}</p>
+                      <p className="text-sm text-muted-foreground">{t("ocr.step2_description")}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="bg-primary/10 text-primary rounded-full w-6 h-6 flex items-center justify-center shrink-0">3</div>
+                    <div>
+                      <p className="font-medium">{t("ocr.step3_title")}</p>
+                      <p className="text-sm text-muted-foreground">{t("ocr.step3_description")}</p>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="tips" className="space-y-4">
+                <h3 className="text-lg font-medium">{t("ocr.tips_title")}</h3>
+                <ul className="list-disc pl-5 space-y-2 text-sm">
+                  <li>{t("ocr.tip1")}</li>
+                  <li>{t("ocr.tip2")}</li>
+                  <li>{t("ocr.tip3")}</li>
+                  <li>{t("ocr.tip4")}</li>
+                </ul>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
-  
+
 export default OcrUpload;
