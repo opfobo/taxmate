@@ -1,3 +1,4 @@
+
 import { useState, useRef, ChangeEvent, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +13,6 @@ import { PDF_PREVIEW_BASE_URL } from "@/constants/config";
 import { getApiKey } from "@/lib/supabase/helpers/getApiKey";
 import { mapOcrInvoiceMapping, mapOcrInvoiceLineItems} from "@/lib/ocr/OcrInvoiceMappings";
 
-
 const MINDEE_API_URL = "https://api.mindee.net/v1/products/mindee/invoices/v4/predict";
 
 export interface OcrUploadProps {
@@ -24,10 +24,13 @@ export interface OcrUploadProps {
 
 export const OcrUpload = ({
   onOcrResult,
-  label = t("ocr_upload.label"),
+  label,
   mimeTypes = ["application/pdf", "image/jpeg", "image/png"],
   fileSizeLimitMB = 10,
 }: OcrUploadProps) => {
+  const { t } = useTranslation();
+  const displayLabel = label ?? t("ocr_upload.label");
+
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
