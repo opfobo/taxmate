@@ -1229,16 +1229,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_ocr_tokens_for_new_user: {
-        Args: { uid: string }
-        Returns: undefined
-      }
       decrement_ocr_token: {
         Args: { uid: string }
         Returns: undefined
       }
       folder_uid: {
-        Args: Record<PropertyKey, never> | { name: string }
+        Args: { name: string }
         Returns: string
       }
     }

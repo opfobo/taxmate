@@ -194,16 +194,14 @@ export const AssignInventoryToOrderForm = ({
     setAssigning(true);
     try {
       for (const { itemId, quantity } of itemsToAssign) {
-        // Using stored procedure instead of direct table access
-        const { error } = await supabase.rpc(
-          'insert_order_inventory_item', 
-          { 
+        // Using raw SQL method since the table isn't in the types
+        const { error } = await supabase
+          .rpc('insert_order_inventory_item', { 
             p_order_id: selectedOrder.id,
             p_ocr_item_id: itemId,
             p_assigned_quantity: quantity,
             p_created_by: user.id
-          } as any
-        );
+          });
         
         if (error) throw error;
       }
