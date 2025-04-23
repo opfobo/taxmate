@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, Upload, FileText, Image as ImageIcon, CheckCircle, AlertCircle } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslation } from "@/hooks/useTranslation";
 import { PDF_PREVIEW_BASE_URL } from "@/constants/config";
 import { getApiKey } from "@/lib/supabase/helpers/getApiKey";
 import { mapOcrInvoiceMapping, mapOcrInvoiceLineItems} from "@/lib/ocr/OcrInvoiceMappings";
