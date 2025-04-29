@@ -192,12 +192,12 @@ const handleSubmit = async () => {
     return;
   }
 
- const cleanedItems = editedLineItems.map(({ isNew, ...rest }) => ({
+const sanitizedItems = editedLineItems.map(({ isNew, created_at, updated_at, ...rest }) => ({
   ...rest,
   is_new: isNew ?? false,
+  created_at: created_at ?? (isNew ? new Date().toISOString() : undefined),
 }));
 
-const sanitizedItems = editedLineItems.map(({ created_at, updated_at, ...rest }) => rest);
 
 const { error: itemError } = await supabase
   .from("ocr_invoice_items")
