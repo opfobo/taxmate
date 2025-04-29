@@ -197,9 +197,12 @@ const handleSubmit = async () => {
   is_new: isNew ?? false,
 }));
 
+const sanitizedItems = editedLineItems.map(({ created_at, updated_at, ...rest }) => rest);
+
 const { error: itemError } = await supabase
   .from("ocr_invoice_items")
-  .upsert(cleanedItems);
+  .upsert(sanitizedItems);
+
 
   if (itemError) {
     toast({
