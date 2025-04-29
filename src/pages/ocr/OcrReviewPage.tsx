@@ -126,6 +126,36 @@ const OcrReviewPage = () => {
     });
   };
 
+  const handleDeleteLineItem = (index: number) => {
+  setEditedLineItems((prevItems) => {
+    const updated = [...prevItems];
+    updated.splice(index, 1); // Entfernt 1 Element an Stelle index
+    return updated.map((item, idx) => ({
+      ...item,
+      item_index: idx + 1, // Neu indexieren
+    }));
+  });
+};
+
+
+  const handleAddLineItem = () => {
+  setEditedLineItems((prevItems) => [
+    ...prevItems,
+    {
+      id: crypto.randomUUID(),
+      mapping_id: invoiceMapping?.id ?? "",
+      item_index: prevItems.length + 1,
+      description: "",
+      quantity: 1,
+      unit_price: 0,
+      total_price: 0,
+      tax_rate: formData.default_tax_rate ?? null,
+      isNew: true, // Flag für später wenn gebraucht
+    },
+  ]);
+};
+
+
 const handleSubmit = async () => {
   if (!invoiceMapping?.id) return;
 
@@ -351,8 +381,26 @@ const handleSubmit = async () => {
                     <div className="col-span-2">
                       <TaxRateSelector value={item.tax_rate} onChange={(val) => handleLineItemChange(index, "tax_rate", val)} isEditing={isEditing} />
                     </div>
+                    {isEditing && (
+  <div className="col-span-1 flex justify-center">
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => handleDeleteLineItem(index)}
+    >
+      <X className="h-4 w-4" />
+    </Button>
+  </div>
+)}
+
                   </div>
                 ))}
+                {isEditing && (
+  <Button variant="outline" size="sm" onClick={handleAddLineItem}>
+    <Plus className="mr-2 h-4 w-4" size={16} /> Neue Position hinzufügen
+  </Button>
+)}
+
               </CardContent>
             </Card>
           </div>
