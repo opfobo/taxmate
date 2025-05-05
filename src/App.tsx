@@ -23,7 +23,8 @@ import ConsumerOcrTab from "@/components/ocr/ConsumerOcrTab";
 import OcrReviewPage from "@/pages/ocr/OcrReviewPage";
 import OcrTestPage from "@/pages/ocr/OcrTestPage";
 import OcrInvoiceReviewPage from "@/pages/ocr/OcrInvoiceReviewPage";
-import AssignInventoryPage from "@/pages/inventory/AssignInventoryPage"; // New import
+import AssignInventoryPage from "@/pages/inventory/AssignInventoryPage";
+import OrderFlowPage from "@/pages/OrderFlowPage"; // New import
 
 // ✅ Hier importieren
 import { Toaster } from "@/components/ui/toaster";
@@ -99,6 +100,10 @@ function App() {
         <Route
           path="/dashboard/inventory/assign"
           element={user ? <AssignInventoryPage /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/orderflow"
+          element={user ? <OrderFlowPage /> : <Navigate to="/login" />}
         />
         <Route
           path="/dashboard/orders"
