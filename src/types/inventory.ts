@@ -19,4 +19,3 @@ export interface OrderInventoryItem {
   created_at: string;
   created_by: string;
 }
-
