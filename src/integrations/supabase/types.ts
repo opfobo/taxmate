@@ -321,9 +321,10 @@ export type Database = {
       }
       ocr_invoice_items: {
         Row: {
-          created_at: string | null
+          created_at: string
           description: string | null
           id: string
+          is_new: boolean | null
           item_index: number | null
           mapping_id: string
           product_code: string | null
@@ -333,9 +334,10 @@ export type Database = {
           unit_price: number | null
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           description?: string | null
           id?: string
+          is_new?: boolean | null
           item_index?: number | null
           mapping_id: string
           product_code?: string | null
@@ -345,9 +347,10 @@ export type Database = {
           unit_price?: number | null
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           description?: string | null
           id?: string
+          is_new?: boolean | null
           item_index?: number | null
           mapping_id?: string
           product_code?: string | null
@@ -1229,12 +1232,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_ocr_tokens_for_new_user: {
+        Args: { uid: string }
+        Returns: undefined
+      }
       decrement_ocr_token: {
         Args: { uid: string }
         Returns: undefined
       }
       folder_uid: {
-        Args: { name: string }
+        Args: Record<PropertyKey, never> | { name: string }
         Returns: string
       }
     }
