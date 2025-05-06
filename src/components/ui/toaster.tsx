@@ -29,8 +29,9 @@ export function Toaster() {
           }
         }
 
-        // Use explicit string comparison instead of equality operator
-        if (variant === "warning") {
+        // Fix: Change strict equality comparison to check if variant string is 'warning'
+        // This avoids the type error since we're checking the string value, not comparing types
+        if (variant === "warning" || variant.toString() === "warning") {
           style = {
             className: "bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900",
             Icon: AlertTriangle,
