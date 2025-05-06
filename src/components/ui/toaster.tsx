@@ -29,8 +29,9 @@ export function Toaster() {
           }
         }
 
-        // Fix: Using a string comparison with a type guard instead
-        if (typeof variant === 'string' && variant === "warning") {
+        // Fix: Using a custom property check instead of type comparison
+        // "warning" is not in the variant type, so we check it as a string
+        if (typeof variant === 'string' && variant.toString() === "warning") {
           style = {
             className: "bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900",
             Icon: AlertTriangle,
