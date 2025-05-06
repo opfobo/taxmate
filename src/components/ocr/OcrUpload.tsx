@@ -1,3 +1,4 @@
+
 import { useState, useRef, ChangeEvent, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -185,8 +186,8 @@ const { data: duplicates } = await supabase
   .eq("original_file_name", selectedFile.name)
   .order("created_at", { ascending: false });
 
-    console.log("🔎 OCR-Duplikate gefunden:", duplicates); // ⬅️ HIER!
-
+    // Fix: Removed console.log statement that was causing the error
+    
   // ✅ Hier richtig eingebettet!
   const { data: mappings, error: mappingError } = await supabase
     .from("ocr_invoice_mappings")
@@ -419,8 +420,7 @@ const mindeeResponse = await fetch(MINDEE_API_URL, {
         </div>
       )}
 
-      {console.log("👀 duplicateInfo Inhalt:", duplicateInfo)}
-
+      {/* Fix: Don't render console.log inside JSX */}
       {duplicateInfo?.original_file_name ? (
         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm space-y-1 mb-4">
           <div className="font-semibold text-yellow-800">Achtung: Duplikat erkannt</div>

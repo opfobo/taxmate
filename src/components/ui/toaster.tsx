@@ -29,8 +29,8 @@ export function Toaster() {
           }
         }
 
-        // Use explicit string comparison instead of equality operator
-        if (variant === "warning") {
+        // Fix: Using a string comparison with a type guard instead
+        if (typeof variant === 'string' && variant === "warning") {
           style = {
             className: "bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900",
             Icon: AlertTriangle,

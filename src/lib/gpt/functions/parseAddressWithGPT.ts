@@ -12,7 +12,7 @@ export async function parseAddressWithGPT(input: string): Promise<Record<string,
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo-1106",
       temperature: 0.2,
-      response_format: "json",
+      response_format: { type: "json_object" },
       messages: [
         { role: "system", content: SYSTEM_PROMPT_ADDRESS },
         { role: "user", content: input.slice(0, 500) } // Cap at 500 chars
