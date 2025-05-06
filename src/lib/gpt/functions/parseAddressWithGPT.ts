@@ -1,10 +1,14 @@
+
 // src/lib/gpt/functions/parseAddressWithGPT.ts
 
 import { SYSTEM_PROMPT_ADDRESS } from "@/lib/gpt/prompts/address";
-import { openai } from "@/lib/gpt/gptClient";
+import { getOpenAiClient } from "@/lib/gpt/gptClient";
 
 export async function parseAddressWithGPT(input: string): Promise<Record<string, string> | null> {
   try {
+    const openai = await getOpenAiClient();
+    if (!openai) return null;
+    
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo-1106",
       temperature: 0.2,

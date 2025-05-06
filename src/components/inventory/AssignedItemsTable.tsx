@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/context/AuthContext";
@@ -42,10 +41,10 @@ export const AssignedItemsTable = ({ orderId }: AssignedItemsTableProps) => {
       setLoading(true);
       try {
         const { data, error } = await supabase
-          .rpc('get_order_inventory_items', { p_order_id: orderId });
+          .rpc('get_order_inventory_items' as any, { p_order_id: orderId });
 
         if (error) throw error;
-        setItems(data as AssignedItem[]);
+        setItems(data as unknown as AssignedItem[]);
       } catch (error) {
         console.error("Error fetching assigned items:", error);
         toast({

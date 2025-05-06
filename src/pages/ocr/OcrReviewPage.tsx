@@ -54,10 +54,12 @@ const OcrReviewPage = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
-      if (data?.status === "inventory_created") setIsInventorized(true);
-    },
   });
+
+  // Update state when data is loaded
+  useEffect(() => {
+    if (invoiceMapping?.status === "inventory_created") setIsInventorized(true);
+  }, [invoiceMapping]);
 
   useEffect(() => {
     if (invoiceMapping && Object.keys(invoiceMapping).length > 0) {
@@ -80,11 +82,9 @@ const OcrReviewPage = () => {
       return data;
     },
     enabled: !!invoiceMapping?.id,
-    onSuccess: (data) => {
-      setEditedLineItems(data);
-    },
   });
 
+  // Update lineItems state when data is loaded
   useEffect(() => {
     if (lineItems.length > 0) {
       setEditedLineItems(lineItems);
