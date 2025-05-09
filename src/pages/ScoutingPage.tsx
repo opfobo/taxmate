@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageLayout } from "@/components/common/PageLayout";
@@ -30,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { Trash, Image, Plus, Filter } from "lucide-react";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
+import { ScoutingRequestDetailsDrawer } from "@/components/ScoutingRequestDetailsDrawer";
 
 // Define a local type for search-request orders
 type ScoutingOrder = {
@@ -41,6 +41,7 @@ type ScoutingOrder = {
   status: string | null;
   currency: string | null;
   image_urls?: string[] | null;
+  notes?: string | null;
 };
 
 // Form data type
@@ -85,6 +86,10 @@ export default function ScoutingPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Add new state for the details drawer
+  const [selectedRequest, setSelectedRequest] = useState<ScoutingOrder | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
   useEffect(() => {
     fetchSearchRequests();
@@ -201,14 +206,13 @@ export default function ScoutingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.id) {
-  toast({
-    variant: "destructive",
-    title: "Authentication Error",
-    description: "User not identified. Please log in again.",
-  });
-  return;
-}
-
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: "User not identified. Please log in again.",
+      });
+      return;
+    }
     
     if (!formData.search_description) {
       toast({
@@ -377,6 +381,17 @@ export default function ScoutingPage() {
     if (statusFilter === "all") return true;
     return request.status === statusFilter;
   });
+
+  // Open the drawer when a row is clicked
+  const handleRowClick = (request: ScoutingOrder) => {
+    setSelectedRequest(request);
+    setIsDrawerOpen(true);
+  };
+
+  // Close the drawer
+  const handleCloseDrawer = () => {
+    setIsDrawerOpen(false);
+  };
 
   return (
     <PageLayout>
@@ -590,7 +605,8 @@ export default function ScoutingPage() {
                 {filteredSearchRequests.map((request) => (
                   <TableRow 
                     key={request.id} 
-                    className={getRowHighlightClass(request.status)}
+                    className={`${getRowHighlightClass(request.status)} cursor-pointer`}
+                    onClick={() => handleRowClick(request)}
                   >
                     <TableCell>{renderImageThumbnail(request.image_urls ? request.image_urls[0] : null)}</TableCell>
                     <TableCell className="max-w-xs break-words">
@@ -608,6 +624,7 @@ export default function ScoutingPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-500 hover:underline truncate max-w-[150px] inline-block"
+                          onClick={(e) => e.stopPropagation()} // Prevent row click when clicking the link
                         >
                           {request.link}
                         </a>
@@ -625,6 +642,14 @@ export default function ScoutingPage() {
             </Table>
           </div>
         )}
+        
+        {/* Add the drawer component */}
+        <ScoutingRequestDetailsDrawer 
+          isOpen={isDrawerOpen} 
+          onClose={handleCloseDrawer}
+          request={selectedRequest}
+          onUpdate={fetchSearchRequests}
+        />
       </div>
     </PageLayout>
   );
