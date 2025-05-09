@@ -14,11 +14,22 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Order } from "@/types/order";
 import { useToast } from "@/hooks/use-toast";
 
+// Define a local type for search-request orders
+type ScoutingOrder = {
+  id: string;
+  created_at: string;
+  search_description: string | null;
+  price_limit: number | null;
+  link: string | null;
+  status: string | null;
+  currency: string | null;
+  image_urls?: string[] | null;
+};
+
 export default function ScoutingPage() {
-  const [searchRequests, setSearchRequests] = useState<Order[]>([]);
+  const [searchRequests, setSearchRequests] = useState<ScoutingOrder[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
