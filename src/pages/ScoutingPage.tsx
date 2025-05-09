@@ -229,7 +229,7 @@ export default function ScoutingPage() {
             order_type: "search-request",
             currency: "EUR", // Default currency
             amount: 0, // Required field based on error
-            order_number: `SR-${Date.now()}` // Required field based on error
+            order_number: `SR-${Date.now()}`, // Required field based on error
             user_id: user?.id, // 🧩 wichtig für RLS!
 
           },
