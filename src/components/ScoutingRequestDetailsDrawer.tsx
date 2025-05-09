@@ -338,7 +338,7 @@ export function ScoutingRequestDetailsDrawer({
             <img 
               src={getCurrentImage()} 
               alt="Preview" 
-              className="max-h-full max-w-full object-contain"
+              className="w-auto h-auto"
             />
             
             {/* Previous button */}
