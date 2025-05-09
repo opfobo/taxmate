@@ -87,7 +87,20 @@ export default function ScoutingPage() {
         throw error;
       }
 
-      setSearchRequests(data || []);
+      // Get images for each order
+      const ordersWithImages = await Promise.all((data || []).map(async (order) => {
+        const { data: imageData } = await supabase
+          .from("order_images")
+          .select("image_url")
+          .eq("order_id", order.id);
+        
+        return {
+          ...order,
+          image_urls: imageData?.map(img => img.image_url) || [],
+        };
+      }));
+
+      setSearchRequests(ordersWithImages || []);
     } catch (err) {
       console.error("Error fetching search requests:", err);
       setError("Failed to load search requests. Please try again later.");
@@ -190,7 +203,7 @@ export default function ScoutingPage() {
         imageUrls = await uploadImages();
       }
       
-      // Submit to database
+      // Submit order data to database without image_urls
       const { data, error } = await supabase
         .from("orders")
         .insert([
@@ -200,14 +213,38 @@ export default function ScoutingPage() {
             link: formData.link,
             status: formData.status,
             order_type: "search-request",
-            image_urls: imageUrls.length > 0 ? imageUrls : null,
             currency: "EUR", // Default currency
+            amount: 0, // Required field based on error
+            order_number: `SR-${Date.now()}` // Required field based on error
           },
         ])
         .select();
 
       if (error) {
         throw error;
+      }
+
+      // After successful order insert, add image references to order_images table
+      if (imageUrls.length > 0 && data && data.length > 0) {
+        const orderId = data[0].id;
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        
+        // Insert each image reference
+        for (const imageUrl of imageUrls) {
+          const { error: imageError } = await supabase
+            .from("order_images")
+            .insert([
+              { 
+                order_id: orderId, 
+                image_url: imageUrl, 
+                uploaded_by: userId || null
+              }
+            ]);
+            
+          if (imageError) {
+            console.error("Error saving image reference:", imageError);
+          }
+        }
       }
 
       // Success
