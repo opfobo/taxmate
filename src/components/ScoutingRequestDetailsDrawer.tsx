@@ -320,7 +320,7 @@ export function ScoutingRequestDetailsDrawer({
       {/* Full-screen Image Preview */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-[90vw] h-[90vh] p-0 border-none bg-transparent shadow-none">
-          <div className="relative w-full h-full flex items-center justify-center">
+          <div className="relative w-full h-full overflow-auto flex items-center justify-center p-4">
             {/* Navigation controls */}
             <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-10">
               <div className="text-white bg-black/50 px-2 py-1 rounded text-sm">
