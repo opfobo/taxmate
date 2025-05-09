@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -30,7 +31,8 @@ import {
   ChartBar,
   ShoppingBag,
   ScanLine,
-  GitBranch
+  GitBranch,
+  Search
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -67,6 +69,11 @@ const Navbar = () => {
       to: "/orderflow",
       label: t("menu.orderFlow"),
       icon: <GitBranch className="h-5 w-5" />
+    },
+    {
+      to: "/scouting", // New scouting link
+      label: "Scouting",
+      icon: <Search className="h-5 w-5" />
     },
     {
       to: "/dashboard/ocr",

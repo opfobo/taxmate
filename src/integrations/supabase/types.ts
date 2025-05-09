@@ -651,14 +651,17 @@ export type Database = {
           id: string
           image_url: string | null
           is_sales_order: boolean | null
+          link: string | null
           notes: string | null
           ocr_customer_data: Json | null
           order_date: string | null
           order_number: string
           order_type: Database["public"]["Enums"]["order_type_enum"] | null
           payment_status: string | null
+          price_limit: number | null
           purchase_origin: string | null
           purchase_type: Database["public"]["Enums"]["purchase_type"] | null
+          search_description: string | null
           shipping_address_id: string | null
           source_order_id: string | null
           status: string | null
@@ -681,14 +684,17 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_sales_order?: boolean | null
+          link?: string | null
           notes?: string | null
           ocr_customer_data?: Json | null
           order_date?: string | null
           order_number: string
           order_type?: Database["public"]["Enums"]["order_type_enum"] | null
           payment_status?: string | null
+          price_limit?: number | null
           purchase_origin?: string | null
           purchase_type?: Database["public"]["Enums"]["purchase_type"] | null
+          search_description?: string | null
           shipping_address_id?: string | null
           source_order_id?: string | null
           status?: string | null
@@ -711,14 +717,17 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_sales_order?: boolean | null
+          link?: string | null
           notes?: string | null
           ocr_customer_data?: Json | null
           order_date?: string | null
           order_number?: string
           order_type?: Database["public"]["Enums"]["order_type_enum"] | null
           payment_status?: string | null
+          price_limit?: number | null
           purchase_origin?: string | null
           purchase_type?: Database["public"]["Enums"]["purchase_type"] | null
+          search_description?: string | null
           shipping_address_id?: string | null
           source_order_id?: string | null
           status?: string | null

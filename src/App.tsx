@@ -24,9 +24,9 @@ import OcrReviewPage from "@/pages/ocr/OcrReviewPage";
 import OcrTestPage from "@/pages/ocr/OcrTestPage";
 import OcrInvoiceReviewPage from "@/pages/ocr/OcrInvoiceReviewPage";
 import AssignInventoryPage from "@/pages/inventory/AssignInventoryPage";
-import OrderFlowPage from "@/pages/OrderFlowPage"; // New import
+import OrderFlowPage from "@/pages/OrderFlowPage";
+import ScoutingPage from "@/pages/ScoutingPage"; // New import for the scouting page
 
-// ✅ Hier importieren
 import { Toaster } from "@/components/ui/toaster";
 
 function App() {
@@ -105,6 +105,11 @@ function App() {
           path="/orderflow"
           element={user ? <OrderFlowPage /> : <Navigate to="/login" />}
         />
+        {/* New route for scouting page */}
+        <Route
+          path="/scouting"
+          element={user ? <ScoutingPage /> : <Navigate to="/login" />}
+        />
         <Route
           path="/dashboard/orders"
           element={user ? <OrdersLayout /> : <Navigate to="/login" />}
@@ -124,7 +129,6 @@ function App() {
         </Route>
       </Routes>
 
-      {/* ✅ Globaler Toast-Provider ganz am Ende */}
       <Toaster />
     </Router>
   );
