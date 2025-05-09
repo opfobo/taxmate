@@ -26,8 +26,9 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Trash, Image, Plus } from "lucide-react";
+import { Trash, Image, Plus, Filter } from "lucide-react";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Badge } from "@/components/ui/badge";
 
 // Define a local type for search-request orders
 type ScoutingOrder = {
@@ -50,10 +51,23 @@ type ScoutingFormData = {
   image_urls?: string[] | null;
 };
 
+// Define status options
+const statusOptions = [
+  "all",
+  "new", 
+  "in_progress", 
+  "found", 
+  "not_found", 
+  "ordered", 
+  "fulfilled", 
+  "canceled"
+];
+
 export default function ScoutingPage() {
   const [searchRequests, setSearchRequests] = useState<ScoutingOrder[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const { toast } = useToast();
   
   // Form state
@@ -277,6 +291,47 @@ export default function ScoutingPage() {
     }
   };
 
+  // Status badge component
+  const renderStatusBadge = (status: string | null) => {
+    const safeStatus = status || "new";
+    
+    // Badge variants map based on status
+    const badgeVariantMap: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", className: string }> = {
+      new: { variant: "outline", className: "bg-gray-100 text-gray-700" },
+      in_progress: { variant: "outline", className: "bg-orange-100 text-orange-700 border-orange-200" },
+      found: { variant: "outline", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+      not_found: { variant: "destructive", className: "" },
+      ordered: { variant: "outline", className: "bg-blue-100 text-blue-700 border-blue-200" },
+      fulfilled: { variant: "outline", className: "bg-green-100 text-green-700 border-green-200" },
+      canceled: { variant: "outline", className: "bg-gray-100 text-gray-500 line-through" }
+    };
+    
+    const { variant, className } = badgeVariantMap[safeStatus] || badgeVariantMap["new"];
+    
+    return (
+      <Badge variant={variant} className={className}>
+        {safeStatus.replace("_", " ")}
+      </Badge>
+    );
+  };
+
+  // Row highlight class based on status
+  const getRowHighlightClass = (status: string | null) => {
+    const safeStatus = status || "new";
+    
+    const rowHighlightMap: Record<string, string> = {
+      new: "hover:bg-gray-50",
+      in_progress: "bg-orange-50/30 hover:bg-orange-50/50",
+      found: "bg-yellow-50/30 hover:bg-yellow-50/50",
+      not_found: "bg-red-50/30 hover:bg-red-50/50",
+      ordered: "bg-blue-50/30 hover:bg-blue-50/50",
+      fulfilled: "bg-green-50/30 hover:bg-green-50/50",
+      canceled: "bg-gray-50/30 hover:bg-gray-50/50"
+    };
+    
+    return rowHighlightMap[safeStatus] || rowHighlightMap["new"];
+  };
+
   const renderImageThumbnail = (imageUrl: string | null | undefined) => {
     if (!imageUrl) {
       return (
@@ -303,6 +358,12 @@ export default function ScoutingPage() {
     if (!dateString) return "N/A";
     return format(new Date(dateString), "MMM d, yyyy");
   };
+  
+  // Filter search requests by status
+  const filteredSearchRequests = searchRequests.filter((request) => {
+    if (statusFilter === "all") return true;
+    return request.status === statusFilter;
+  });
 
   return (
     <PageLayout>
@@ -463,15 +524,39 @@ export default function ScoutingPage() {
           </Alert>
         )}
 
+        {/* Status filter */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="flex items-center mr-2">
+            <Filter className="h-4 w-4 mr-1" />
+            <span className="text-sm font-medium">Filter by status:</span>
+          </div>
+          
+          {statusOptions.map((status) => (
+            <Badge 
+              key={status}
+              variant={statusFilter === status ? "default" : "outline"}
+              className={`
+                cursor-pointer capitalize
+                ${statusFilter === status ? "bg-primary" : "hover:bg-muted"}
+              `}
+              onClick={() => setStatusFilter(status)}
+            >
+              {status === "all" ? "All" : status.replace("_", " ")}
+            </Badge>
+          ))}
+        </div>
+
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <p>Loading scouting requests...</p>
           </div>
-        ) : searchRequests.length === 0 ? (
+        ) : filteredSearchRequests.length === 0 ? (
           <div className="bg-muted/50 p-8 rounded-lg text-center">
             <h3 className="text-xl font-medium mb-2">No search requests found</h3>
             <p className="text-muted-foreground">
-              Start creating search requests to see them here.
+              {statusFilter !== "all" 
+                ? `No requests with status "${statusFilter}" found. Try a different filter.`
+                : "Start creating search requests to see them here."}
             </p>
           </div>
         ) : (
@@ -489,8 +574,11 @@ export default function ScoutingPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {searchRequests.map((request) => (
-                  <TableRow key={request.id}>
+                {filteredSearchRequests.map((request) => (
+                  <TableRow 
+                    key={request.id} 
+                    className={getRowHighlightClass(request.status)}
+                  >
                     <TableCell>{renderImageThumbnail(request.image_urls ? request.image_urls[0] : null)}</TableCell>
                     <TableCell className="max-w-xs break-words">
                       {request.search_description || "No description provided"}
@@ -515,7 +603,7 @@ export default function ScoutingPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className="capitalize">{request.status || "new"}</span>
+                      {renderStatusBadge(request.status)}
                     </TableCell>
                     <TableCell>{formatDate(request.created_at)}</TableCell>
                   </TableRow>
