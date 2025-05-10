@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardPage from "@/pages/Dashboard";
 import LoginPage from "@/pages/auth/LoginPage";
+import SignupPage from "@/pages/auth/SignupPage";
 import ProfilePage from "@/pages/ProfilePage";
 import SettingsPage from "@/pages/SettingsPage";
 import TransactionsPage from "@/pages/TransactionsPage";
@@ -77,6 +78,16 @@ function App() {
         <Route
           path="/auth/login"
           element={!user ? <LoginPage /> : <Navigate to="/dashboard" />}
+        />
+        
+        {/* Signup Routes - New routes */}
+        <Route
+          path="/signup"
+          element={!user ? <SignupPage /> : <Navigate to="/dashboard" />}
+        />
+        <Route
+          path="/auth/signup"
+          element={<Navigate to="/signup" />}
         />
 
         {/* Protected Routes */}
