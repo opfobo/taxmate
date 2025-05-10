@@ -803,6 +803,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       resources: {
@@ -1139,6 +1146,143 @@ export type Database = {
           vat_refunded?: number | null
         }
         Relationships: []
+      }
+      telegram_bots: {
+        Row: {
+          assigned_to_user: string | null
+          bot_token: string
+          bot_username: string
+          created_at: string | null
+          default_language: string | null
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          assigned_to_user?: string | null
+          bot_token: string
+          bot_username: string
+          created_at?: string | null
+          default_language?: string | null
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          assigned_to_user?: string | null
+          bot_token?: string
+          bot_username?: string
+          created_at?: string | null
+          default_language?: string | null
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_bots_assigned_to_user_fkey"
+            columns: ["assigned_to_user"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telegram_link_tokens: {
+        Row: {
+          alias: string
+          bot_id: string | null
+          created_at: string | null
+          id: string
+          used: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          alias: string
+          bot_id?: string | null
+          created_at?: string | null
+          id?: string
+          used?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          alias?: string
+          bot_id?: string | null
+          created_at?: string | null
+          id?: string
+          used?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_link_tokens_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_bots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telegram_link_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telegram_users: {
+        Row: {
+          bot_id: string | null
+          created_at: string | null
+          id: string
+          is_blocked: boolean | null
+          last_interaction_at: string | null
+          preferred_language: string | null
+          telegram_first_name: string | null
+          telegram_id: number
+          telegram_last_name: string | null
+          telegram_username: string | null
+          user_id: string | null
+        }
+        Insert: {
+          bot_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_blocked?: boolean | null
+          last_interaction_at?: string | null
+          preferred_language?: string | null
+          telegram_first_name?: string | null
+          telegram_id: number
+          telegram_last_name?: string | null
+          telegram_username?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          bot_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_blocked?: boolean | null
+          last_interaction_at?: string | null
+          preferred_language?: string | null
+          telegram_first_name?: string | null
+          telegram_id?: number
+          telegram_last_name?: string | null
+          telegram_username?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_users_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_bots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telegram_users_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -41,12 +41,13 @@ const Navbar = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/auth/login";
+    navigate("/auth/login");
   };
 
   // Close mobile menu when route changes
@@ -113,6 +114,17 @@ const Navbar = () => {
           <span>{link.label}</span>
         </Link>
       ))}
+      
+      {/* Added logout button below navigation items for sidebar/desktop */}
+      {user && !isMobile && (
+        <button
+          onClick={handleLogout}
+          className="mt-auto flex items-center gap-2 px-3 py-2 transition-colors hover:text-destructive text-muted-foreground"
+        >
+          <LogOut className="h-5 w-5" />
+          <span>{t("logout")}</span>
+        </button>
+      )}
     </>
   );
 
