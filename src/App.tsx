@@ -25,7 +25,8 @@ import OcrTestPage from "@/pages/ocr/OcrTestPage";
 import OcrInvoiceReviewPage from "@/pages/ocr/OcrInvoiceReviewPage";
 import AssignInventoryPage from "@/pages/inventory/AssignInventoryPage";
 import OrderFlowPage from "@/pages/OrderFlowPage";
-import ScoutingPage from "@/pages/ScoutingPage"; // New import for the scouting page
+import ScoutingPage from "@/pages/ScoutingPage";
+import LandingPage from "@/pages/LandingPage";
 
 import { Toaster } from "@/components/ui/toaster";
 
@@ -65,14 +66,20 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route
-          path="/"
-          element={user ? <Navigate to="/dashboard" /> : <Navigate to="/login" />}
-        />
+        {/* Public Landing Page */}
+        <Route path="/" element={<LandingPage />} />
+        
+        {/* Login Routes - Unify to same component */}
         <Route
           path="/login"
           element={!user ? <LoginPage /> : <Navigate to="/dashboard" />}
         />
+        <Route
+          path="/auth/login"
+          element={!user ? <LoginPage /> : <Navigate to="/dashboard" />}
+        />
+
+        {/* Protected Routes */}
         <Route
           path="/dashboard"
           element={user ? <DashboardPage /> : <Navigate to="/login" />}
@@ -105,7 +112,6 @@ function App() {
           path="/orderflow"
           element={user ? <OrderFlowPage /> : <Navigate to="/login" />}
         />
-        {/* New route for scouting page */}
         <Route
           path="/scouting"
           element={user ? <ScoutingPage /> : <Navigate to="/login" />}
@@ -127,6 +133,9 @@ function App() {
           <Route path="invoice" element={<InvoiceOcrTab />} />
           <Route path="consumer" element={<ConsumerOcrTab />} />
         </Route>
+
+        {/* Fallback route - redirect all unknown paths to login */}
+        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
 
       <Toaster />
@@ -135,3 +144,4 @@ function App() {
 }
 
 export default App;
+
