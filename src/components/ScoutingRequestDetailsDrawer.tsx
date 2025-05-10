@@ -319,7 +319,7 @@ export function ScoutingRequestDetailsDrawer({
 
       {/* Full-screen Image Preview */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-[90vw] h-[90vh] p-0 border-none bg-transparent shadow-none">
+        <DialogContent className="max-w-[90vw] h-[90vh] p-0 border-none bg-black/80 shadow-xl flex items-center justify-center">
           <div className="relative w-full h-full overflow-auto scrollbar-hidden bg-black p-4">
             {/* Navigation controls */}
             <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-10">
@@ -338,7 +338,7 @@ export function ScoutingRequestDetailsDrawer({
             <img 
               src={getCurrentImage()} 
               alt="Preview" 
-              className="w-auto h-auto"
+              className="mx-auto my-0"
             />
             
             {/* Previous button */}
